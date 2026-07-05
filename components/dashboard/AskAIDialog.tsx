@@ -47,6 +47,7 @@ export default function AskAIDialog({ onClose, context }: AskAIDialogProps) {
                 body: JSON.stringify({ message: text, context }),
             });
             const data = await res.json();
+            console.log('[JagAgent] response:', data);
             setMessages(prev => [...prev, { role: 'ai', content: data.reply ?? '抱歉，發生了錯誤。' }]);
         } catch {
             setMessages(prev => [...prev, { role: 'ai', content: '連線失敗，請稍後再試。' }]);
