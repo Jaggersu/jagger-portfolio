@@ -26,7 +26,10 @@ ${context ? `\n客戶專案背景：${context}` : ''}
         );
 
         const data = await res.json();
-        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '抱歉，無法取得回應。';
+        console.log('[ai-chat] gemini raw:', JSON.stringify(data).slice(0, 500));
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text
+            ?? data?.error?.message
+            ?? '抱歉，無法取得回應。';
         return NextResponse.json({ reply });
     } catch (err: any) {
         console.error('[ai-chat] error:', err);
