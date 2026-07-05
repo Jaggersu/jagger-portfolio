@@ -7,6 +7,7 @@ import { LayoutList } from '../icons/LayoutList';
 import { FileIcon } from '../icons/FileIcon';
 import { ContractIcon } from '../icons/ContractIcon';
 import { SettingsIcon } from '../icons/SettingsIcon';
+import AskAIDialog from './AskAIDialog';
 
 interface DashboardPanelProps {
     onClose: () => void;
@@ -95,6 +96,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     const [files, setFiles]                 = useState<FileItem[]>(MOCK_FILES);
     const [loading, setLoading]             = useState(false);
     const [aiPanel, setAiPanel]             = useState<AiPanel | null>(null);
+    const [showAskAI, setShowAskAI]         = useState(false);
     const [fileSearch, setFileSearch]       = useState('');
     const [driveLoading, setDriveLoading]   = useState<string | null>(null);
     const [settingsTab, setSettingsTab]     = useState<SettingsTab>('account');
@@ -352,6 +354,19 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                         <span className="text-[11px] text-zinc-300 capitalize">{activeNav}</span>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowAskAI(true)}
+                            className="flex items-center gap-1.5 text-[10px] text-zinc-400 hover:text-white border border-zinc-800 hover:border-[#FF5500]/60 px-2.5 py-1 rounded transition-colors"
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] animate-pulse" />
+                            Ask AI
+                        </button>
+                        <button
+                            onClick={() => alert('開新專案功能即將上線')}
+                            className="text-[10px] text-black bg-[#FF5500] hover:bg-white px-2.5 py-1 rounded font-bold tracking-wider transition-colors"
+                        >
+                            + New Project
+                        </button>
                         <span className="text-[10px] text-zinc-600 border border-zinc-900 px-2.5 py-1 rounded">{profile?.name ?? 'Client'}</span>
                         <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -641,6 +656,13 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
 
                 </div>
             </main>
+
+            {showAskAI && (
+                <AskAIDialog
+                    onClose={() => setShowAskAI(false)}
+                    context={profile ? `客戶：${profile.name}，方案：${selectedPlan}，目前任務數：${tasks.length}` : undefined}
+                />
+            )}
         </div>
     );
 }
