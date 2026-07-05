@@ -1,81 +1,252 @@
-import React, { useState, useEffect } from 'react';
+'use client';
 
-// 這裡預留 Supabase 狀態結構，若您尚未安裝 @supabase/supabase-js，這段程式碼仍可安全運行（使用預設值）
-export default function SubscriptionCards() {
-    const [spotsAvailable, setSpotsAvailable] = useState<number>(2); // 預設剩餘 2 位
-    const [isLoading, setIsLoading] = useState<boolean>(false);
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { UserFlowProvider, useUserFlow } from '../lib/userFlow';
+import OnboardingModal from './dashboard/OnboardingModal';
+
+interface PlanItem {
+    tag: string;
+    title: string;
+    desc: string;
+    price: string;
+    period: string;
+    features: string[];
+    actionText: string;
+    checkSpots: boolean;
+    isPopular: boolean;
+}
+
+function SubscriptionContent() {
+    const { flowState } = useUserFlow();
+    const [spotsAvailable, setSpotsAvailable] = useState<number>(2);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [activeModal, setActiveModal] = useState<string | null>(null);
+
+    const openModal = useCallback((planTitle: string) => setActiveModal(planTitle), []);
+    const closeModal = useCallback(() => setActiveModal(null), []);
 
     useEffect(() => {
-        // 下一步驟將在此處串接 Supabase 實時抓取席位邏輯
-        // async function fetchSpots() { ... }
+        async function fetchSpots() {
+            try {
+                setIsLoading(true);
+                const { data, error } = await supabase
+                    .from('site_config')
+                    .select('value_int')
+                    .eq('key', 'subscription_spots')
+                    .single();
+
+                if (error) throw error;
+                if (data) {
+                    setSpotsAvailable(data.value_int);
+                }
+            } catch (err) {
+                console.error('無法讀取 Supabase 席位設定:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchSpots();
     }, []);
 
+    const plans: PlanItem[] = [
+        {
+            tag: '// ON-DEMAND',
+            title: '散戶單件計價',
+            desc: '臨時急件素材製作。未註冊走傳統交付；註冊登入後解鎖 Dashboard 即可線上簽約。',
+            price: '論斤計價',
+            period: ' / 依件報價',
+            features: [
+                '單件平面 / 數位 DM 快速製作',
+                '24-48 小時內極速交付',
+                '⚠️ 註冊登入解鎖 Dashboard',
+                '🔑 解鎖後支援線上簽約機制'
+            ],
+            actionText: '登入解鎖 Dashboard',
+            checkSpots: false,
+            isPopular: false
+        },
+        {
+            tag: '// LITE',
+            title: '平面視覺訂閱',
+            desc: '適合需要常態、大量平面與社群視覺素材。填表或掃名片開通後台權限。',
+            price: 'NT$ 25,000',
+            period: ' / mo',
+            features: [
+                '平面廣告 / 印刷輸出 / 社群 DM',
+                '平均 2-3 專案工作天交付',
+                '✅ 標配專屬 Dashboard 看板',
+                '✍️ 支援線上簽約與進度追蹤'
+            ],
+            actionText: '申請開通 LITE',
+            checkSpots: true,
+            isPopular: false
+        },
+        {
+            tag: '// PRO',
+            title: '全包廣域核心',
+            desc: '資深廣域設計 + AI 狂飆速度 + 頂級 Next.js 前端與 PWA 開發。',
+            price: 'NT$ 45,000',
+            period: ' / mo',
+            features: [
+                '平面+數位宣傳+網站設計+PWA',
+                '平均 3-5 專案工作天快速交付',
+                '✅ 標配專屬 Dashboard 看板',
+                '✍️ 支援線上簽約與核心配置'
+            ],
+            actionText: '立即開啟 PRO 訂閱',
+            checkSpots: true,
+            isPopular: true
+        },
+        {
+            tag: '// SCALE',
+            title: '雙軌並行代理',
+            desc: '多線專案並進，解鎖雙任務同時推進，由 AI 流程全力全開變現。',
+            price: 'NT$ 85,000',
+            period: ' / mo',
+            features: [
+                '服務範疇與 PRO 完全相同',
+                '🔥 支援 2 個任務同時推進',
+                '✅ 標配專屬 Dashboard 看板',
+                '✍️ 支援線上簽約與雙軌追蹤'
+            ],
+            actionText: '申請代理方案',
+            checkSpots: true,
+            isPopular: false
+        },
+        {
+            tag: '// FIXED PROJECT',
+            title: '一次性專案',
+            desc: '傳統客一口價首選。完整品牌識別與高階 PWA 開發，標配完整合約與看板。',
+            price: 'NT$ 88,000 起',
+            period: ' / 一口價',
+            features: [
+                '完整品牌識別 + 客製網頁開發',
+                '依合約進度與甘特圖時程交付',
+                '✅ 標配專屬 Dashboard 看板',
+                '✍️ 強制啟動線上簽約流程'
+            ],
+            actionText: '洽談專案細節',
+            checkSpots: false,
+            isPopular: false
+        }
+    ];
+
     return (
-        <section id="subscription" className="py-20 px-4 max-w-4xl mx-auto bg-[#121214]">
-            <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold tracking-wider text-white font-mono">
-                    DESIGN SUBSCRIPTION <span className="text-[#FF5500]">/</span> 設計訂閱制
-                </h2>
-                <p className="text-zinc-500 text-xs font-mono mt-2 uppercase tracking-widest">
-                    移植高效協作邏輯 · 專屬網頁與視覺開發方案
-                </p>
-            </div>
+        <section id="subscription" className="relative w-full bg-[#121214] border-t border-[#1F1F23] overflow-hidden">
+            {/* 橘色光暈 */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#FF5500]/5 rounded-full blur-[120px] pointer-events-none" />
 
-            <div className="bg-[#0A0A0B] border border-zinc-800 rounded-2xl p-8 md:p-12 relative overflow-hidden max-w-2xl mx-auto group hover:border-[#FF5500] transition-all duration-300">
-
-                {/* 席位狀態動態標籤 */}
-                <div className="absolute top-4 right-4 bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-full flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${spotsAvailable > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                    <span className="text-[10px] font-mono text-zinc-400">
-                        {spotsAvailable > 0 ? `席位開放中 (剩餘 ${spotsAvailable} 位)` : '席位已額滿 (預約候補)'}
-                    </span>
-                </div>
-
-                {/* 卡片內容 */}
-                <div className="mb-8">
-                    <span className="text-xs font-mono text-[#FF5500] tracking-widest">// MONTHLY PLAN</span>
-                    <h3 className="text-3xl font-bold text-white mt-1">月費全包制</h3>
-                    <p className="text-zinc-400 text-sm mt-3 leading-relaxed">
-                        適合需要持續產出高質量網頁開發、品牌識別、系統架構優化的長期合作夥伴。
+            <div className="py-20 px-6 max-w-7xl mx-auto relative z-10">
+                <div className="text-center mb-16">
+                    <span className="text-[10px] font-mono text-zinc-600 tracking-widest uppercase block mb-3">// subscription.plan</span>
+                    <h2 className="text-3xl font-bold tracking-wider text-white font-mono">
+                        DESIGN SUBSCRIPTION <span className="text-[#FF5500]">/</span> 設計訂閱制
+                    </h2>
+                    <p className="text-zinc-500 text-xs font-mono mt-2 uppercase tracking-widest">
+                        移植高效協作邏輯 · 廣域設計與全棧開發多元方案
                     </p>
                 </div>
 
-                {/* 核心特色（清單） */}
-                <ul className="space-y-3 text-sm font-mono text-zinc-300 border-t border-zinc-900 pt-6 mb-8">
-                    <li className="flex items-center gap-3">
-                        <span className="text-[#FF5500]">✓</span> 一次交付一項核心任務，隨時可調整優先順序
-                    </li>
-                    <li className="flex items-center gap-3">
-                        <span className="text-[#FF5500]">✓</span> 平均 3-5 專案工作天快速交付交付
-                    </li>
-                    <li className="flex items-center gap-3">
-                        <span className="text-[#FF5500]">✓</span> Next.js + Tailwind CSS 頂級前台架構開發
-                    </li>
-                    <li className="flex items-center gap-3">
-                        <span className="text-[#FF5500]">✓</span> 包含 Supabase / 資料庫基礎架構配置
-                    </li>
-                </ul>
+                {/* 方案網格卡片 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {plans.map((plan, index) => {
+                        const isButtonDisabled = plan.checkSpots && (spotsAvailable === 0 || isLoading);
 
-                {/* 價格與行動按鈕 */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-t border-zinc-900 pt-6">
-                    <div>
-                        <span className="text-[10px] font-mono text-zinc-500 block uppercase tracking-widest">Fixed Pricing</span>
-                        <div className="text-2xl font-bold text-white font-mono mt-1">
-                            NT$ <span className="text-3xl text-white">45,000</span> <span className="text-sm text-zinc-500 font-normal">/ mo</span>
-                        </div>
-                    </div>
+                        return (
+                            <div
+                                key={index}
+                                className={`bg-[#0A0A0B] border rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between group transition-all duration-300 ${plan.isPopular ? 'border-[#FF5500]/60 shadow-[0_0_20px_rgba(255,85,0,0.05)]' : 'border-zinc-800'
+                                    } hover:border-[#FF5500]/50`}
+                            >
+                                {/* artboard 角落控制點 */}
+                                <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-zinc-700 pointer-events-none" />
+                                <div className="absolute top-3 right-3 w-3 h-3 border-t border-r border-zinc-700 pointer-events-none" />
+                                <div className="absolute bottom-3 left-3 w-3 h-3 border-b border-l border-zinc-700 pointer-events-none" />
+                                <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-zinc-700 pointer-events-none" />
 
-                    <button
-                        disabled={spotsAvailable === 0 || isLoading}
-                        className={`px-8 py-3 rounded font-bold text-xs tracking-wider uppercase transition-all duration-300 ${spotsAvailable > 0
-                                ? 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
-                                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                            }`}
-                    >
-                        {spotsAvailable > 0 ? '立即開啟訂閱' : '聯絡候補席位'}
-                    </button>
+
+                                {/* 卡片內容 */}
+                                <div>
+                                    <div className="mb-6 mt-2">
+                                        <span className="text-[10px] font-mono text-[#FF5500] tracking-widest block">{plan.tag}</span>
+                                        <h3 className="text-xl font-bold text-white mt-1 flex items-center gap-2">
+                                            {plan.title}
+                                            {plan.isPopular && <span className="text-[9px] bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/30 px-1.5 py-0.5 rounded uppercase tracking-wider">RECOMMENDED</span>}
+                                        </h3>
+                                        <p className="text-zinc-400 text-xs mt-3 leading-relaxed min-h-[40px]">
+                                            {plan.desc}
+                                        </p>
+                                    </div>
+
+                                    {/* 核心特色 */}
+                                    <ul className="space-y-2.5 text-xs font-mono text-zinc-300 border-t border-zinc-900 pt-5 mb-6">
+                                        {plan.features.map((feature, fIdx) => (
+                                            <li key={fIdx} className="flex items-start gap-2 leading-tight">
+                                                <span className="text-[#FF5500] shrink-0">✓</span>
+                                                <span>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {/* 價格與行動按鈕 */}
+                                <div className="border-t border-zinc-900 pt-5 mt-auto">
+                                    <div className="mb-4">
+                                        <span className="text-[9px] font-mono text-zinc-500 block uppercase tracking-widest">PRICING MODEL</span>
+                                        <div className="text-lg font-bold text-white font-mono mt-0.5">
+                                            {plan.price !== '論斤計價' && plan.price !== 'NT$ 88,000 起' ? 'NT$ ' : ''}
+                                            <span className="text-2xl text-white font-bold">{plan.price.replace('NT$ ', '').replace(' 起', '')}</span>
+                                            {plan.price.includes('起') && <span className="text-sm text-white"> 起</span>}
+                                            <span className="text-xs text-zinc-500 font-normal">{plan.period}</span>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        disabled={isButtonDisabled}
+                                        onClick={() => !isButtonDisabled && openModal(plan.title)}
+                                        className={`w-full py-2.5 rounded font-bold text-[11px] tracking-wider uppercase transition-all duration-300 ${isLoading && plan.checkSpots
+                                                ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                                                : plan.checkSpots && spotsAvailable === 0
+                                                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                                                    : 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
+                                            }`}
+                                    >
+                                        {isLoading && plan.checkSpots
+                                            ? '載入中'
+                                            : plan.checkSpots && spotsAvailable === 0
+                                                ? '聯絡候補席位'
+                                                : plan.actionText}
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* EOF 終止標記 */}
+                <div className="mt-20 flex items-center gap-4 font-mono text-[10px] text-zinc-700">
+                    <span className="flex-1 h-px bg-zinc-900" />
+                    <span className="tracking-widest">// EOF · JAGGER OS v2.0 · ALL RIGHTS RESERVED</span>
+                    <span className="flex-1 h-px bg-zinc-900" />
                 </div>
             </div>
+
+            {/* Onboarding Modal */}
+            {activeModal && (
+                <OnboardingModal
+                    plan={activeModal}
+                    onClose={closeModal}
+                />
+            )}
         </section>
+    );
+}
+
+export default function SubscriptionCards() {
+    return (
+        <UserFlowProvider>
+            <SubscriptionContent />
+        </UserFlowProvider>
     );
 }

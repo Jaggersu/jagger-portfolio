@@ -39,3 +39,76 @@ body {
   background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
   background-size: 30px 30px;
 }
+/* GLightbox 樣式覆蓋 */
+.glightbox-clean .gslide-description,
+.glightbox-clean .gslide-description.description-bottom,
+.glightbox-clean .gslide-description.description-top {
+  background: rgba(10, 10, 11, 0.82) !important;
+  backdrop-filter: blur(10px) !important;
+  padding: 6px 20px !important;
+  min-height: unset !important;
+}
+
+.glightbox-clean .gdesc-inner {
+  padding: 4px 0 !important;
+}
+
+.glightbox-clean .gslide-title {
+  color: rgba(255, 255, 255, 0.55) !important;
+  font-size: 10px !important;
+  font-family: monospace !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.1em !important;
+  margin: 0 !important;
+  text-transform: uppercase !important;
+}
+
+.glightbox-clean .gslide-desc {
+  display: none !important;
+}
+
+/* ── AI overlay slide-up animation ──────────────────────────────────────── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* ── Linear-style scrollbar ─────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #27272a;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #3f3f46;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+/* ── end scrollbar ───────────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    @apply scroll-smooth bg-[#0A0A0B] text-white font-mono;
+  }
+  
+  /* 確保所有含有 id 的錨點區塊，滾動定位時自動下移，避免被 Header 遮擋 */
+  section[id] {
+    @apply scroll-mt-24;
+  }
+}
