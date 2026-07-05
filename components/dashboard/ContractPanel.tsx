@@ -42,9 +42,9 @@ const CONTRACT_CLAUSES = [
 ];
 
 const PLAN_PRICES: Record<string, number> = {
-    'LITE': 25000,
-    'PRO': 45000,
-    'SCALE': 85000,
+    '平面視覺訂閱': 25000,
+    '全包廣域核心': 45000,
+    '雙軌並行代理': 85000,
 };
 
 export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
@@ -56,8 +56,8 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
     const [paying, setPaying] = useState(false);
     const lastPos = useRef<{ x: number; y: number } | null>(null);
 
-    const isFixedProject = plan === 'FIXED PROJECT' || plan === 'ON-DEMAND';
     const fixedAmount = PLAN_PRICES[plan];
+    const isFixedProject = !fixedAmount;
 
     useEffect(() => {
         if (fixedAmount) {
