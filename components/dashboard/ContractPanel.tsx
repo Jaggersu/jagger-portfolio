@@ -127,9 +127,12 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
         if (!canvas || !hasSig || !agreed) return;
         sign(canvas.toDataURL('image/png'));
 
-        const rawAmount = contractParams.amount.replace(/[^0-9]/g, '');
+        const rawAmount = (fixedAmount ? String(fixedAmount) : contractParams.amount).replace(/[^0-9]/g, '');
         const amount = parseInt(rawAmount, 10);
-        if (!amount || amount <= 0) return;
+        if (!amount || amount <= 0) {
+            console.error('[checkout] 金額無效:', contractParams.amount, 'fixedAmount:', fixedAmount);
+            return;
+        }
 
         setPaying(true);
         try {
