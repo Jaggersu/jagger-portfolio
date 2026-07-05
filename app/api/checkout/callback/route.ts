@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
+function padKey(key: string, len: number): Buffer {
+    return Buffer.from(key.padEnd(len, '\0').slice(0, len));
+}
+
 function aesDecrypt(encryptedHex: string, key: string, iv: string): string {
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', padKey(key, 32), padKey(iv, 16));
     decipher.setAutoPadding(false);
     let decrypted = decipher.update(encryptedHex, 'hex', 'utf8');
     decrypted += decipher.final('utf8');

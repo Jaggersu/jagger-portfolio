@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
+function padKey(key: string, len: number): Buffer {
+    return Buffer.from(key.padEnd(len, '\0').slice(0, len));
+}
+
 function aesEncrypt(data: string, key: string, iv: string): string {
-    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+    const cipher = crypto.createCipheriv('aes-256-cbc', padKey(key, 32), padKey(iv, 16));
     let encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return encrypted;
