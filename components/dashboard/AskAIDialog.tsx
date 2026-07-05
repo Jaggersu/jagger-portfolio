@@ -63,7 +63,7 @@ export default function AskAIDialog({ onClose, context }: AskAIDialogProps) {
                 {/* Left — Preset Topics */}
                 <div className="w-48 border-r border-zinc-900 flex flex-col shrink-0">
                     <div className="p-4 border-b border-zinc-900">
-                        <div className="text-[9px] text-zinc-600 tracking-widest">// TOPICS</div>
+                        <div className="text-[9px] text-zinc-600 tracking-widest">// JAG AGENT</div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 space-y-1">
                         {PRESET_TOPICS.map(t => (
@@ -84,7 +84,7 @@ export default function AskAIDialog({ onClose, context }: AskAIDialogProps) {
                     <div className="h-12 border-b border-zinc-900 flex items-center justify-between px-4 shrink-0">
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 bg-[#FF5500] rounded-full animate-pulse" />
-                            <span className="text-[11px] text-zinc-400 tracking-widest">JAGGER OS · ASK AI</span>
+                            <span className="text-[11px] text-zinc-400 tracking-widest">JAGGER OS · JAG AGENT</span>
                         </div>
                         <button onClick={onClose} className="text-zinc-600 hover:text-white text-lg">×</button>
                     </div>
@@ -105,7 +105,7 @@ export default function AskAIDialog({ onClose, context }: AskAIDialogProps) {
                         {loading && (
                             <div className="flex justify-start">
                                 <div className="bg-zinc-900 px-4 py-2.5 rounded-xl text-zinc-600 text-[12px]">
-                                    <span className="animate-pulse">// 思考中…</span>
+                                    <span className="animate-pulse">// JAG AGENT 思考中…</span>
                                 </div>
                             </div>
                         )}

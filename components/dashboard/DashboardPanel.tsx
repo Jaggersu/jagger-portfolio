@@ -359,7 +359,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                             className="flex items-center gap-1.5 text-[10px] text-zinc-400 hover:text-white border border-zinc-800 hover:border-[#FF5500]/60 px-2.5 py-1 rounded transition-colors"
                         >
                             <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] animate-pulse" />
-                            Ask AI
+                            Jag Agent
                         </button>
                         <button
                             onClick={() => alert('開新專案功能即將上線')}
