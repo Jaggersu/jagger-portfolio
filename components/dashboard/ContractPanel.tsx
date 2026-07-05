@@ -41,6 +41,12 @@ const CONTRACT_CLAUSES = [
     },
 ];
 
+const PLAN_PRICES: Record<string, number> = {
+    'LITE': 25000,
+    'PRO': 45000,
+    'SCALE': 85000,
+};
+
 export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
     const { sign, profile, contractParams, setContractParams } = useUserFlow();
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,6 +55,15 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
     const [agreed, setAgreed] = useState(false);
     const [paying, setPaying] = useState(false);
     const lastPos = useRef<{ x: number; y: number } | null>(null);
+
+    const isFixedProject = plan === 'FIXED PROJECT' || plan === 'ON-DEMAND';
+    const fixedAmount = PLAN_PRICES[plan];
+
+    useEffect(() => {
+        if (fixedAmount) {
+            setContractParams(prev => ({ ...prev, amount: String(fixedAmount) }));
+        }
+    }, [fixedAmount, setContractParams]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -280,13 +295,19 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-[10px] text-zinc-600 block mb-1.5">AMOUNT (NT$)</label>
-                                    <input
-                                        type="text"
-                                        value={contractParams.amount}
-                                        onChange={e => setContractParams({ ...contractParams, amount: e.target.value })}
-                                        placeholder="e.g. 12,000"
-                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
-                                    />
+                                    {isFixedProject ? (
+                                        <input
+                                            type="text"
+                                            value={contractParams.amount}
+                                            onChange={e => setContractParams({ ...contractParams, amount: e.target.value })}
+                                            placeholder="e.g. 88000"
+                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
+                                        />
+                                    ) : (
+                                        <div className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-[#FF5500] font-mono">
+                                            NT$ {Number(contractParams.amount || fixedAmount).toLocaleString()} / mo
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="text-[10px] text-zinc-600 block mb-1.5">TIMELINE</label>
@@ -294,7 +315,7 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                                         type="text"
                                         value={contractParams.timeline}
                                         onChange={e => setContractParams({ ...contractParams, timeline: e.target.value })}
-                                        placeholder="e.g. 3 個月"
+                                        placeholder={isFixedProject ? 'e.g. 3 個月' : '按月續約'}
                                         className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
                                     />
                                 </div>
