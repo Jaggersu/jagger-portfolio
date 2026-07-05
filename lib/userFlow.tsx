@@ -28,7 +28,7 @@ interface UserFlowContextValue {
     profile: UserProfile | null;
     selectedPlan: string | null;
     contractParams: ContractParams;
-    setContractParams: (p: ContractParams) => void;
+    setContractParams: React.Dispatch<React.SetStateAction<ContractParams>>;
     // Transitions — swap these for real DB calls later
     register: (profile: UserProfile, plan: string) => void;
     sign: (signatureDataUrl: string) => void;
