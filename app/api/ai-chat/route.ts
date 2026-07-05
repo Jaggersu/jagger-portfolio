@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
 
 export async function POST(req: NextRequest) {
     try {
@@ -13,26 +14,16 @@ export async function POST(req: NextRequest) {
 ${context ? `\n客戶專案背景：${context}` : ''}
 請直接回答，不要過多客套。`;
 
-        const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `${systemPrompt}\n\n客戶問：${message}` }] }],
-                    generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
-                }),
-            }
-        );
+        const ai = new GoogleGenAI({ apiKey });
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `${systemPrompt}\n\n客戶問：${message}`,
+        });
 
-        const data = await res.json();
-        console.log('[ai-chat] gemini raw:', JSON.stringify(data).slice(0, 500));
-        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text
-            ?? data?.error?.message
-            ?? '抱歉，無法取得回應。';
+        const reply = response.text ?? '抱歉，無法取得回應。';
         return NextResponse.json({ reply });
     } catch (err: any) {
-        console.error('[ai-chat] error:', err);
-        return NextResponse.json({ reply: '發生錯誤，請稍後再試。' }, { status: 500 });
+        console.error('[ai-chat] error:', err.message);
+        return NextResponse.json({ reply: `錯誤：${err.message}` }, { status: 500 });
     }
 }
