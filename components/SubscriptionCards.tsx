@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { UserFlowProvider, useUserFlow } from '../lib/userFlow';
+import { useUserFlow } from '../lib/userFlow';
 import OnboardingModal from './dashboard/OnboardingModal';
 
 interface PlanItem {
@@ -244,9 +244,5 @@ function SubscriptionContent() {
 }
 
 export default function SubscriptionCards() {
-    return (
-        <UserFlowProvider>
-            <SubscriptionContent />
-        </UserFlowProvider>
-    );
+    return <SubscriptionContent />;
 }
