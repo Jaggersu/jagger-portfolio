@@ -237,17 +237,31 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                     {/* Clauses */}
                     <div className="flex-1 overflow-y-auto px-8 py-6 space-y-7">
                         {CONTRACT_CLAUSES.map(clause => {
-                            const body = clause.num === '02' && (contractParams.amount || contractParams.timeline)
-                                ? clause.body
-                                    .replace('[[AMOUNT]]', contractParams.amount ? `NT$ ${contractParams.amount}` : '（待確認）')
-                                    .replace('[[TIMELINE]]', contractParams.timeline || '（待確認）')
-                                : clause.body;
+                            const amountText = contractParams.amount ? `NT$ ${Number(contractParams.amount).toLocaleString()}` : '（待確認）';
+                            const timelineText = contractParams.timeline || '（待確認）';
+
+                            const renderBody = () => {
+                                if (clause.num !== '02' || (!contractParams.amount && !contractParams.timeline)) {
+                                    return <p className="text-[14px] text-zinc-400 leading-[1.75]">{clause.body}</p>;
+                                }
+                                const parts = clause.body.split(/(\[\[AMOUNT\]\]|\[\[TIMELINE\]\])/);
+                                return (
+                                    <p className="text-[14px] text-zinc-400 leading-[1.75]">
+                                        {parts.map((part, i) => {
+                                            if (part === '[[AMOUNT]]') return <span key={i} className="text-[#FF5500] font-bold">{amountText}</span>;
+                                            if (part === '[[TIMELINE]]') return <span key={i} className="text-[#FF5500] font-bold">{timelineText}</span>;
+                                            return <span key={i}>{part}</span>;
+                                        })}
+                                    </p>
+                                );
+                            };
+
                             return (
                             <div key={clause.num} className="flex gap-5">
                                 <span className="text-[11px] text-[#FF5500] font-bold shrink-0 mt-0.5 w-6">{clause.num}</span>
                                 <div>
                                     <div className="text-sm font-bold text-zinc-100 mb-2">{clause.title}</div>
-                                    <p className="text-[14px] text-zinc-400 leading-[1.75]">{body}</p>
+                                    {renderBody()}
                                 </div>
                             </div>
                             );
@@ -378,6 +392,72 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
 
                         <div className="text-[10px] text-zinc-700 text-center">
                             // 簽署完成後將跳轉藍新金流完成付款
+                        </div>
+
+                        {/* ── Crypto Payment ── */}
+                        <div className="border border-zinc-900 rounded-xl p-5 space-y-4">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-zinc-600 tracking-widest">// CRYPTO PAYMENT</span>
+                                <span className="text-[9px] text-zinc-700">USDT / USDC</span>
+                            </div>
+                            {[
+                                {
+                                    chain: 'TRC-20',
+                                    network: 'Tron Network',
+                                    address: 'TAgWCpyof2tNYEq67v5PBgUApqpKHviYEY',
+                                    warn: '請務必使用波場 Tron 網路傳送，勿使用 ERC-20 或其他網路。',
+                                    icon: (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                                            <path d="M12 2L2 8l10 14L22 8L12 2z" fill="#FF0013" opacity="0.8"/>
+                                        </svg>
+                                    ),
+                                },
+                                {
+                                    chain: 'Base / Arbitrum',
+                                    network: 'EVM Network',
+                                    address: '0x8D929F645fa9c97df90349203b8949c3318ceACE',
+                                    warn: '支援 Base 與 Arbitrum 網路，請勿使用主網 ETH 或其他 EVM 網路。',
+                                    icon: (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                                            <circle cx="12" cy="12" r="10" fill="#0052FF" opacity="0.8"/>
+                                            <path d="M8 12h8M12 8v8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+                                        </svg>
+                                    ),
+                                },
+                                {
+                                    chain: 'TON',
+                                    network: 'TON Network',
+                                    address: 'UQBXuoeso8Yxl-LNGxD_q8JQqtWKgkZIgOlyTfY57ESXTHSw',
+                                    warn: '僅限 TON 網路轉帳，請勿使用其他網路。',
+                                    icon: (
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                                            <path d="M12 2L3 9h18L12 2z" fill="#0098EA" opacity="0.8"/>
+                                            <path d="M3 9l9 13L21 9" fill="#0098EA" opacity="0.5"/>
+                                        </svg>
+                                    ),
+                                },
+                            ].map(w => (
+                                <div key={w.chain} className="border border-zinc-800 rounded-lg p-3 space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        {w.icon}
+                                        <span className="text-[11px] text-zinc-300 font-bold">{w.chain}</span>
+                                        <span className="text-[9px] text-zinc-600">{w.network}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2">
+                                        <code className="text-[10px] text-zinc-400 flex-1 truncate select-all">{w.address}</code>
+                                        <button
+                                            onClick={() => { navigator.clipboard.writeText(w.address); }}
+                                            className="text-[9px] text-[#FF5500] border border-[#FF5500]/30 px-2 py-0.5 rounded hover:bg-[#FF5500]/10 transition-colors shrink-0"
+                                        >
+                                            COPY
+                                        </button>
+                                    </div>
+                                    <p className="text-[9px] text-yellow-600/80">⚠ {w.warn}</p>
+                                </div>
+                            ))}
+                            <p className="text-[9px] text-red-500/70 text-center">
+                                請確認選擇正確的網路，若因鏈種選擇錯誤導致資產損失，本空間概不負責。
+                            </p>
                         </div>
                     </div>
                 </div>

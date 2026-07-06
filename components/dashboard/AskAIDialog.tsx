@@ -77,6 +77,19 @@ export default function AskAIDialog({ onClose, context }: AskAIDialogProps) {
                             </button>
                         ))}
                     </div>
+                    <div className="p-3 border-t border-zinc-900">
+                        <a
+                            href="https://t.me/jaggersu"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/30 hover:bg-[#FF5500]/20 hover:border-[#FF5500] transition-colors group"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.073l3.9 1.205a.75.75 0 0 0 .722-.163l6.293-5.725a.75.75 0 0 1 1.01 1.11l-5.447 5.96a.75.75 0 0 0-.062.87l2.527 3.987a2.25 2.25 0 0 0 4.024-.633l3.66-16.106a2.25 2.25 0 0 0-1.231-2.293z" />
+                            </svg>
+                            <span className="text-[10px] text-[#FF5500] group-hover:text-white font-bold tracking-wider">TELEGRAM</span>
+                        </a>
+                    </div>
                 </div>
 
                 {/* Right — Chat */}

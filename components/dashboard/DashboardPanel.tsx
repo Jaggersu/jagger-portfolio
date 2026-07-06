@@ -97,6 +97,8 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     const [loading, setLoading]             = useState(true);
     const [aiPanel, setAiPanel]             = useState<AiPanel | null>(null);
     const [showAskAI, setShowAskAI]         = useState(false);
+    const [showNewProject, setShowNewProject] = useState(false);
+    const [newProjectName, setNewProjectName] = useState('');
     const [fileSearch, setFileSearch]       = useState('');
     const [driveLoading, setDriveLoading]   = useState<string | null>(null);
     const [settingsTab, setSettingsTab]     = useState<SettingsTab>('account');
@@ -224,6 +226,22 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     const filteredFiles = files.filter(f =>
         f.file_name.toLowerCase().includes(fileSearch.toLowerCase())
     );
+
+    const handleCreateProject = useCallback(async () => {
+        if (!newProjectName.trim() || !profile?.id) return;
+        const { data, error } = await supabase
+            .from('projects')
+            .insert({ user_id: profile.id, name: newProjectName.trim(), status: 'ACTIVE' })
+            .select()
+            .single();
+        if (error) {
+            alert(`建立失敗：${error.message}`);
+            return;
+        }
+        alert(`✅ 專案已建立：${data.name}`);
+        setNewProjectName('');
+        setShowNewProject(false);
+    }, [newProjectName, profile]);
 
     return (
         <div className="flex h-full w-full bg-[#000000] font-mono overflow-hidden relative">
@@ -362,7 +380,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                             Jag Agent
                         </button>
                         <button
-                            onClick={() => alert('開新專案功能即將上線')}
+                            onClick={() => setShowNewProject(true)}
                             className="text-[10px] text-black bg-[#FF5500] hover:bg-white px-2.5 py-1 rounded font-bold tracking-wider transition-colors"
                         >
                             + New Project
@@ -671,6 +689,44 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                     onClose={() => setShowAskAI(false)}
                     context={profile ? `客戶：${profile.name}，方案：${selectedPlan}，目前任務數：${tasks.length}` : undefined}
                 />
+            )}
+
+            {showNewProject && (
+                <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNewProject(false)}>
+                    <div className="bg-[#0A0A0B] border border-zinc-800 rounded-xl w-full max-w-sm p-6 space-y-5" onClick={e => e.stopPropagation()}>
+                        <div>
+                            <div className="text-[10px] text-zinc-600 tracking-widest mb-1">// NEW PROJECT</div>
+                            <h3 className="text-base font-bold text-white">建立新專案</h3>
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-zinc-600 block mb-1.5">PROJECT NAME</label>
+                            <input
+                                type="text"
+                                value={newProjectName}
+                                onChange={e => setNewProjectName(e.target.value)}
+                                placeholder="e.g. 品牌重塑專案"
+                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
+                                autoFocus
+                                onKeyDown={e => e.key === 'Enter' && handleCreateProject()}
+                            />
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowNewProject(false)}
+                                className="flex-1 py-2.5 text-[11px] text-zinc-500 border border-zinc-800 rounded-lg hover:border-zinc-600 transition-colors"
+                            >
+                                取消
+                            </button>
+                            <button
+                                onClick={handleCreateProject}
+                                disabled={!newProjectName.trim()}
+                                className="flex-1 py-2.5 text-[11px] font-bold bg-[#FF5500] text-black rounded-lg hover:bg-white transition-colors disabled:opacity-40"
+                            >
+                                建立 →
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
