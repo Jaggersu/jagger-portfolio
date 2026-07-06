@@ -452,26 +452,56 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                             {/* Tabs */}
                             <div className="grid grid-cols-2 border-b border-zinc-900">
                                 {([
-                                    { key: 'fiat' as const,   label: '銀行匯款',  sub: 'BANK TRANSFER' },
-                                    { key: 'crypto' as const, label: 'USDT / USDC', sub: 'CRYPTO' },
+                                    { key: 'fiat' as const,   label: '信用卡 / 匯款',  sub: 'NewebPay 線上金流', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
+                                    { key: 'crypto' as const, label: 'USDT / USDC', sub: '區塊鏈轉帳', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 9l4-3 4 3M8 15l4 3 4-3"/></svg> },
                                 ]).map(tab => (
                                     <button key={tab.key} onClick={() => setPaymentTab(tab.key)}
-                                        className={`py-3 text-center transition-colors ${paymentTab === tab.key ? 'bg-zinc-900 border-b-2 border-[#FF5500]' : 'hover:bg-zinc-900/40'}`}>
-                                        <div className={`text-[11px] font-bold font-mono ${paymentTab === tab.key ? 'text-[#FF5500]' : 'text-zinc-500'}`}>{tab.label}</div>
-                                        <div className="text-[8px] text-zinc-600 tracking-widest">{tab.sub}</div>
+                                        className={`py-4 text-center transition-colors flex flex-col items-center gap-1 ${paymentTab === tab.key ? 'bg-zinc-900 border-b-2 border-[#FF5500]' : 'hover:bg-zinc-900/40'}`}>
+                                        <div className={`flex items-center gap-1.5 ${paymentTab === tab.key ? 'text-[#FF5500]' : 'text-zinc-500'}`}>
+                                            {tab.icon}
+                                            <div className={`text-[13px] font-bold font-mono ${paymentTab === tab.key ? 'text-[#FF5500]' : 'text-zinc-500'}`}>{tab.label}</div>
+                                        </div>
+                                        <div className="text-[10px] text-zinc-600 tracking-widest">{tab.sub}</div>
                                     </button>
                                 ))}
                             </div>
 
                             {/* Content */}
-                            <div className="p-6 space-y-4">
+                            <div className="p-6 space-y-5">
                                 {paymentTab === 'fiat' && (
                                     <>
-                                        <p className="text-[11px] text-zinc-500 font-mono">簽署完成後將跳轉藍新金流完成付款。</p>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                                            </div>
+                                            <div>
+                                                <div className="text-[13px] font-bold text-white font-mono">藍新金流 NewebPay</div>
+                                                <div className="text-[11px] text-zinc-500">信用卡、WebATM、ATM 轉帳、超商代碼</div>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-[13px] text-zinc-500 font-mono leading-relaxed">
+                                            點擊下方按鈕後將跳轉至藍新金流，可依偏好選擇信用卡、ATM 匯款或超商付款等方式。
+                                        </p>
+
+                                        {/* Supported methods grid */}
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                { label: '信用卡', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
+                                                { label: 'ATM 匯款', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M6 14h.01M10 10h8M10 14h8"/></svg> },
+                                                { label: '超商代碼', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg> },
+                                            ].map(m => (
+                                                <div key={m.label} className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-3 flex flex-col items-center gap-1.5">
+                                                    <div className="text-[#FF5500]">{m.icon}</div>
+                                                    <span className="text-[11px] text-zinc-400 font-mono">{m.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
                                         <button
                                             onClick={handleSign}
                                             disabled={paying}
-                                            className="w-full py-3.5 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[12px] tracking-widest rounded-lg transition-colors disabled:opacity-50"
+                                            className="w-full py-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-lg transition-colors disabled:opacity-50"
                                         >
                                             {paying ? '⟳ 跳轉中…' : '前往藍新金流付款 →'}
                                         </button>
@@ -480,54 +510,51 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
 
                                 {paymentTab === 'crypto' && (
                                     <>
-                                        {/* Chain selector */}
-                                        <div className="flex gap-1.5">
-                                            {WALLETS.map(w => (
-                                                <button key={w.chain} onClick={() => setCryptoChain(w.chain)}
-                                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold transition-colors ${cryptoChain === w.chain ? 'bg-zinc-800 text-[#FF5500] border border-[#FF5500]/40' : 'text-zinc-600 border border-zinc-900 hover:text-zinc-400'}`}>
-                                                    {w.icon}{w.chain}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    <div className="text-[13px] font-bold text-white font-mono">選擇鏈種</div>
+                                    <div className="flex gap-2">
+                                        {WALLETS.map(w => (
+                                            <button key={w.chain} onClick={() => setCryptoChain(w.chain)}
+                                                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[12px] font-bold transition-colors ${cryptoChain === w.chain ? 'bg-zinc-800 text-[#FF5500] border border-[#FF5500]/40' : 'text-zinc-600 border border-zinc-900 hover:text-zinc-400'}`}>
+                                                {w.icon}{w.chain}
+                                            </button>
+                                        ))}
+                                    </div>
 
-                                        {/* Network badge */}
-                                        <div className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 flex items-center gap-2">
-                                            <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
-                                            <span className="text-[11px] text-zinc-300 font-mono">{activeWallet.network} ({activeWallet.chain})</span>
-                                        </div>
+                                    <div className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
+                                        <span className="text-[13px] text-zinc-300 font-mono">{activeWallet.network} ({activeWallet.chain})</span>
+                                    </div>
 
-                                        {/* Address */}
-                                        <div>
-                                            <div className="text-[10px] text-zinc-600 mb-1.5 tracking-widest font-mono">收 款 地 址</div>
-                                            <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3">
-                                                <code className="text-[11px] text-zinc-300 flex-1 truncate select-all">{activeWallet.address}</code>
-                                                <button onClick={() => handleCopy(activeWallet.chain, activeWallet.address)}
-                                                    className={`text-[10px] border px-3 py-1 rounded transition-colors shrink-0 font-mono ${copiedChain === activeWallet.chain ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' : 'text-[#FF5500] border-[#FF5500]/30 hover:bg-[#FF5500]/10'}`}>
-                                                    {copiedChain === activeWallet.chain ? '✓ 已複製' : '複製'}
-                                                </button>
-                                            </div>
+                                    <div>
+                                        <div className="text-[12px] text-zinc-500 mb-2 tracking-widest font-mono">收 款 地 址</div>
+                                        <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3">
+                                            <code className="text-[13px] text-zinc-300 flex-1 truncate select-all">{activeWallet.address}</code>
+                                            <button onClick={() => handleCopy(activeWallet.chain, activeWallet.address)}
+                                                className={`text-[11px] border px-3 py-1.5 rounded transition-colors shrink-0 font-mono ${copiedChain === activeWallet.chain ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' : 'text-[#FF5500] border-[#FF5500]/30 hover:bg-[#FF5500]/10'}`}>
+                                                {copiedChain === activeWallet.chain ? '✓ 已複製' : '複製'}
+                                            </button>
                                         </div>
+                                    </div>
 
-                                        <div className="bg-yellow-900/10 border border-yellow-600/20 rounded-lg px-4 py-2.5">
-                                            <p className="text-[10px] text-yellow-600/80">ⓘ {activeWallet.warn}</p>
-                                        </div>
-                                        <div className="bg-red-900/10 border border-red-600/20 rounded-lg px-4 py-2.5">
-                                            <p className="text-[10px] text-red-500/80">⚠ 請確認選擇正確的網路，若因鏈種選擇錯誤導致資產損失，本空間概不負責。</p>
-                                        </div>
+                                    <div className="bg-yellow-900/10 border border-yellow-600/20 rounded-lg px-4 py-3">
+                                        <p className="text-[12px] text-yellow-600/80">ⓘ {activeWallet.warn}</p>
+                                    </div>
+                                    <div className="bg-red-900/10 border border-red-600/20 rounded-lg px-4 py-3">
+                                        <p className="text-[12px] text-red-500/80">⚠ 請確認選擇正確的網路，若因鏈種選擇錯誤導致資產損失，本空間概不負責。</p>
+                                    </div>
 
-                                        {/* TXID */}
-                                        <div>
-                                            <div className="text-[10px] text-zinc-600 mb-1.5 tracking-widest font-mono">交 易 HASH (TXID)</div>
-                                            <input type="text" value={txid} onChange={e => setTxid(e.target.value)}
-                                                placeholder="0x... 或貼上交易雜湊"
-                                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-[11px] text-zinc-300 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60" />
-                                        </div>
+                                    <div>
+                                        <div className="text-[12px] text-zinc-500 mb-2 tracking-widest font-mono">交 易 HASH (TXID)</div>
+                                        <input type="text" value={txid} onChange={e => setTxid(e.target.value)}
+                                            placeholder="0x... 或貼上交易雜湊"
+                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-[13px] text-zinc-300 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60" />
+                                    </div>
 
-                                        <button onClick={handleTxidSubmit} disabled={!txid.trim() || txidSubmitting}
-                                            className={`w-full py-3.5 rounded-lg font-mono font-bold text-[12px] tracking-widest uppercase transition-all ${txid.trim() && !txidSubmitting ? 'bg-[#FF5500] text-black hover:bg-white cursor-pointer' : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'}`}>
-                                            {txidSubmitting ? '⟳ 提交中…' : '我已完成鏈上匯款　驗證 TXID →'}
-                                        </button>
-                                    </>
+                                    <button onClick={handleTxidSubmit} disabled={!txid.trim() || txidSubmitting}
+                                        className={`w-full py-4 rounded-lg font-mono font-bold text-[13px] tracking-widest uppercase transition-all ${txid.trim() && !txidSubmitting ? 'bg-[#FF5500] text-black hover:bg-white cursor-pointer' : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'}`}>
+                                        {txidSubmitting ? '⟳ 提交中…' : '我已完成鏈上匯款　驗證 TXID →'}
+                                    </button>
+                                </>
                                 )}
                             </div>
                         </div>
