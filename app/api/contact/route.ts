@@ -15,14 +15,14 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: true, note: 'logged (no email service)' });
         }
 
-        await fetch('https://api.resend.com/emails', {
+        const resendRes = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-                from: 'JAGGER OS <noreply@jaggersu.com>',
+                from: 'JAGGER OS <onboarding@resend.dev>',
                 to: [ADMIN_EMAIL],
                 subject: `[Contact] ${name || 'Anonymous'} — ${email}`,
                 html: `
@@ -34,6 +34,13 @@ export async function POST(req: NextRequest) {
                 `,
             }),
         });
+
+        const resendData = await resendRes.json();
+        console.log('[contact] resend response:', resendRes.status, JSON.stringify(resendData));
+
+        if (!resendRes.ok) {
+            return NextResponse.json({ error: resendData }, { status: 500 });
+        }
 
         return NextResponse.json({ ok: true });
     } catch (err: any) {
