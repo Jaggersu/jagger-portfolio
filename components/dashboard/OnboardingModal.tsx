@@ -102,7 +102,7 @@ export default function OnboardingModal({ plan, onClose }: OnboardingModalProps)
                                 { key: 'company', label: 'COMPANY', placeholder: '公司 / 品牌名稱（選填）', type: 'text', required: false },
                             ].map(({ key, label, placeholder, type, required }) => (
                                 <div key={key}>
-                                    <label className="text-[9px] font-mono text-zinc-600 tracking-widest block mb-1">{label}</label>
+                                    <label className="text-[11px] font-mono text-[#FF5500] tracking-widest block mb-1.5">{label}</label>
                                     <input
                                         type={type}
                                         required={required}
