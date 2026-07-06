@@ -109,52 +109,48 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         telegramWebhook: '',
     });
 
-    // ── Supabase: fetch tasks ──────────────────────────────────
-    useEffect(() => {
-        async function fetchTasks() {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('tasks')
-                .select('id,task_code,title,priority,type,status,eta,description,ai_summary')
-                .order('created_at', { ascending: false });
-            if (!error && data) {
-                setTasks(data.map(r => ({
-                    id:          r.task_code ?? r.id,
-                    title:       r.title,
-                    status:      r.status as TaskStatus,
-                    type:        r.type ?? '—',
-                    eta:         r.eta  ?? '—',
-                    priority:    r.priority as 'HIGH'|'MED'|'LOW',
-                    description: r.description ?? undefined,
-                    ai_summary:  r.ai_summary  ?? undefined,
-                })));
-            }
-            setLoading(false);
+    // ── Supabase: fetch helpers ─────────────────────────────────
+    const fetchTasks = useCallback(async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('tasks')
+            .select('id,task_code,title,priority,type,status,eta,description,ai_summary')
+            .order('created_at', { ascending: false });
+        if (!error && data) {
+            setTasks(data.map(r => ({
+                id:          r.task_code ?? r.id,
+                title:       r.title,
+                status:      r.status as TaskStatus,
+                type:        r.type ?? '—',
+                eta:         r.eta  ?? '—',
+                priority:    r.priority as 'HIGH'|'MED'|'LOW',
+                description: r.description ?? undefined,
+                ai_summary:  r.ai_summary  ?? undefined,
+            })));
         }
-        fetchTasks();
+        setLoading(false);
     }, []);
 
-    // ── Supabase: fetch files ──────────────────────────────────
-    useEffect(() => {
-        async function fetchFiles() {
-            const { data, error } = await supabase
-                .from('files')
-                .select('id,file_name,file_url,size,storage_path,google_drive_id,created_at')
-                .order('created_at', { ascending: false });
-            if (!error && data) {
-                setFiles(data.map(r => ({
-                    id:              r.id,
-                    file_name:       r.file_name,
-                    file_url:        r.file_url  ?? '#',
-                    size:            r.size       ?? 0,
-                    storage_path:    r.storage_path ?? '',
-                    google_drive_id: r.google_drive_id ?? undefined,
-                    created_at:      r.created_at?.slice(0, 10) ?? '',
-                })));
-            }
+    const fetchFiles = useCallback(async () => {
+        const { data, error } = await supabase
+            .from('files')
+            .select('id,file_name,file_url,size,storage_path,google_drive_id,created_at')
+            .order('created_at', { ascending: false });
+        if (!error && data) {
+            setFiles(data.map(r => ({
+                id:              r.id,
+                file_name:       r.file_name,
+                file_url:        r.file_url  ?? '#',
+                size:            r.size       ?? 0,
+                storage_path:    r.storage_path ?? '',
+                google_drive_id: r.google_drive_id ?? undefined,
+                created_at:      r.created_at?.slice(0, 10) ?? '',
+            })));
         }
-        fetchFiles();
     }, []);
+
+    useEffect(() => { fetchTasks(); }, [fetchTasks]);
+    useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
     const inProgress = tasks.filter(t => t.status === 'IN_PROGRESS');
     const queued     = tasks.filter(t => t.status === 'QUEUED');
@@ -238,10 +234,13 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
             alert(`建立失敗：${error.message}`);
             return;
         }
-        alert(`✅ 專案已建立：${data.name}`);
+        alert(`✅ 專案「${data.name}」已建立！\n你可以在 Telegram 告知 Jagger 開始作業。`);
         setNewProjectName('');
         setShowNewProject(false);
-    }, [newProjectName, profile]);
+        setActiveNav('tasks');
+        fetchTasks();
+        fetchFiles();
+    }, [newProjectName, profile, fetchTasks, fetchFiles]);
 
     return (
         <div className="flex h-full w-full bg-[#000000] font-mono overflow-hidden relative">

@@ -54,6 +54,11 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
     const [hasSig, setHasSig] = useState(false);
     const [agreed, setAgreed] = useState(false);
     const [paying, setPaying] = useState(false);
+    const [paymentTab, setPaymentTab] = useState<'fiat' | 'crypto'>('fiat');
+    const [cryptoChain, setCryptoChain] = useState<string>('TRC-20');
+    const [copiedChain, setCopiedChain] = useState<string | null>(null);
+    const [txid, setTxid] = useState('');
+    const [txidSubmitting, setTxidSubmitting] = useState(false);
     const lastPos = useRef<{ x: number; y: number } | null>(null);
 
     const fixedAmount = PLAN_PRICES[plan];
@@ -375,89 +380,172 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                             </span>
                         </div>
 
-                        {/* Submit */}
-                        <button
-                            onClick={handleSign}
-                            disabled={!hasSig || !agreed || paying}
-                            className={`w-full py-3.5 rounded-lg font-mono font-bold text-[12px] tracking-widest uppercase transition-all duration-200 ${
-                                paying
-                                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                                    : hasSig && agreed
-                                        ? 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
-                                        : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
-                            }`}
-                        >
-                            {paying ? '⟳ 前往付款中…' : hasSig && agreed ? '確認簽署 · 前往付款 →' : '請完成簽名並勾選同意'}
-                        </button>
-
-                        <div className="text-[10px] text-zinc-700 text-center">
-                            // 簽署完成後將跳轉藍新金流完成付款
-                        </div>
-
-                        {/* ── Crypto Payment ── */}
-                        <div className="border border-zinc-900 rounded-xl p-5 space-y-4">
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-zinc-600 tracking-widest">// CRYPTO PAYMENT</span>
-                                <span className="text-[9px] text-zinc-700">USDT / USDC</span>
+                        {/* ── Payment Section ── */}
+                        <div className="border border-zinc-900 rounded-xl overflow-hidden">
+                            {/* Payment Tabs */}
+                            <div className="grid grid-cols-2 border-b border-zinc-900">
+                                {([
+                                    { key: 'fiat' as const, label: '銀行匯款', sub: 'BANK TRANSFER' },
+                                    { key: 'crypto' as const, label: 'USDT / USDC', sub: 'CRYPTO' },
+                                ]).map(tab => (
+                                    <button
+                                        key={tab.key}
+                                        onClick={() => setPaymentTab(tab.key)}
+                                        className={`py-3 text-center transition-colors ${paymentTab === tab.key ? 'bg-zinc-900 border-b-2 border-[#FF5500]' : 'hover:bg-zinc-900/40'}`}
+                                    >
+                                        <div className={`text-[11px] font-bold ${paymentTab === tab.key ? 'text-[#FF5500]' : 'text-zinc-500'}`}>{tab.label}</div>
+                                        <div className="text-[8px] text-zinc-600 tracking-widest">{tab.sub}</div>
+                                    </button>
+                                ))}
                             </div>
-                            {[
-                                {
-                                    chain: 'TRC-20',
-                                    network: 'Tron Network',
-                                    address: 'TAgWCpyof2tNYEq67v5PBgUApqpKHviYEY',
-                                    warn: '請務必使用波場 Tron 網路傳送，勿使用 ERC-20 或其他網路。',
-                                    icon: (
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                                            <path d="M12 2L2 8l10 14L22 8L12 2z" fill="#FF0013" opacity="0.8"/>
-                                        </svg>
-                                    ),
-                                },
-                                {
-                                    chain: 'Base / Arbitrum',
-                                    network: 'EVM Network',
-                                    address: '0x8D929F645fa9c97df90349203b8949c3318ceACE',
-                                    warn: '支援 Base 與 Arbitrum 網路，請勿使用主網 ETH 或其他 EVM 網路。',
-                                    icon: (
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                                            <circle cx="12" cy="12" r="10" fill="#0052FF" opacity="0.8"/>
-                                            <path d="M8 12h8M12 8v8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
-                                        </svg>
-                                    ),
-                                },
-                                {
-                                    chain: 'TON',
-                                    network: 'TON Network',
-                                    address: 'UQBXuoeso8Yxl-LNGxD_q8JQqtWKgkZIgOlyTfY57ESXTHSw',
-                                    warn: '僅限 TON 網路轉帳，請勿使用其他網路。',
-                                    icon: (
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                                            <path d="M12 2L3 9h18L12 2z" fill="#0098EA" opacity="0.8"/>
-                                            <path d="M3 9l9 13L21 9" fill="#0098EA" opacity="0.5"/>
-                                        </svg>
-                                    ),
-                                },
-                            ].map(w => (
-                                <div key={w.chain} className="border border-zinc-800 rounded-lg p-3 space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        {w.icon}
-                                        <span className="text-[11px] text-zinc-300 font-bold">{w.chain}</span>
-                                        <span className="text-[9px] text-zinc-600">{w.network}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2">
-                                        <code className="text-[10px] text-zinc-400 flex-1 truncate select-all">{w.address}</code>
+
+                            <div className="p-5 space-y-4">
+                                {/* ─ Fiat (藍新) ─ */}
+                                {paymentTab === 'fiat' && (
+                                    <>
                                         <button
-                                            onClick={() => { navigator.clipboard.writeText(w.address); }}
-                                            className="text-[9px] text-[#FF5500] border border-[#FF5500]/30 px-2 py-0.5 rounded hover:bg-[#FF5500]/10 transition-colors shrink-0"
+                                            onClick={handleSign}
+                                            disabled={!hasSig || !agreed || paying}
+                                            className={`w-full py-3.5 rounded-lg font-mono font-bold text-[12px] tracking-widest uppercase transition-all duration-200 ${
+                                                paying
+                                                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                                                    : hasSig && agreed
+                                                        ? 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
+                                                        : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
+                                            }`}
                                         >
-                                            COPY
+                                            {paying ? '⟳ 前往付款中…' : hasSig && agreed ? '確認簽署 · 前往付款 →' : '請完成簽名並勾選同意'}
                                         </button>
-                                    </div>
-                                    <p className="text-[9px] text-yellow-600/80">⚠ {w.warn}</p>
-                                </div>
-                            ))}
-                            <p className="text-[9px] text-red-500/70 text-center">
-                                請確認選擇正確的網路，若因鏈種選擇錯誤導致資產損失，本空間概不負責。
-                            </p>
+                                        <div className="text-[10px] text-zinc-700 text-center">
+                                            // 簽署完成後將跳轉藍新金流完成付款
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* ─ Crypto ─ */}
+                                {paymentTab === 'crypto' && (() => {
+                                    const WALLETS = [
+                                        {
+                                            chain: 'TRC-20',
+                                            network: 'Tron Network',
+                                            address: 'TAgWCpyof2tNYEq67v5PBgUApqpKHviYEY',
+                                            warn: '請務必使用波場 Tron 網路傳送，勿使用 ERC-20 或其他網路。',
+                                            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 2L2 8l10 14L22 8L12 2z" fill="#FF0013" opacity="0.8"/></svg>,
+                                        },
+                                        {
+                                            chain: 'Base / Arb',
+                                            network: 'EVM Network',
+                                            address: '0x8D929F645fa9c97df90349203b8949c3318ceACE',
+                                            warn: '支援 Base 與 Arbitrum 網路，請勿使用主網 ETH 或其他 EVM 網路。',
+                                            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0"><circle cx="12" cy="12" r="10" fill="#0052FF" opacity="0.8"/><path d="M8 12h8M12 8v8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>,
+                                        },
+                                        {
+                                            chain: 'TON',
+                                            network: 'TON Network',
+                                            address: 'UQBXuoeso8Yxl-LNGxD_q8JQqtWKgkZIgOlyTfY57ESXTHSw',
+                                            warn: '僅限 TON 網路轉帳，請勿使用其他網路。',
+                                            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 2L3 9h18L12 2z" fill="#0098EA" opacity="0.8"/><path d="M3 9l9 13L21 9" fill="#0098EA" opacity="0.5"/></svg>,
+                                        },
+                                    ];
+                                    const activeWallet = WALLETS.find(w => w.chain === cryptoChain) ?? WALLETS[0];
+                                    const handleCopy = (chain: string, address: string) => {
+                                        navigator.clipboard.writeText(address);
+                                        setCopiedChain(chain);
+                                        setTimeout(() => setCopiedChain(null), 2000);
+                                    };
+                                    const handleTxidSubmit = async () => {
+                                        if (!txid.trim()) return;
+                                        setTxidSubmitting(true);
+                                        try {
+                                            await fetch('/api/contact', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    name: profile?.name ?? '',
+                                                    email: profile?.email ?? '',
+                                                    message: `[Crypto Payment]\nChain: ${cryptoChain}\nTXID: ${txid}\nPlan: ${plan}\nAmount: ${contractParams.amount}`,
+                                                }),
+                                            });
+                                            alert('✅ TXID 已送出，我們將盡快驗證！');
+                                            setTxid('');
+                                        } catch {
+                                            alert('送出失敗，請稍後再試');
+                                        }
+                                        setTxidSubmitting(false);
+                                    };
+
+                                    return (
+                                        <>
+                                            {/* Chain selector */}
+                                            <div className="flex gap-1">
+                                                {WALLETS.map(w => (
+                                                    <button
+                                                        key={w.chain}
+                                                        onClick={() => setCryptoChain(w.chain)}
+                                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold transition-colors ${cryptoChain === w.chain ? 'bg-zinc-800 text-[#FF5500] border border-[#FF5500]/40' : 'text-zinc-600 hover:text-zinc-400 border border-zinc-900'}`}
+                                                    >
+                                                        {w.icon}
+                                                        {w.chain}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Network */}
+                                            <div className="bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2.5 flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
+                                                <span className="text-[11px] text-zinc-300">{activeWallet.network} ({activeWallet.chain})</span>
+                                            </div>
+
+                                            {/* Address */}
+                                            <div>
+                                                <div className="text-[10px] text-zinc-600 mb-1.5 tracking-wider">收 款 地 址</div>
+                                                <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3">
+                                                    <code className="text-[11px] text-zinc-300 flex-1 truncate select-all">{activeWallet.address}</code>
+                                                    <button
+                                                        onClick={() => handleCopy(activeWallet.chain, activeWallet.address)}
+                                                        className={`text-[10px] border px-3 py-1 rounded transition-colors shrink-0 ${copiedChain === activeWallet.chain ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' : 'text-[#FF5500] border-[#FF5500]/30 hover:bg-[#FF5500]/10'}`}
+                                                    >
+                                                        {copiedChain === activeWallet.chain ? '✓ 已複製' : '複製'}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Warnings */}
+                                            <div className="bg-yellow-900/10 border border-yellow-600/20 rounded-lg px-4 py-2.5">
+                                                <p className="text-[10px] text-yellow-600/80">ⓘ {activeWallet.warn}</p>
+                                            </div>
+                                            <div className="bg-red-900/10 border border-red-600/20 rounded-lg px-4 py-2.5">
+                                                <p className="text-[10px] text-red-500/80">⚠ 請確認選擇正確的網路，若因鏈種選擇錯誤導致資產損失，本空間概不負責。</p>
+                                            </div>
+
+                                            {/* TXID */}
+                                            <div>
+                                                <div className="text-[10px] text-zinc-600 mb-1.5 tracking-wider">交 易 HASH (TXID)</div>
+                                                <input
+                                                    type="text"
+                                                    value={txid}
+                                                    onChange={e => setTxid(e.target.value)}
+                                                    placeholder="0x... 或貼上交易雜湊"
+                                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-[11px] text-zinc-300 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
+                                                />
+                                            </div>
+
+                                            {/* Verify button */}
+                                            <button
+                                                onClick={handleTxidSubmit}
+                                                disabled={!txid.trim() || txidSubmitting || !hasSig || !agreed}
+                                                className={`w-full py-3.5 rounded-lg font-mono font-bold text-[12px] tracking-widest uppercase transition-all duration-200 ${
+                                                    txid.trim() && hasSig && agreed && !txidSubmitting
+                                                        ? 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
+                                                        : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
+                                                }`}
+                                            >
+                                                {txidSubmitting ? '⟳ 提交中…' : '我已完成鏈上匯款　輸入 TXID 驗證'}
+                                            </button>
+                                        </>
+                                    );
+                                })()}
+                            </div>
                         </div>
                     </div>
                 </div>
