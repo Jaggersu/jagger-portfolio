@@ -284,7 +284,7 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                         <h3 className="text-base font-bold text-white">電子簽名</h3>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-6">
+                    <div className="flex-1 overflow-y-auto px-8 py-4 flex flex-col gap-4">
 
                         {/* Sig pad */}
                         <div className="flex flex-col gap-2">
@@ -294,7 +294,7 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                                     CLEAR
                                 </button>
                             </div>
-                            <div className="border border-zinc-800 rounded-xl overflow-hidden relative bg-[#0A0A0B]" style={{ minHeight: '220px' }}>
+                            <div className="border border-zinc-800 rounded-xl overflow-hidden relative bg-[#0A0A0B]" style={{ minHeight: '150px' }}>
                                 {!hasSig && (
                                     <span className="absolute inset-0 flex items-center justify-center text-[12px] font-mono text-zinc-700 pointer-events-none select-none">
                                         在此以滑鼠或觸控板簽名
@@ -303,9 +303,9 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                                 <canvas
                                     ref={canvasRef}
                                     width={800}
-                                    height={300}
+                                    height={200}
                                     className="w-full cursor-crosshair touch-none"
-                                    style={{ height: '220px' }}
+                                    style={{ height: '150px' }}
                                     onMouseDown={startDraw}
                                     onMouseMove={draw}
                                     onMouseUp={stopDraw}
