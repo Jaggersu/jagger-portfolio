@@ -17,6 +17,7 @@ export default function Header({ visible }: HeaderProps) {
     { name: '// PORTFOLIO', href: '#works' },
     { name: '// PROCESS', href: '#process' },
     { name: '// SUBSCRIPTION', href: '#subscription' },
+    { name: '// CONTACT', href: '#contact' },
   ];
 
   return (

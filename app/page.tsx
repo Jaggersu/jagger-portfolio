@@ -9,6 +9,7 @@ import BackToTop from "../components/BackToTop";
 import LiveProjects from "../components/LiveProjects";
 import Header from "../components/Header";
 import AskAIDialog from "../components/dashboard/AskAIDialog";
+import ContactSection from "../components/ContactSection";
 
 interface Point {
   x: number;
@@ -637,6 +638,9 @@ export default function Home() {
 
       {/* 3. 設計訂閱制區塊 */}
       <SubscriptionCards />
+
+      {/* 4. 聯繫區塊 */}
+      <ContactSection />
 
       <BackToTop />
 
