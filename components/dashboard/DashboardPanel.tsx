@@ -92,9 +92,9 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     const [activeNav, setActiveNav]         = useState<NavItem>('tasks');
     const [hoveredNav, setHoveredNav]       = useState<NavItem | null>(null);
     const [selectedTask, setSelectedTask]   = useState<Task | null>(null);
-    const [tasks, setTasks]                 = useState<Task[]>(MOCK_TASKS);
-    const [files, setFiles]                 = useState<FileItem[]>(MOCK_FILES);
-    const [loading, setLoading]             = useState(false);
+    const [tasks, setTasks]                 = useState<Task[]>([]);
+    const [files, setFiles]                 = useState<FileItem[]>([]);
+    const [loading, setLoading]             = useState(true);
     const [aiPanel, setAiPanel]             = useState<AiPanel | null>(null);
     const [showAskAI, setShowAskAI]         = useState(false);
     const [fileSearch, setFileSearch]       = useState('');
@@ -115,7 +115,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 .from('tasks')
                 .select('id,task_code,title,priority,type,status,eta,description,ai_summary')
                 .order('created_at', { ascending: false });
-            if (!error && data && data.length > 0) {
+            if (!error && data) {
                 setTasks(data.map(r => ({
                     id:          r.task_code ?? r.id,
                     title:       r.title,
@@ -139,7 +139,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 .from('files')
                 .select('id,file_name,file_url,size,storage_path,google_drive_id,created_at')
                 .order('created_at', { ascending: false });
-            if (!error && data && data.length > 0) {
+            if (!error && data) {
                 setFiles(data.map(r => ({
                     id:              r.id,
                     file_name:       r.file_name,
@@ -403,6 +403,15 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                     <div className="col-span-2">ETA</div>
                                 </div>
                                 <div className="divide-y divide-zinc-900/60">
+                                    {loading && (
+                                        <div className="px-6 py-12 text-center text-zinc-600 text-[11px] font-mono">載入中…</div>
+                                    )}
+                                    {!loading && tasks.length === 0 && (
+                                        <div className="px-6 py-12 text-center">
+                                            <div className="text-zinc-600 text-[11px] font-mono mb-2">目前沒有任務</div>
+                                            <div className="text-zinc-700 text-[10px] font-mono">專案建立後，任務會顯示在這裡</div>
+                                        </div>
+                                    )}
                                     {tasks.map(task => {
                                         const s = STATUS_CONFIG[task.status];
                                         const p = PRIORITY_CONFIG[task.priority];

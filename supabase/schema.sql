@@ -1,24 +1,43 @@
 -- ============================================================
--- JAGGER OS · Supabase Schema
+-- JAGGER OS · Supabase Schema v2
 -- Run this in Supabase SQL Editor
 -- ============================================================
 
 -- ── 1. profiles ─────────────────────────────────────────────
+-- profiles.id = auth.uid() (Supabase Auth user ID)
 create table if not exists public.profiles (
-  id         uuid primary key default gen_random_uuid(),
+  id         uuid primary key references auth.users(id) on delete cascade,
   name       text,
   email      text,
   phone      text,
   company    text,
+  plan_type  text check (plan_type in ('ON-DEMAND','LITE','PRO','SCALE','FIXED')),
+  status     text check (status in ('REGISTERED','ACTIVE')) default 'REGISTERED',
+  line_id    text,
+  telegram_webhook text,
+  notify_email     text,
   created_at timestamptz default now()
 );
 
-alter table public.profiles
-  add column if not exists plan_type         text check (plan_type in ('ON-DEMAND','LITE','PRO','SCALE','FIXED')),
-  add column if not exists status            text check (status in ('REGISTERED','ACTIVE')) default 'REGISTERED',
-  add column if not exists line_id           text,
-  add column if not exists telegram_webhook  text,
-  add column if not exists notify_email      text;
+alter table public.profiles enable row level security;
+create policy "用戶可讀寫自身 profile" on public.profiles
+  for all using (auth.uid() = id);
+
+-- Auto-create profile on signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, name)
+  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'name', ''))
+  on conflict (id) do nothing;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
 -- ── 2. projects ─────────────────────────────────────────────
 create table if not exists public.projects (
@@ -30,12 +49,12 @@ create table if not exists public.projects (
 );
 
 alter table public.projects enable row level security;
+drop policy if exists "用戶可完全控制自身專案" on public.projects;
 create policy "用戶可完全控制自身專案" on public.projects
   for all using (auth.uid() = user_id);
 
 -- ── 3. contracts ────────────────────────────────────────────
-drop table if exists public.contracts cascade;
-create table public.contracts (
+create table if not exists public.contracts (
   id         uuid primary key default gen_random_uuid(),
   project_id uuid references public.projects(id) on delete cascade not null,
   user_id    uuid references public.profiles(id) on delete cascade not null,
@@ -47,40 +66,47 @@ create table public.contracts (
 );
 
 alter table public.contracts enable row level security;
+drop policy if exists "用戶可檢視自身合約" on public.contracts;
 create policy "用戶可檢視自身合約" on public.contracts
   for select using (auth.uid() = user_id);
 
 -- ── 4. tasks ────────────────────────────────────────────────
-drop table if exists public.tasks cascade;
-create table public.tasks (
+create table if not exists public.tasks (
   id          uuid primary key default gen_random_uuid(),
   project_id  uuid references public.projects(id) on delete cascade not null,
   user_id     uuid references public.profiles(id) on delete cascade not null,
+  task_code   text,
   title       text not null,
   description text,
-  status      text default 'TODO' check (status in ('TODO','IN_PROGRESS','DONE')),
+  status      text default 'QUEUED' check (status in ('QUEUED','IN_PROGRESS','REVIEW','DELIVERED')),
+  type        text default 'GENERAL',
+  priority    text default 'MED' check (priority in ('HIGH','MED','LOW')),
+  eta         text,
   ai_summary  text,
   due_date    timestamptz,
   created_at  timestamptz default timezone('utc', now()) not null
 );
 
 alter table public.tasks enable row level security;
+drop policy if exists "用戶可完全控制自身任務" on public.tasks;
 create policy "用戶可完全控制自身任務" on public.tasks
   for all using (auth.uid() = user_id);
 
 -- ── 5. files ────────────────────────────────────────────────
-drop table if exists public.files cascade;
-create table public.files (
-  id            uuid primary key default gen_random_uuid(),
-  project_id    uuid references public.projects(id) on delete cascade not null,
-  user_id       uuid references public.profiles(id) on delete cascade not null,
-  name          text not null,
-  drive_file_id text,
-  mime_type     text,
-  size          bigint,
-  created_at    timestamptz default timezone('utc', now()) not null
+create table if not exists public.files (
+  id              uuid primary key default gen_random_uuid(),
+  project_id      uuid references public.projects(id) on delete cascade not null,
+  user_id         uuid references public.profiles(id) on delete cascade not null,
+  file_name       text not null,
+  file_url        text,
+  storage_path    text,
+  google_drive_id text,
+  mime_type       text,
+  size            bigint default 0,
+  created_at      timestamptz default timezone('utc', now()) not null
 );
 
 alter table public.files enable row level security;
+drop policy if exists "用戶可完全控制自身檔案" on public.files;
 create policy "用戶可完全控制自身檔案" on public.files
   for all using (auth.uid() = user_id);
