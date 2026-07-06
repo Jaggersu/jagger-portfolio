@@ -144,9 +144,21 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                     amount,
                     title: `${plan} — ${contractParams.timeline}`,
                     email: profile?.email ?? '',
+                    userId: profile?.id ?? '',
+                    plan,
                 }),
             });
             const data = await res.json();
+
+            // Mock 模式：直接完成
+            if (data.mock) {
+                alert(`✅ ${data.message}\n專案 ID: ${data.projectId}`);
+                setPaying(false);
+                onClose();
+                return;
+            }
+
+            // 正式模式：跳轉藍新
             if (data.gatewayUrl && data.fields) {
                 const form = document.createElement('form');
                 form.method = 'POST';

@@ -12,6 +12,7 @@ import { supabase } from './supabase';
 export type UserFlowState = 'GUEST' | 'REGISTERED' | 'SIGNED' | 'ACTIVE';
 
 export interface UserProfile {
+    id: string;
     name: string;
     email: string;
     phone: string;
@@ -49,6 +50,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user) {
                 setProfile(prev => prev ?? {
+                    id: session.user.id,
                     name: session.user.user_metadata?.name ?? '',
                     email: session.user.email ?? '',
                     phone: session.user.user_metadata?.phone ?? '',
@@ -62,6 +64,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             if (session?.user) {
                 setProfile(prev => prev ?? {
+                    id: session.user.id,
                     name: session.user.user_metadata?.name ?? '',
                     email: session.user.email ?? '',
                     phone: session.user.user_metadata?.phone ?? '',

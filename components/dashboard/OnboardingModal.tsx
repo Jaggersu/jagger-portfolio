@@ -15,7 +15,7 @@ const STAGE_LABELS = ['REGISTER', 'CONTRACT', 'DASHBOARD'];
 export default function OnboardingModal({ plan, onClose }: OnboardingModalProps) {
     const { flowState, register, profile } = useUserFlow();
 
-    const [form, setForm] = useState<UserProfile>({ name: '', email: '', phone: '', company: '', plan });
+    const [form, setForm] = useState<UserProfile>({ id: '', name: '', email: '', phone: '', company: '', plan });
 
     const currentStage = flowState === 'GUEST' ? 0 : flowState === 'REGISTERED' ? 1 : 2;
     const isFullscreen = flowState === 'REGISTERED' || flowState === 'ACTIVE' || flowState === 'SIGNED';

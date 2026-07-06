@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 function padKey(key: string, len: number): Buffer {
     return Buffer.from(key.padEnd(len, '\0').slice(0, len));
@@ -18,8 +19,49 @@ function sha256Sign(data: string): string {
 
 export async function POST(req: NextRequest) {
     try {
-        const { projectId, amount, title, email } = await req.json();
+        const { projectId, amount, title, email, userId, plan } = await req.json();
 
+        // ── Mock 模式：不跳藍新，直接寫入 DB ──
+        if (process.env.PAYMENT_MOCK === 'true') {
+            const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!
+            );
+
+            // 建立 project
+            const { data: project, error: projErr } = await supabase
+                .from('projects')
+                .insert({ user_id: userId, name: title, status: 'ACTIVE' })
+                .select()
+                .single();
+            if (projErr) throw projErr;
+
+            // 建立 contract
+            const { error: contractErr } = await supabase
+                .from('contracts')
+                .insert({
+                    project_id: project.id,
+                    user_id: userId,
+                    status: 'SIGNED',
+                    metadata: { plan, amount, mock: true },
+                    signed_at: new Date().toISOString(),
+                });
+            if (contractErr) throw contractErr;
+
+            // 更新 profile plan_type + status
+            await supabase
+                .from('profiles')
+                .update({ plan_type: plan, status: 'ACTIVE' })
+                .eq('id', userId);
+
+            return NextResponse.json({
+                mock: true,
+                projectId: project.id,
+                message: '測試模式：專案已建立',
+            });
+        }
+
+        // ── 正式模式：藍新金流 ──
         const HashKey = process.env.NEWEBPAY_HASH_KEY!;
         const HashIV = process.env.NEWEBPAY_HASH_IV!;
         const MerchantID = process.env.NEWEBPAY_MERCHANT_ID!;
