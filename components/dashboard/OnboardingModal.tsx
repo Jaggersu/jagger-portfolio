@@ -87,7 +87,7 @@ export default function OnboardingModal({ plan, onClose }: OnboardingModalProps)
 
 
                 {/* Body */}
-                <div className={`flex-1 min-h-0 ${isFullscreen ? 'p-0 h-full overflow-hidden' : 'px-5 py-4 overflow-y-auto'}`}>
+                <div className={`flex-1 min-h-0 ${isFullscreen ? 'p-0 h-full' : 'px-5 py-4 overflow-y-auto'}`}>
 
                     {/* Stage 0: Register */}
                     {currentStage === 0 && (
