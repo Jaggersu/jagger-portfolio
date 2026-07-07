@@ -14,7 +14,7 @@ function aesEncrypt(data: string, key: string, iv: string): string {
 }
 
 function sha256Sign(data: string): string {
-    return crypto.createHash('sha256').update(data).digest('hex').toLowerCase();
+    return crypto.createHash('sha256').update(data).digest('hex').toUpperCase();
 }
 
 export async function POST(req: NextRequest) {
