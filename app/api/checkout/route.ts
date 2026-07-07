@@ -78,8 +78,32 @@ export async function POST(req: NextRequest) {
         const gatewayUrl = process.env.NEWEBPAY_URL!;
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        // 先建立 pending project + contract，讓 callback 有東西可更新
+        const { data: project, error: projErr } = await supabase
+            .from('projects')
+            .insert({ user_id: userId, name: title, status: 'PENDING' })
+            .select()
+            .single();
+        if (projErr) throw projErr;
+
         const TimeStamp = Math.floor(Date.now() / 1000).toString();
-        const MerchantOrderNo = `${projectId}_${TimeStamp}`;
+        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        const MerchantOrderNo = `J${TimeStamp}${randomSuffix}`;
+
+        await supabase.from('contracts').insert({
+            project_id: project.id,
+            user_id: userId,
+            status: 'PENDING',
+            metadata: { plan, amount, merchantOrderNo: MerchantOrderNo },
+        });
+
+        // 移除特殊符號，避免藍新簽章比對失敗
+        const safeItemDesc = title.replace(/[^\u4e00-\u9fa5a-zA-Z0-9\s]/g, '').trim().slice(0, 50);
 
         const plainParams = {
             MerchantID,
@@ -88,7 +112,7 @@ export async function POST(req: NextRequest) {
             Version: '2.0',
             MerchantOrderNo,
             Amt: String(amount),
-            ItemDesc: title.slice(0, 50),
+            ItemDesc: safeItemDesc || 'JAGGER OS Service',
             Email: email,
             NotifyURL: `${siteUrl}/api/checkout/callback`,
             ReturnURL: `${siteUrl}/?payment=success`,
