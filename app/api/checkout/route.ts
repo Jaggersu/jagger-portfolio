@@ -142,8 +142,8 @@ export async function POST(req: NextRequest) {
             gatewayUrl,
             fields: {
                 MerchantID,
-                TradeInfo,
-                TradeSha,
+                TradeInfo: TradeInfo.toLowerCase(),
+                TradeSha: TradeSha.toUpperCase(),
                 Version: '2.0',
             },
         });

@@ -70,6 +70,7 @@ export default function ContractPanel({ plan, onClose, embedded = false }: Contr
     const [txidSubmitting, setTxidSubmitting] = useState(false);
     const [checkoutError, setCheckoutError] = useState<string | null>(null);
     const lastPos = useRef<{ x: number; y: number } | null>(null);
+    const formSubmitRef = useRef(false);
 
     const fixedAmount = PLAN_PRICES[plan];
     const isFixedProject = !fixedAmount;
@@ -151,6 +152,8 @@ export default function ContractPanel({ plan, onClose, embedded = false }: Contr
         }
         setCheckoutError(null);
 
+        if (formSubmitRef.current) return;
+        formSubmitRef.current = true;
         setPaying(true);
         try {
             const res = await fetch('/api/checkout', {
@@ -176,6 +179,7 @@ export default function ContractPanel({ plan, onClose, embedded = false }: Contr
 
             // 正式模式：跳轉藍新
             if (data.gatewayUrl && data.fields) {
+                console.log('[checkout] fields sent to NewebPay:', data.fields);
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = data.gatewayUrl;
@@ -188,9 +192,16 @@ export default function ContractPanel({ plan, onClose, embedded = false }: Contr
                 });
                 document.body.appendChild(form);
                 form.submit();
+                setTimeout(() => {
+                    document.body.removeChild(form);
+                    formSubmitRef.current = false;
+                }, 0);
+            } else {
+                formSubmitRef.current = false;
             }
         } catch (e) {
             console.error('[checkout]', e);
+            formSubmitRef.current = false;
             setPaying(false);
         }
     }, [hasSig, agreed, sign, activate, contractParams, plan, profile]);
