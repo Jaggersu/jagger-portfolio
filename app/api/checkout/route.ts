@@ -114,10 +114,10 @@ export async function POST(req: NextRequest) {
             Amt: String(amount),
             ItemDesc: safeItemDesc || 'JAGGER OS Service',
             Email: email,
+            LoginType: '0',
             NotifyURL: `${siteUrl}/api/checkout/callback`,
             ReturnURL: `${siteUrl}/?payment=success`,
             ClientBackURL: `${siteUrl}/?payment=cancel`,
-            LoginType: '0',
         };
         const tradeData = new URLSearchParams(plainParams).toString();
 
