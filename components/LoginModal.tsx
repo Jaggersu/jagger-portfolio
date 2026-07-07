@@ -18,7 +18,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     const [devEmail, setDevEmail] = useState('');
     const [devPassword, setDevPassword] = useState('');
     const [devError, setDevError] = useState('');
-    const isDev = process.env.NODE_ENV === 'development';
+    const isDev = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DEV_LOGIN === 'true';
     const closeIconRef = useRef<AnimatedIconHandle>(null);
 
     const handleDevLogin = async (e: React.FormEvent) => {
