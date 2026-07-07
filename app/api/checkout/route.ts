@@ -119,11 +119,22 @@ export async function POST(req: NextRequest) {
             ReturnURL: `${siteUrl}/?payment=success`,
             ClientBackURL: `${siteUrl}/?payment=cancel`,
         };
-        const tradeData = new URLSearchParams(plainParams).toString();
-
-        // 修正 URLSearchParams 空格編碼：Node 預設 +，藍新預期 %20
-        const encodedTradeData = tradeData.replace(/\+/g, '%20');
-        const TradeInfo = aesEncrypt(encodedTradeData, HashKey, HashIV).toLowerCase();
+        // 藍新預期送進 AES 前的明文為「未 URL 編碼」的純文字 query string
+        const rawTradeData = [
+            `MerchantID=${plainParams.MerchantID}`,
+            `RespondType=${plainParams.RespondType}`,
+            `TimeStamp=${plainParams.TimeStamp}`,
+            `Version=${plainParams.Version}`,
+            `MerchantOrderNo=${plainParams.MerchantOrderNo}`,
+            `Amt=${plainParams.Amt}`,
+            `ItemDesc=${plainParams.ItemDesc}`,
+            `Email=${plainParams.Email}`,
+            `LoginType=${plainParams.LoginType}`,
+            `NotifyURL=${plainParams.NotifyURL}`,
+            `ReturnURL=${plainParams.ReturnURL}`,
+            `ClientBackURL=${plainParams.ClientBackURL}`,
+        ].join('&');
+        const TradeInfo = aesEncrypt(rawTradeData, HashKey, HashIV).toLowerCase();
         const shaOriginString = `HashKey=${HashKey}&TradeInfo=${TradeInfo}&HashIV=${HashIV}`;
         const TradeSha = sha256Sign(shaOriginString);
 
@@ -132,8 +143,7 @@ export async function POST(req: NextRequest) {
         console.log('HashIV 是否存在:', !!HashIV, 'len:', HashIV?.length);
         console.log('MerchantID 是否存在:', !!MerchantID, 'len:', MerchantID?.length);
         console.log('plainParams:', plainParams);
-        console.log('tradeData (raw):', tradeData);
-        console.log('encodedTradeData:', encodedTradeData);
+        console.log('rawTradeData:', rawTradeData);
         console.log('shaOriginString:', shaOriginString);
         console.log('TradeInfo:', TradeInfo);
         console.log('TradeSha:', TradeSha);
