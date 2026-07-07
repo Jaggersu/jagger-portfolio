@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         // 修正 URLSearchParams 空格編碼：Node 預設 +，藍新預期 %20
         const encodedTradeData = tradeData.replace(/\+/g, '%20');
         const TradeInfo = aesEncrypt(encodedTradeData, HashKey, HashIV).toLowerCase();
-        const shaOriginString = `HashKey=${HashKey}&TradeInfo=${TradeInfo}&HashIV=${HashIV}`;
+        const shaOriginString = `HashKey=${HashKey}&${TradeInfo}&HashIV=${HashIV}`;
         const TradeSha = sha256Sign(shaOriginString);
 
         console.log('=== 藍新除錯斷言 ===');
