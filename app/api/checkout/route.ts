@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         const TimeStamp = Math.floor(Date.now() / 1000).toString();
         const MerchantOrderNo = `${projectId}_${TimeStamp}`;
 
-        const tradeData = new URLSearchParams({
+        const plainParams = {
             MerchantID,
             RespondType: 'JSON',
             TimeStamp,
@@ -94,12 +94,25 @@ export async function POST(req: NextRequest) {
             ReturnURL: `${siteUrl}/?payment=success`,
             ClientBackURL: `${siteUrl}/?payment=cancel`,
             LoginType: '0',
-        }).toString();
+        };
+        const tradeData = new URLSearchParams(plainParams).toString();
 
         // 修正 URLSearchParams 空格編碼：Node 預設 +，藍新預期 %20
         const encodedTradeData = tradeData.replace(/\+/g, '%20');
         const TradeInfo = aesEncrypt(encodedTradeData, HashKey, HashIV).toUpperCase();
-        const TradeSha = sha256Sign(`HashKey=${HashKey}&TradeInfo=${TradeInfo}&HashIV=${HashIV}`);
+        const shaOriginString = `HashKey=${HashKey}&TradeInfo=${TradeInfo}&HashIV=${HashIV}`;
+        const TradeSha = sha256Sign(shaOriginString);
+
+        console.log('=== 藍新除錯斷言 ===');
+        console.log('HashKey 是否存在:', !!HashKey, 'len:', HashKey?.length);
+        console.log('HashIV 是否存在:', !!HashIV, 'len:', HashIV?.length);
+        console.log('MerchantID 是否存在:', !!MerchantID, 'len:', MerchantID?.length);
+        console.log('plainParams:', plainParams);
+        console.log('tradeData (raw):', tradeData);
+        console.log('encodedTradeData:', encodedTradeData);
+        console.log('shaOriginString:', shaOriginString);
+        console.log('TradeInfo:', TradeInfo);
+        console.log('TradeSha:', TradeSha);
 
         return NextResponse.json({
             gatewayUrl,
