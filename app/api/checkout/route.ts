@@ -96,7 +96,9 @@ export async function POST(req: NextRequest) {
             LoginType: '0',
         }).toString();
 
-        const TradeInfo = aesEncrypt(tradeData, HashKey, HashIV);
+        // 修正 URLSearchParams 空格編碼：Node 預設 +，藍新預期 %20
+        const encodedTradeData = tradeData.replace(/\+/g, '%20');
+        const TradeInfo = aesEncrypt(encodedTradeData, HashKey, HashIV);
         const TradeSha = sha256Sign(`HashKey=${HashKey}&TradeInfo=${TradeInfo}&HashIV=${HashIV}`);
 
         return NextResponse.json({
