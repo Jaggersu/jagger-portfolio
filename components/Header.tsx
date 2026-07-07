@@ -1,16 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useUserFlow } from '../lib/userFlow';
 import LoginModal from './LoginModal';
+import OnboardingModal from './dashboard/OnboardingModal';
+import LayoutDashboardIcon from './icons/LayoutDashboardIcon';
+import LogoutIcon from './icons/LogoutIcon';
+import GolangIcon from './icons/GolangIcon';
+import type { AnimatedIconHandle } from './icons/types';
 
 interface HeaderProps {
   visible: boolean;
 }
 
 export default function Header({ visible }: HeaderProps) {
-  const { flowState, profile, reset } = useUserFlow();
+  const { flowState, profile, reset, openDashboard, dashboardOpen, closeDashboard } = useUserFlow();
   const [showLogin, setShowLogin] = useState(false);
+  const dashboardIconRef = useRef<AnimatedIconHandle>(null);
+  const logoutIconRef = useRef<AnimatedIconHandle>(null);
+  const loginIconRef = useRef<AnimatedIconHandle>(null);
 
   const navItems = [
     { name: '// LIVE PROJECTS', href: '#live-sites' },
@@ -44,18 +52,55 @@ export default function Header({ visible }: HeaderProps) {
             ))}
 
             {flowState === 'ACTIVE' ? (
-              <button
-                onClick={() => void reset()}
-                className="text-[11px] text-zinc-500 hover:text-white transition-colors tracking-wider border border-zinc-800 px-3 py-1 rounded"
-              >
-                {profile?.email?.split('@')[0] ?? 'USER'} · 登出
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Dashboard 入口按鈕：呼吸橘光 + Linear 風格動態 icon */}
+                <button
+                  onClick={openDashboard}
+                  onMouseEnter={() => dashboardIconRef.current?.startAnimation()}
+                  onMouseLeave={() => dashboardIconRef.current?.stopAnimation()}
+                  className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#FF5500]/50 hover:border-[#FF5500] bg-[#FF5500]/5 hover:bg-[#FF5500]/10 transition-all duration-300"
+                >
+                  {/* 呼吸光暈 */}
+                  <span className="absolute inset-0 rounded-lg pointer-events-none" style={{
+                    background: 'rgba(255,85,0,0.12)',
+                    animation: 'db-glow 2s ease-in-out infinite',
+                  }} />
+                  {/* LayoutDashboard 動態 icon */}
+                  <span className="relative shrink-0 text-[#FF5500] pointer-events-none">
+                    <LayoutDashboardIcon ref={dashboardIconRef} size={18} strokeWidth={1.75} color="currentColor" />
+                  </span>
+                  {/* 文字 */}
+                  <span className="relative text-[11px] font-mono font-bold text-[#FF5500] tracking-widest group-hover:text-white transition-colors">
+                    {profile?.name?.split(' ')[0] || profile?.email?.split('@')[0] || 'CLIENT'}
+                    <span className="text-[#FF5500]/60 group-hover:text-white/60"> · DB</span>
+                  </span>
+                </button>
+
+                {/* 登出按鈕 */}
+                <button
+                  onClick={() => void reset()}
+                  title="登出"
+                  onMouseEnter={() => logoutIconRef.current?.startAnimation()}
+                  onMouseLeave={() => logoutIconRef.current?.stopAnimation()}
+                  className="flex items-center gap-1 text-[10px] font-mono text-zinc-600 hover:text-red-400 transition-colors border border-zinc-800 hover:border-red-400/40 px-2 py-1.5 rounded-lg"
+                >
+                  <span className="pointer-events-none">
+                    <LogoutIcon ref={logoutIconRef} size={18} strokeWidth={2} color="currentColor" />
+                  </span>
+                  <span className="hidden sm:inline">登出</span>
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => setShowLogin(true)}
-                className="text-[11px] text-[#FF5500] hover:text-white transition-colors tracking-wider border border-[#FF5500]/40 hover:border-white/40 px-3 py-1 rounded"
+                onMouseEnter={() => loginIconRef.current?.startAnimation()}
+                onMouseLeave={() => loginIconRef.current?.stopAnimation()}
+                className="flex items-center gap-1.5 text-[11px] text-[#FF5500] hover:text-white transition-colors tracking-wider border border-[#FF5500]/40 hover:border-white/40 px-3 py-1 rounded"
               >
-                // LOGIN
+                LOGIN
+                <span className="pointer-events-none">
+                  <GolangIcon ref={loginIconRef} size={25} color="currentColor" strokeWidth={1.5} />
+                </span>
               </button>
             )}
           </nav>
@@ -63,6 +108,10 @@ export default function Header({ visible }: HeaderProps) {
       </header>
 
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
+
+      {dashboardOpen && flowState === 'ACTIVE' && (
+        <OnboardingModal plan={profile?.plan ?? ''} onClose={closeDashboard} />
+      )}
     </>
   );
 }

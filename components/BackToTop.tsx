@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 
 export default function BackToTop() {
@@ -27,7 +28,7 @@ export default function BackToTop() {
     return (
         <button
             onClick={scrollToTop}
-            className={`fixed bottom-8 right-8 z-40 bg-[#0A0A0B] border border-zinc-800 hover:border-[#FF5500] w-12 h-12 rounded flex flex-col items-center justify-center transition-all duration-300 shadow-2xl group cursor-pointer ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+            className={`fixed bottom-24 right-6 z-40 bg-[#0A0A0B] border border-zinc-800 hover:border-[#FF5500] w-12 h-12 rounded flex flex-col items-center justify-center transition-all duration-300 shadow-2xl group cursor-pointer ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
                 }`}
             title="回到最上方"
         >

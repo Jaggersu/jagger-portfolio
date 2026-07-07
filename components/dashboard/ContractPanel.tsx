@@ -2,10 +2,13 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useUserFlow } from '../../lib/userFlow';
+import XIcon from '../icons/XIcon';
+import type { AnimatedIconHandle } from '../icons/types';
 
 interface ContractPanelProps {
     plan: string;
     onClose: () => void;
+    embedded?: boolean;
 }
 
 const CONTRACT_CLAUSES = [
@@ -42,14 +45,19 @@ const CONTRACT_CLAUSES = [
 ];
 
 const PLAN_PRICES: Record<string, number> = {
+    'LITE':  25000,
+    'PRO':   45000,
+    'SCALE': 85000,
+    'ON-DEMAND': 0,
     '平面視覺訂閱': 25000,
     '全包廣域核心': 45000,
     '雙軌並行代理': 85000,
 };
 
-export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
-    const { sign, profile, contractParams, setContractParams } = useUserFlow();
+export default function ContractPanel({ plan, onClose, embedded = false }: ContractPanelProps) {
+    const { sign, activate, profile, contractParams, setContractParams } = useUserFlow();
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const closeIconRef = useRef<AnimatedIconHandle>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasSig, setHasSig] = useState(false);
     const [agreed, setAgreed] = useState(false);
@@ -60,6 +68,7 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
     const [copiedChain, setCopiedChain] = useState<string | null>(null);
     const [txid, setTxid] = useState('');
     const [txidSubmitting, setTxidSubmitting] = useState(false);
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
     const lastPos = useRef<{ x: number; y: number } | null>(null);
 
     const fixedAmount = PLAN_PRICES[plan];
@@ -136,9 +145,11 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
         const rawAmount = (fixedAmount ? String(fixedAmount) : contractParams.amount).replace(/[^0-9]/g, '');
         const amount = parseInt(rawAmount, 10);
         if (!amount || amount <= 0) {
-            console.error('[checkout] 金額無效:', contractParams.amount, 'fixedAmount:', fixedAmount);
+            setCheckoutError('請先填寫合約金額（AMOUNT）再繼續');
+            setPaying(false);
             return;
         }
+        setCheckoutError(null);
 
         setPaying(true);
         try {
@@ -158,9 +169,8 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
 
             // Mock 模式：直接完成
             if (data.mock) {
-                alert(`✅ ${data.message}\n專案 ID: ${data.projectId}`);
                 setPaying(false);
-                onClose();
+                activate();
                 return;
             }
 
@@ -183,13 +193,13 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
             console.error('[checkout]', e);
             setPaying(false);
         }
-    }, [hasSig, agreed, sign, contractParams, plan, profile]);
+    }, [hasSig, agreed, sign, activate, contractParams, plan, profile]);
 
     return (
         <div className="flex flex-col h-full w-full bg-[#000000] font-mono overflow-hidden">
 
             {/* Topbar */}
-            <div className="h-12 border-b border-zinc-900 flex items-center justify-between px-6 shrink-0">
+            {!embedded && <div className="h-12 border-b border-zinc-900 flex items-center justify-between px-6 shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="w-4 h-4 bg-[#FF5500] rounded flex items-center justify-center">
                         <span className="text-[7px] font-black text-black">J</span>
@@ -203,13 +213,18 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                         <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
                         <span className="text-[9px] text-yellow-500 tracking-widest">PENDING SIGNATURE</span>
                     </div>
-                    <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
+                    <button
+                        onClick={onClose}
+                        onMouseEnter={() => closeIconRef.current?.startAnimation()}
+                        onMouseLeave={() => closeIconRef.current?.stopAnimation()}
+                        className="text-zinc-600 hover:text-zinc-300 transition-colors"
+                    >
+                        <span className="pointer-events-none">
+                            <XIcon ref={closeIconRef} size={14} strokeWidth={1.75} color="currentColor" />
+                        </span>
                     </button>
                 </div>
-            </div>
+            </div>}
 
             {/* Two-column body */}
             <div className="flex flex-1 overflow-hidden">
@@ -439,7 +454,7 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
 
                 return (
                     <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-                        <div className="bg-[#0A0A0B] border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                        <div className="bg-[#0A0A0B] border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                             {/* Header */}
                             <div className="h-12 border-b border-zinc-900 flex items-center justify-between px-6">
                                 <div className="flex items-center gap-2">
@@ -467,7 +482,7 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                             </div>
 
                             {/* Content */}
-                            <div className="p-6 space-y-5">
+                            <div className="p-6 space-y-5 overflow-y-auto">
                                 {paymentTab === 'fiat' && (
                                     <>
                                         <div className="flex items-center gap-3">
@@ -498,6 +513,11 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                                             ))}
                                         </div>
 
+                                        {checkoutError && (
+                                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">
+                                                <p className="text-[12px] text-red-400 font-mono">⚠ {checkoutError}</p>
+                                            </div>
+                                        )}
                                         <button
                                             onClick={handleSign}
                                             disabled={paying}
@@ -528,7 +548,9 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                                     <div>
                                         <div className="text-[12px] text-zinc-500 mb-2 tracking-widest font-mono">收 款 地 址</div>
                                         <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3">
-                                            <code className="text-[13px] text-zinc-300 flex-1 truncate select-all">{activeWallet.address}</code>
+                                            <div className="flex-1 overflow-x-auto">
+                                                <code className="text-[13px] text-zinc-300 whitespace-nowrap select-all block">{activeWallet.address}</code>
+                                            </div>
                                             <button onClick={() => handleCopy(activeWallet.chain, activeWallet.address)}
                                                 className={`text-[11px] border px-3 py-1.5 rounded transition-colors shrink-0 font-mono ${copiedChain === activeWallet.chain ? 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10' : 'text-[#FF5500] border-[#FF5500]/30 hover:bg-[#FF5500]/10'}`}>
                                                 {copiedChain === activeWallet.chain ? '✓ 已複製' : '複製'}
@@ -536,11 +558,9 @@ export default function ContractPanel({ plan, onClose }: ContractPanelProps) {
                                         </div>
                                     </div>
 
-                                    <div className="bg-yellow-900/10 border border-yellow-600/20 rounded-lg px-4 py-3">
-                                        <p className="text-[12px] text-yellow-600/80">ⓘ {activeWallet.warn}</p>
-                                    </div>
-                                    <div className="bg-red-900/10 border border-red-600/20 rounded-lg px-4 py-3">
-                                        <p className="text-[12px] text-red-500/80">⚠ 請確認選擇正確的網路，若因鏈種選擇錯誤導致資產損失，本空間概不負責。</p>
+                                    <div className="bg-[#FF5500]/5 border border-[#FF5500]/20 rounded-lg px-4 py-3 space-y-1.5">
+                                        <p className="text-[12px] text-[#FF7733]/90 font-mono">ⓘ {activeWallet.warn}</p>
+                                        <p className="text-[12px] text-[#FF7733]/70 font-mono">⚠ 請務必確認所選網路正確，鏈種選錯導致的資產損失恕無法追回，敬請謹慎操作。</p>
                                     </div>
 
                                     <div>

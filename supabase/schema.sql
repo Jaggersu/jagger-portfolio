@@ -13,6 +13,7 @@ create table if not exists public.profiles (
   company    text,
   plan_type  text check (plan_type in ('ON-DEMAND','LITE','PRO','SCALE','FIXED')),
   status     text check (status in ('REGISTERED','ACTIVE')) default 'REGISTERED',
+  role       text not null default 'client' check (role in ('client','admin')),
   line_id    text,
   telegram_webhook text,
   notify_email     text,
@@ -20,7 +21,12 @@ create table if not exists public.profiles (
 );
 
 alter table public.profiles enable row level security;
-create policy "用戶可讀寫自身 profile" on public.profiles
+create policy "read_own_or_admin" on public.profiles
+  for select using (
+    auth.uid() = id
+    or (select role from public.profiles where id = auth.uid()) = 'admin'
+  );
+create policy "write_own" on public.profiles
   for all using (auth.uid() = id);
 
 -- Auto-create profile on signup
@@ -52,6 +58,11 @@ alter table public.projects enable row level security;
 drop policy if exists "用戶可完全控制自身專案" on public.projects;
 create policy "用戶可完全控制自身專案" on public.projects
   for all using (auth.uid() = user_id);
+drop policy if exists "admin可讀寫所有專案" on public.projects;
+create policy "admin可讀寫所有專案" on public.projects
+  for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+  );
 
 -- ── 3. contracts ────────────────────────────────────────────
 create table if not exists public.contracts (
@@ -69,6 +80,11 @@ alter table public.contracts enable row level security;
 drop policy if exists "用戶可檢視自身合約" on public.contracts;
 create policy "用戶可檢視自身合約" on public.contracts
   for select using (auth.uid() = user_id);
+drop policy if exists "admin可讀寫所有合約" on public.contracts;
+create policy "admin可讀寫所有合約" on public.contracts
+  for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+  );
 
 -- ── 4. tasks ────────────────────────────────────────────────
 create table if not exists public.tasks (
@@ -91,6 +107,11 @@ alter table public.tasks enable row level security;
 drop policy if exists "用戶可完全控制自身任務" on public.tasks;
 create policy "用戶可完全控制自身任務" on public.tasks
   for all using (auth.uid() = user_id);
+drop policy if exists "admin可讀寫所有任務" on public.tasks;
+create policy "admin可讀寫所有任務" on public.tasks
+  for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+  );
 
 -- ── 5. files ────────────────────────────────────────────────
 create table if not exists public.files (

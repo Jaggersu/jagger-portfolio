@@ -2,25 +2,58 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
+    const { searchParams, origin } = new URL(req.url);
     const code = searchParams.get('code');
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+    const token_hash = searchParams.get('token_hash');
+    const type = searchParams.get('type') ?? 'magiclink';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
 
-    if (!code) {
-        return NextResponse.redirect(`${siteUrl}/?auth=error`);
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+    // ── PKCE flow（code）──────────────────────────────────────────
+    if (code) {
+        const sb = createClient(supabaseUrl, supabaseAnonKey);
+        const { data, error } = await sb.auth.exchangeCodeForSession(code);
+        if (error || !data?.user) {
+            return NextResponse.redirect(`${siteUrl}/?auth=error`);
+        }
+        await upsertProfile(supabaseUrl, supabaseServiceKey, data.user);
+        // 把 access_token 帶回主頁，讓瀏覽器端的 supabase client 接管 session
+        const res = NextResponse.redirect(`${siteUrl}/?auth=success`);
+        res.cookies.set('sb-access-token', data.session?.access_token ?? '', { path: '/', maxAge: 3600, sameSite: 'lax' });
+        res.cookies.set('sb-refresh-token', data.session?.refresh_token ?? '', { path: '/', maxAge: 7 * 24 * 3600, sameSite: 'lax', httpOnly: true });
+        return res;
     }
 
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (error) {
-        console.error('[auth/callback] error:', error.message);
-        return NextResponse.redirect(`${siteUrl}/?auth=error`);
+    // ── OTP / Magic Link flow（token_hash）───────────────────────
+    if (token_hash) {
+        const sb = createClient(supabaseUrl, supabaseAnonKey);
+        const { data, error } = await sb.auth.verifyOtp({ token_hash, type: type as any });
+        if (error || !data?.user) {
+            return NextResponse.redirect(`${siteUrl}/?auth=error`);
+        }
+        await upsertProfile(supabaseUrl, supabaseServiceKey, data.user);
+        const res = NextResponse.redirect(`${siteUrl}/?auth=success`);
+        res.cookies.set('sb-access-token', data.session?.access_token ?? '', { path: '/', maxAge: 3600, sameSite: 'lax' });
+        res.cookies.set('sb-refresh-token', data.session?.refresh_token ?? '', { path: '/', maxAge: 7 * 24 * 3600, sameSite: 'lax', httpOnly: true });
+        return res;
     }
 
-    return NextResponse.redirect(`${siteUrl}/?auth=success`);
+    return NextResponse.redirect(`${siteUrl}/?auth=error`);
+}
+
+async function upsertProfile(url: string, serviceKey: string, user: any) {
+    const admin = createClient(url, serviceKey);
+    const meta = user.user_metadata ?? {};
+    await admin.from('profiles').upsert({
+        id: user.id,
+        name: meta.name ?? '',
+        email: user.email ?? '',
+        phone: meta.phone ?? '',
+        company: meta.company ?? '',
+        plan_type: meta.plan ?? '',
+        status: 'REGISTERED',
+    }, { onConflict: 'id' });
 }

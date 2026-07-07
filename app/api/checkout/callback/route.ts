@@ -47,15 +47,35 @@ export async function POST(req: Request) {
                 process.env.SUPABASE_SERVICE_ROLE_KEY!
             );
 
+            // A. 更新 project 狀態
             await supabaseAdmin
                 .from('projects')
                 .update({ status: 'ACTIVE' })
                 .eq('id', projectId);
 
+            // B. 更新 contract 狀態
             await supabaseAdmin
                 .from('contracts')
                 .update({ status: 'SIGNED', signed_at: new Date().toISOString() })
                 .eq('project_id', projectId);
+
+            // C. 取得 user_id 後初始化籌備期任務
+            const { data: project } = await supabaseAdmin
+                .from('projects')
+                .select('user_id')
+                .eq('id', projectId)
+                .single();
+
+            if (project?.user_id) {
+                const INIT_TASKS = [
+                    { title: '與 AI 助理 JAVIS 完成核心需求規格收斂',          status: 'QUEUED', priority: 'HIGH', type: 'GENERAL' },
+                    { title: '上傳既有品牌資產與參考範例至 Files 組件',          status: 'QUEUED', priority: 'MED',  type: 'GENERAL' },
+                    { title: '預約第一次線上啟動會議（透過 Telegram）',         status: 'QUEUED', priority: 'HIGH', type: 'GENERAL' },
+                ];
+                await supabaseAdmin.from('tasks').insert(
+                    INIT_TASKS.map(t => ({ ...t, project_id: projectId, user_id: project.user_id }))
+                );
+            }
 
             return new Response('OK', { status: 200 });
         }

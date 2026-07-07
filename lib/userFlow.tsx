@@ -18,6 +18,7 @@ export interface UserProfile {
     phone: string;
     company: string;
     plan: string;
+    role: 'client' | 'admin';
 }
 
 export interface ContractParams {
@@ -31,7 +32,10 @@ interface UserFlowContextValue {
     selectedPlan: string | null;
     contractParams: ContractParams;
     setContractParams: React.Dispatch<React.SetStateAction<ContractParams>>;
-    register: (profile: UserProfile, plan: string) => void;
+    dashboardOpen: boolean;
+    openDashboard: () => void;
+    closeDashboard: () => void;
+    register: (profile: UserProfile, plan: string) => Promise<{ error: string | null }>;
     sign: (signatureDataUrl: string) => void;
     activate: () => void;
     reset: () => void;
@@ -45,55 +49,92 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [contractParams, setContractParams] = useState<ContractParams>({ amount: '', timeline: '' });
+    const [dashboardOpen, setDashboardOpen] = useState(false);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        const syncSession = async (session: any) => {
             if (session?.user) {
-                setProfile(prev => prev ?? {
-                    id: session.user.id,
-                    name: session.user.user_metadata?.name ?? '',
-                    email: session.user.email ?? '',
-                    phone: session.user.user_metadata?.phone ?? '',
-                    company: session.user.user_metadata?.company ?? '',
-                    plan: session.user.user_metadata?.plan ?? '',
-                });
-                setFlowState('ACTIVE');
-            }
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user) {
-                setProfile(prev => prev ?? {
-                    id: session.user.id,
-                    name: session.user.user_metadata?.name ?? '',
-                    email: session.user.email ?? '',
-                    phone: session.user.user_metadata?.phone ?? '',
-                    company: session.user.user_metadata?.company ?? '',
-                    plan: session.user.user_metadata?.plan ?? '',
+                const u = session.user;
+                // 從 profiles 表讀取 role
+                const { data: profileRow } = await supabase
+                    .from('profiles')
+                    .select('name, email, phone, company, plan_type, role')
+                    .eq('id', u.id)
+                    .single();
+                setProfile({
+                    id: u.id,
+                    name: profileRow?.name ?? u.user_metadata?.name ?? '',
+                    email: profileRow?.email ?? u.email ?? '',
+                    phone: profileRow?.phone ?? u.user_metadata?.phone ?? '',
+                    company: profileRow?.company ?? u.user_metadata?.company ?? '',
+                    plan: profileRow?.plan_type ?? u.user_metadata?.plan ?? '',
+                    role: (profileRow?.role as 'client' | 'admin') ?? 'client',
                 });
                 setFlowState('ACTIVE');
             } else {
                 setFlowState('GUEST');
                 setProfile(null);
+                setDashboardOpen(false);
+            }
+        };
+
+        supabase.auth.getSession().then(({ data: { session } }) => syncSession(session));
+
+        // ?auth=success 時主動再 getSession（PKCE callback 後 cookie 已設好）
+        if (typeof window !== 'undefined' && window.location.search.includes('auth=success')) {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                syncSession(session);
+                if (session?.user) setDashboardOpen(true);
+                // 清掉 URL 參數避免重複觸發
+                window.history.replaceState({}, '', window.location.pathname);
+            });
+        }
+
+        let initialSessionHandled = false;
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            syncSession(session);
+            // 只有真正完成登入動作才自動開 Dashboard，
+            // TOKEN_REFRESHED / INITIAL_SESSION（頁面重整/分頁回來）不觸發
+            if (event === 'SIGNED_IN' && session?.user && !initialSessionHandled) {
+                setDashboardOpen(true);
+            }
+            if (event === 'INITIAL_SESSION') {
+                initialSessionHandled = true;
             }
         });
 
         return () => subscription.unsubscribe();
     }, []);
 
-    const register = useCallback((p: UserProfile, plan: string) => {
-        setProfile(p);
+    const openDashboard = useCallback(() => setDashboardOpen(true), []);
+    const closeDashboard = useCallback(() => setDashboardOpen(false), []);
+
+    const register = useCallback(async (p: UserProfile, plan: string): Promise<{ error: string | null }> => {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+        const { error } = await supabase.auth.signInWithOtp({
+            email: p.email,
+            options: {
+                emailRedirectTo: `${siteUrl}/auth/callback`,
+                data: { name: p.name, phone: p.phone, company: p.company, plan },
+            },
+        });
+
+        if (error) return { error: error.message };
+
+        // 暫存資料供 UI 顯示，等 magic link 點擊後 onAuthStateChange 才真正 ACTIVE
+        setProfile({ ...p, id: '', plan });
         setSelectedPlan(plan);
         setFlowState('REGISTERED');
+        return { error: null };
     }, []);
 
     const sign = useCallback((_signatureDataUrl: string) => {
         setFlowState('SIGNED');
-        setTimeout(() => setFlowState('ACTIVE'), 800);
     }, []);
 
     const activate = useCallback(() => {
         setFlowState('ACTIVE');
+        setDashboardOpen(true);
     }, []);
 
     const reset = useCallback(async () => {
@@ -101,6 +142,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
         setFlowState('GUEST');
         setProfile(null);
         setSelectedPlan(null);
+        setDashboardOpen(false);
     }, []);
 
     const sendMagicLink = useCallback(async (email: string) => {
@@ -113,7 +155,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <UserFlowContext.Provider value={{ flowState, profile, selectedPlan, contractParams, setContractParams, register, sign, activate, reset, sendMagicLink }}>
+        <UserFlowContext.Provider value={{ flowState, profile, selectedPlan, contractParams, setContractParams, dashboardOpen, openDashboard, closeDashboard, register, sign, activate, reset, sendMagicLink }}>
             {children}
         </UserFlowContext.Provider>
     );

@@ -8,6 +8,7 @@ import { FileIcon } from '../icons/FileIcon';
 import { ContractIcon } from '../icons/ContractIcon';
 import { SettingsIcon } from '../icons/SettingsIcon';
 import AskAIDialog from './AskAIDialog';
+import ContractPanel from './ContractPanel';
 
 interface DashboardPanelProps {
     onClose: () => void;
@@ -259,19 +260,19 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                         {/* header */}
                         <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-900">
                             <div className="flex items-center gap-2.5">
-                                <span className="text-[10px] text-[#FF5500] tracking-widest">⚡ AI EXECUTIVE SUMMARY</span>
+                                <span className="text-xs text-[#FF5500] tracking-widest">⚡ AI EXECUTIVE SUMMARY</span>
                                 <span className="text-zinc-800">·</span>
-                                <span className="text-[10px] text-zinc-600 truncate max-w-[240px]">{aiPanel.task.id} — {aiPanel.task.title}</span>
+                                <span className="text-xs text-zinc-600 truncate max-w-[240px]">{aiPanel.task.id} — {aiPanel.task.title}</span>
                             </div>
                             {aiPanel.state !== 'generating' && (
-                                <button onClick={() => setAiPanel(null)} className="text-zinc-600 hover:text-zinc-300 transition-colors text-[11px]">✕</button>
+                                <button onClick={() => setAiPanel(null)} className="text-zinc-600 hover:text-zinc-300 transition-colors text-[13px]">✕</button>
                             )}
                         </div>
                         {/* body */}
                         <div className="px-5 py-5 space-y-4">
                             {aiPanel.state === 'generating' && (
                                 <div className="space-y-2.5">
-                                    <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+                                    <div className="flex items-center gap-2 text-[13px] text-zinc-500">
                                         <span className="inline-block w-3 h-3 rounded-full border-2 border-[#FF5500] border-t-transparent animate-spin" />
                                         Calling Gemini 1.5 Flash…
                                     </div>
@@ -287,15 +288,15 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                     </p>
                                     <div className="flex items-center gap-2 pt-1">
                                         {aiPanel.emailSent ? (
-                                            <span className="text-[10px] text-emerald-500 flex items-center gap-1.5">
+                                            <span className="text-xs text-emerald-500 flex items-center gap-1.5">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Email notification sent
                                             </span>
                                         ) : (
-                                            <span className="text-[10px] text-zinc-600">// Email not sent (RESEND_API_KEY not set)</span>
+                                            <span className="text-xs text-zinc-600">// Email not sent (RESEND_API_KEY not set)</span>
                                         )}
                                         <div className="flex-1" />
                                         <button onClick={() => setAiPanel(null)}
-                                            className="text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-1.5 rounded transition-colors">
+                                            className="text-xs bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-1.5 rounded transition-colors">
                                             Close
                                         </button>
                                     </div>
@@ -303,9 +304,9 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                             )}
                             {aiPanel.state === 'error' && (
                                 <div className="space-y-3">
-                                    <pre className="text-[11px] text-red-400 whitespace-pre-wrap break-all font-mono bg-zinc-950 rounded p-3 border border-zinc-900">{aiPanel.summary}</pre>
+                                    <pre className="text-[13px] text-red-400 whitespace-pre-wrap break-all font-mono bg-zinc-950 rounded p-3 border border-zinc-900">{aiPanel.summary}</pre>
                                     <button onClick={() => setAiPanel(null)}
-                                        className="text-[10px] border border-zinc-800 text-zinc-400 px-4 py-1.5 rounded hover:border-zinc-600 transition-colors">
+                                        className="text-xs border border-zinc-800 text-zinc-400 px-4 py-1.5 rounded hover:border-zinc-600 transition-colors">
                                         Dismiss
                                     </button>
                                 </div>
@@ -323,8 +324,8 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                             <span className="text-[8px] font-black text-black">J</span>
                         </div>
                         <div>
-                            <div className="text-[11px] font-bold text-white tracking-wide">JAGGER OS</div>
-                            <div className="text-[9px] text-zinc-600">{profile?.company || profile?.name || 'JAGGER OS'}</div>
+                            <div className="text-[13px] font-bold text-white tracking-wide">JAGGER OS</div>
+                            <div className="text-[13px] text-zinc-600">{profile?.company || profile?.name || 'JAGGER OS'}</div>
                         </div>
                     </div>
                 </div>
@@ -340,7 +341,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                 onClick={() => setActiveNav(item.key)}
                                 onMouseEnter={() => setHoveredNav(item.key)}
                                 onMouseLeave={() => setHoveredNav(null)}
-                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[12px] transition-colors text-left ${activeNav === item.key ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}`}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${activeNav === item.key ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}`}
                             >
                                 <span className="shrink-0">{iconWithAnimate}</span>{item.label}
                             </button>
@@ -349,14 +350,14 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 </nav>
                 <div className="px-3 py-3 border-t border-zinc-900">
                     <div className="bg-zinc-900/80 rounded-lg px-3 py-2 mb-3">
-                        <div className="text-[9px] text-zinc-600 mb-0.5">ACTIVE PLAN</div>
-                        <div className="text-[11px] text-[#FF5500] font-bold">{selectedPlan}</div>
+                        <div className="text-[13px] text-zinc-600 mb-0.5">ACTIVE PLAN</div>
+                        <div className="text-[13px] text-[#FF5500] font-bold">{selectedPlan}</div>
                         <div className="flex items-center gap-1 mt-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[9px] text-emerald-500">Active</span>
+                            <span className="text-[13px] text-emerald-500">Active</span>
                         </div>
                     </div>
-                    <button onClick={handleSignOut} className="w-full text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors py-1.5 border border-zinc-900 rounded hover:border-zinc-700">
+                    <button onClick={handleSignOut} className="w-full text-xs text-zinc-600 hover:text-zinc-400 transition-colors py-1.5 border border-zinc-900 rounded hover:border-zinc-700">
                         Sign out
                     </button>
                 </div>
@@ -366,25 +367,25 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
             <main className="flex-1 flex flex-col overflow-hidden">
                 <div className="h-12 border-b border-zinc-900 flex items-center justify-between px-6 shrink-0">
                     <div className="flex items-center gap-3">
-                        <span className="text-[11px] text-zinc-600">JAGGER OS</span>
+                        <span className="text-[13px] text-zinc-600">JAGGER OS</span>
                         <span className="text-zinc-800">›</span>
-                        <span className="text-[11px] text-zinc-300 capitalize">{activeNav}</span>
+                        <span className="text-[13px] text-zinc-300 capitalize">{activeNav}</span>
                     </div>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowAskAI(true)}
-                            className="flex items-center gap-1.5 text-[10px] text-zinc-400 hover:text-white border border-zinc-800 hover:border-[#FF5500]/60 px-2.5 py-1 rounded transition-colors"
+                            className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-800 hover:border-[#FF5500]/60 px-2.5 py-1 rounded transition-colors"
                         >
                             <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] animate-pulse" />
                             Jag Agent
                         </button>
                         <button
                             onClick={() => setShowNewProject(true)}
-                            className="text-[10px] text-black bg-[#FF5500] hover:bg-white px-2.5 py-1 rounded font-bold tracking-wider transition-colors"
+                            className="text-xs text-black bg-[#FF5500] hover:bg-white px-2.5 py-1 rounded font-bold tracking-wider transition-colors"
                         >
                             + New Project
                         </button>
-                        <span className="text-[10px] text-zinc-600 border border-zinc-900 px-2.5 py-1 rounded">{profile?.name ?? 'Client'}</span>
+                        <span className="text-xs text-zinc-600 border border-zinc-900 px-2.5 py-1 rounded">{profile?.name ?? 'Client'}</span>
                         <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -408,11 +409,11 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                     ].map(s => (
                                         <div key={s.label} className="px-6 py-4 border-r border-zinc-900 last:border-r-0">
                                             <div className={`text-2xl font-black ${s.accent ? 'text-[#FF5500]' : 'text-white'}`}>{s.count}</div>
-                                            <div className="text-[10px] text-zinc-600 mt-0.5">{s.label}</div>
+                                            <div className="text-xs text-zinc-600 mt-0.5">{s.label}</div>
                                         </div>
                                     ))}
                                 </div>
-                                <div className="grid grid-cols-12 gap-4 px-6 py-2 border-b border-zinc-900 text-[10px] text-zinc-600 shrink-0">
+                                <div className="grid grid-cols-12 gap-4 px-6 py-2 border-b border-zinc-900 text-xs text-zinc-600 shrink-0">
                                     <div className="col-span-1">PRI</div>
                                     <div className="col-span-5">Title</div>
                                     <div className="col-span-2">Type</div>
@@ -421,12 +422,12 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                 </div>
                                 <div className="divide-y divide-zinc-900/60">
                                     {loading && (
-                                        <div className="px-6 py-12 text-center text-zinc-600 text-[11px] font-mono">載入中…</div>
+                                        <div className="px-6 py-12 text-center text-zinc-600 text-[13px] font-mono">載入中…</div>
                                     )}
                                     {!loading && tasks.length === 0 && (
                                         <div className="px-6 py-12 text-center">
-                                            <div className="text-zinc-600 text-[11px] font-mono mb-2">目前沒有任務</div>
-                                            <div className="text-zinc-700 text-[10px] font-mono">專案建立後，任務會顯示在這裡</div>
+                                            <div className="text-zinc-600 text-[13px] font-mono mb-2">目前沒有任務</div>
+                                            <div className="text-zinc-700 text-xs font-mono">專案建立後，任務會顯示在這裡</div>
                                         </div>
                                     )}
                                     {tasks.map(task => {
@@ -438,17 +439,17 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                 className={`grid grid-cols-12 gap-4 px-6 py-3.5 cursor-pointer transition-colors ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/40'}`}>
                                                 <div className={`col-span-1 text-[13px] font-bold ${p.color}`}>{p.icon}</div>
                                                 <div className="col-span-5">
-                                                    <div className="text-[12px] text-zinc-200 truncate">{task.title}</div>
-                                                    <div className="text-[10px] text-zinc-700 mt-0.5">{task.id}</div>
+                                                    <div className="text-sm text-zinc-200 truncate">{task.title}</div>
+                                                    <div className="text-xs text-zinc-700 mt-0.5">{task.id}</div>
                                                 </div>
                                                 <div className="col-span-2">
-                                                    <span className="text-[10px] text-zinc-500 border border-zinc-800 px-1.5 py-0.5 rounded">{task.type}</span>
+                                                    <span className="text-xs text-zinc-500 border border-zinc-800 px-1.5 py-0.5 rounded">{task.type}</span>
                                                 </div>
                                                 <div className="col-span-2 flex items-center gap-1.5">
                                                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
-                                                    <span className={`text-[10px] ${s.color}`}>{s.label}</span>
+                                                    <span className={`text-xs ${s.color}`}>{s.label}</span>
                                                 </div>
-                                                <div className={`col-span-2 text-[10px] ${task.eta === '—' ? 'text-zinc-700' : 'text-zinc-400'}`}>{task.eta}</div>
+                                                <div className={`col-span-2 text-xs ${task.eta === '—' ? 'text-zinc-700' : 'text-zinc-400'}`}>{task.eta}</div>
                                             </div>
                                         );
                                     })}
@@ -462,38 +463,38 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                 return (
                                     <div className="w-1/2 flex flex-col overflow-y-auto">
                                         <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
-                                            <span className="text-[10px] text-zinc-600">{selectedTask.id}</span>
-                                            <button onClick={() => setSelectedTask(null)} className="text-zinc-700 hover:text-zinc-400 text-[11px]">✕</button>
+                                            <span className="text-xs text-zinc-600">{selectedTask.id}</span>
+                                            <button onClick={() => setSelectedTask(null)} className="text-zinc-700 hover:text-zinc-400 text-[13px]">✕</button>
                                         </div>
                                         <div className="px-6 py-5 flex flex-col gap-5">
                                             <h2 className="text-base font-bold text-white leading-snug">{selectedTask.title}</h2>
                                             <div className="grid grid-cols-2 gap-4">
                                                 {[
-                                                    { label: 'Status',   value: <span className={`text-[11px] ${s.color} flex items-center gap-1.5`}><span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}/>{s.label}</span> },
-                                                    { label: 'Priority', value: <span className={`text-[11px] ${p.color}`}>{p.icon} {p.label}</span> },
-                                                    { label: 'Type',     value: <span className="text-[11px] text-zinc-400 border border-zinc-800 px-1.5 py-0.5 rounded">{selectedTask.type}</span> },
-                                                    { label: 'ETA',      value: <span className="text-[11px] text-zinc-400">{selectedTask.eta}</span> },
+                                                    { label: 'Status',   value: <span className={`text-[13px] ${s.color} flex items-center gap-1.5`}><span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}/>{s.label}</span> },
+                                                    { label: 'Priority', value: <span className={`text-[13px] ${p.color}`}>{p.icon} {p.label}</span> },
+                                                    { label: 'Type',     value: <span className="text-[13px] text-zinc-400 border border-zinc-800 px-1.5 py-0.5 rounded">{selectedTask.type}</span> },
+                                                    { label: 'ETA',      value: <span className="text-[13px] text-zinc-400">{selectedTask.eta}</span> },
                                                 ].map(({ label, value }) => (
                                                     <div key={label} className="border border-zinc-900 rounded-lg p-3">
-                                                        <div className="text-[9px] text-zinc-600 mb-1.5">{label.toUpperCase()}</div>
+                                                        <div className="text-[13px] text-zinc-600 mb-1.5">{label.toUpperCase()}</div>
                                                         {value}
                                                     </div>
                                                 ))}
                                             </div>
 
                                             <div className="border border-zinc-900 rounded-lg p-4">
-                                                <div className="text-[9px] text-zinc-600 mb-2">DESCRIPTION</div>
-                                                <p className="text-[12px] text-zinc-400 leading-relaxed">{selectedTask.description ?? '—'}</p>
+                                                <div className="text-[13px] text-zinc-600 mb-2">DESCRIPTION</div>
+                                                <p className="text-sm text-zinc-400 leading-relaxed">{selectedTask.description ?? '—'}</p>
                                             </div>
 
                                             {/* AI Summary */}
                                             <div className="border border-zinc-900 rounded-lg p-4 space-y-3">
                                                 <div className="flex items-center justify-between">
-                                                    <div className="text-[9px] text-zinc-600">// AI EXECUTIVE SUMMARY</div>
+                                                    <div className="text-[13px] text-zinc-600">// AI EXECUTIVE SUMMARY</div>
                                                     <button
                                                         onClick={() => handleAiSummary(selectedTask)}
                                                         disabled={aiPanel?.state === 'generating'}
-                                                        className={`text-[10px] font-mono px-3 py-1.5 rounded border transition-all ${
+                                                        className={`text-xs font-mono px-3 py-1.5 rounded border transition-all ${
                                                             aiPanel?.state === 'generating'
                                                                 ? 'text-zinc-600 border-zinc-800 cursor-not-allowed'
                                                                 : 'text-[#FF5500] border-[#FF5500]/40 hover:bg-[#FF5500]/10 cursor-pointer'
@@ -503,15 +504,15 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                     </button>
                                                 </div>
                                                 {selectedTask.ai_summary ? (
-                                                    <p className="text-[12px] text-zinc-300 leading-relaxed border-l-2 border-[#FF5500] pl-3">{selectedTask.ai_summary}</p>
+                                                    <p className="text-sm text-zinc-300 leading-relaxed border-l-2 border-[#FF5500] pl-3">{selectedTask.ai_summary}</p>
                                                 ) : (
-                                                    <p className="text-[11px] text-zinc-700 italic">Press ⚡ /ai Generate to create a summary and notify the client.</p>
+                                                    <p className="text-[13px] text-zinc-700 italic">Press ⚡ /ai Generate to create a summary and notify the client.</p>
                                                 )}
                                             </div>
 
                                             <div className="border border-zinc-900 rounded-lg p-4">
-                                                <div className="text-[9px] text-zinc-600 mb-3">ACTIVITY</div>
-                                                <div className="text-[10px] text-zinc-700 italic">No activity yet.</div>
+                                                <div className="text-[13px] text-zinc-600 mb-3">ACTIVITY</div>
+                                                <div className="text-xs text-zinc-700 italic">No activity yet.</div>
                                             </div>
                                         </div>
                                     </div>
@@ -524,41 +525,41 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                     {activeNav === 'files' && (
                         <div className="flex flex-col h-full overflow-y-auto">
                             <div className="px-6 py-4 border-b border-zinc-900 flex items-center gap-3 shrink-0">
-                                <span className="text-[10px] text-zinc-600 tracking-widest">// FILES</span>
+                                <span className="text-xs text-zinc-600 tracking-widest">// FILES</span>
                                 <div className="flex-1" />
                                 <input
                                     type="text"
                                     value={fileSearch}
                                     onChange={e => setFileSearch(e.target.value)}
                                     placeholder="Search files…"
-                                    className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-[12px] text-zinc-300 font-mono placeholder-zinc-700 focus:outline-none focus:border-zinc-600 w-56"
+                                    className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 font-mono placeholder-zinc-700 focus:outline-none focus:border-zinc-600 w-56"
                                 />
                             </div>
                             <div className="divide-y divide-zinc-900/60">
                                 {/* Column header */}
-                                <div className="grid grid-cols-12 gap-4 px-6 py-2 text-[10px] text-zinc-600">
+                                <div className="grid grid-cols-12 gap-4 px-6 py-2 text-xs text-zinc-600">
                                     <div className="col-span-5">File Name</div>
                                     <div className="col-span-2">Size</div>
                                     <div className="col-span-3">Uploaded</div>
                                     <div className="col-span-2">Actions</div>
                                 </div>
                                 {filteredFiles.length === 0 && (
-                                    <div className="px-6 py-12 text-center text-[11px] text-zinc-700">No files found.</div>
+                                    <div className="px-6 py-12 text-center text-[13px] text-zinc-700">No files found.</div>
                                 )}
                                 {filteredFiles.map(file => (
                                     <div key={file.id} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-zinc-900/30 transition-colors">
                                         <div className="col-span-5">
-                                            <div className="text-[12px] text-zinc-300 truncate">{file.file_name}</div>
-                                            <div className="text-[10px] text-zinc-700 mt-0.5 truncate">{file.storage_path}</div>
+                                            <div className="text-sm text-zinc-300 truncate">{file.file_name}</div>
+                                            <div className="text-xs text-zinc-700 mt-0.5 truncate">{file.storage_path}</div>
                                         </div>
-                                        <div className="col-span-2 text-[11px] text-zinc-500">{fmt(file.size)}</div>
-                                        <div className="col-span-3 text-[11px] text-zinc-500">{file.created_at}</div>
+                                        <div className="col-span-2 text-[13px] text-zinc-500">{fmt(file.size)}</div>
+                                        <div className="col-span-3 text-[13px] text-zinc-500">{file.created_at}</div>
                                         <div className="col-span-2 flex items-center gap-2">
-                                            <a href={file.file_url} download className="text-[10px] text-zinc-500 hover:text-zinc-300 border border-zinc-900 px-2 py-1 rounded hover:border-zinc-700 transition-colors">↓</a>
+                                            <a href={file.file_url} download className="text-xs text-zinc-500 hover:text-zinc-300 border border-zinc-900 px-2 py-1 rounded hover:border-zinc-700 transition-colors">↓</a>
                                             <button
                                                 onClick={() => handleDriveTransfer(file)}
                                                 disabled={driveLoading === file.id}
-                                                className={`text-[10px] border px-2 py-1 rounded transition-colors ${driveLoading === file.id ? 'text-zinc-700 border-zinc-900 cursor-not-allowed' : 'text-[#FF5500] border-[#FF5500]/30 hover:bg-[#FF5500]/10 cursor-pointer'}`}
+                                                className={`text-xs border px-2 py-1 rounded transition-colors ${driveLoading === file.id ? 'text-zinc-700 border-zinc-900 cursor-not-allowed' : 'text-[#FF5500] border-[#FF5500]/30 hover:bg-[#FF5500]/10 cursor-pointer'}`}
                                                 title="Transfer to Google Drive"
                                             >
                                                 {driveLoading === file.id ? '…' : '▲'}
@@ -570,13 +571,17 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                         </div>
                     )}
 
-                    {/* ── CONTRACT (placeholder) ─────────────────────────── */}
+                    {/* ── CONTRACT ─────────────────────────────────────────── */}
                     {activeNav === 'contract' && (
-                        <div className="flex items-center justify-center h-full">
-                            <div className="text-center space-y-2">
-                                <div className="text-3xl text-zinc-800">✦</div>
-                                <div className="text-[11px] text-zinc-700">// Signed contract · Supabase hook pending</div>
-                            </div>
+                        <div className="h-full overflow-hidden">
+                            <ContractPanel
+                                plan={profile?.plan ?? selectedPlan ?? ''}
+                                embedded={true}
+                                onClose={() => {
+                                    setActiveNav('tasks');
+                                    fetchTasks();
+                                }}
+                            />
                         </div>
                     )}
 
@@ -587,7 +592,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                             <div className="w-44 border-r border-zinc-900 flex flex-col pt-4 shrink-0">
                                 {(['account', 'billing', 'integrations'] as SettingsTab[]).map(tab => (
                                     <button key={tab} onClick={() => setSettingsTab(tab)}
-                                        className={`text-left px-4 py-2.5 text-[11px] capitalize transition-colors ${settingsTab === tab ? 'text-white bg-zinc-900' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                                        className={`text-left px-4 py-2.5 text-[13px] capitalize transition-colors ${settingsTab === tab ? 'text-white bg-zinc-900' : 'text-zinc-600 hover:text-zinc-400'}`}>
                                         {tab}
                                     </button>
                                 ))}
@@ -598,14 +603,14 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                 {settingsTab === 'account' && (
                                     <>
                                         <div>
-                                            <div className="text-[10px] text-zinc-600 tracking-widest mb-4">// ACCOUNT & NOTIFICATIONS</div>
+                                            <div className="text-xs text-zinc-600 tracking-widest mb-4">// ACCOUNT & NOTIFICATIONS</div>
                                             <div className="space-y-4 max-w-sm">
                                                 {[
                                                     { key: 'displayName', label: 'DISPLAY NAME', type: 'text', placeholder: profile?.name ?? '' },
                                                     { key: 'notifyEmail', label: 'NOTIFICATION EMAIL', type: 'email', placeholder: profile?.email ?? '' },
                                                 ].map(field => (
                                                     <div key={field.key}>
-                                                        <label className="text-[10px] text-zinc-600 block mb-1.5">{field.label}</label>
+                                                        <label className="text-xs text-zinc-600 block mb-1.5">{field.label}</label>
                                                         <input type={field.type}
                                                             value={settingsForm[field.key as keyof typeof settingsForm]}
                                                             onChange={e => setSettingsForm(f => ({ ...f, [field.key]: e.target.value }))}
@@ -614,7 +619,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                         />
                                                     </div>
                                                 ))}
-                                                <button className="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded transition-colors">
+                                                <button className="text-[13px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded transition-colors">
                                                     SAVE CHANGES
                                                 </button>
                                             </div>
@@ -625,25 +630,25 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                 {/* Billing */}
                                 {settingsTab === 'billing' && (
                                     <>
-                                        <div className="text-[10px] text-zinc-600 tracking-widest mb-4">// BILLING & MANAGEMENT</div>
+                                        <div className="text-xs text-zinc-600 tracking-widest mb-4">// BILLING & MANAGEMENT</div>
                                         <div className="border border-zinc-900 rounded-xl p-5 max-w-sm space-y-4">
                                             <div>
-                                                <div className="text-[9px] text-zinc-600 mb-1">CURRENT PLAN</div>
+                                                <div className="text-[13px] text-zinc-600 mb-1">CURRENT PLAN</div>
                                                 <div className="text-base font-bold text-[#FF5500]">{selectedPlan ?? '—'}</div>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <div className="text-[9px] text-zinc-600 mb-0.5">STATUS</div>
+                                                    <div className="text-[13px] text-zinc-600 mb-0.5">STATUS</div>
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                        <span className="text-[11px] text-emerald-400">Active</span>
+                                                        <span className="text-[13px] text-emerald-400">Active</span>
                                                     </div>
                                                 </div>
-                                                <button className="text-[10px] border border-zinc-800 text-zinc-500 px-3 py-1.5 rounded hover:border-red-900 hover:text-red-400 transition-colors">
+                                                <button className="text-xs border border-zinc-800 text-zinc-500 px-3 py-1.5 rounded hover:border-red-900 hover:text-red-400 transition-colors">
                                                     Cancel Plan
                                                 </button>
                                             </div>
-                                            <div className="pt-3 border-t border-zinc-900 text-[10px] text-zinc-700">
+                                            <div className="pt-3 border-t border-zinc-900 text-xs text-zinc-700">
                                                 // Stripe integration pending · Transaction history will appear here
                                             </div>
                                         </div>
@@ -653,14 +658,14 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                 {/* Integrations */}
                                 {settingsTab === 'integrations' && (
                                     <>
-                                        <div className="text-[10px] text-zinc-600 tracking-widest mb-4">// INTEGRATIONS</div>
+                                        <div className="text-xs text-zinc-600 tracking-widest mb-4">// INTEGRATIONS</div>
                                         <div className="space-y-4 max-w-sm">
                                             {[
                                                 { key: 'lineId',          label: 'LINE USER ID',        placeholder: 'Uxxxxxxxxxxxxxxxx' },
                                                 { key: 'telegramWebhook', label: 'TELEGRAM WEBHOOK URL', placeholder: 'https://api.telegram.org/bot…' },
                                             ].map(field => (
                                                 <div key={field.key}>
-                                                    <label className="text-[10px] text-zinc-600 block mb-1.5">{field.label}</label>
+                                                    <label className="text-xs text-zinc-600 block mb-1.5">{field.label}</label>
                                                     <input type="text"
                                                         value={settingsForm[field.key as keyof typeof settingsForm]}
                                                         onChange={e => setSettingsForm(f => ({ ...f, [field.key]: e.target.value }))}
@@ -669,10 +674,10 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                     />
                                                 </div>
                                             ))}
-                                            <button className="text-[11px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded transition-colors">
+                                            <button className="text-[13px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded transition-colors">
                                                 SAVE TOKENS
                                             </button>
-                                            <p className="text-[10px] text-zinc-700">// Tokens stored locally until Supabase profiles hook is connected</p>
+                                            <p className="text-xs text-zinc-700">// Tokens stored locally until Supabase profiles hook is connected</p>
                                         </div>
                                     </>
                                 )}
@@ -694,11 +699,11 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNewProject(false)}>
                     <div className="bg-[#0A0A0B] border border-zinc-800 rounded-xl w-full max-w-sm p-6 space-y-5" onClick={e => e.stopPropagation()}>
                         <div>
-                            <div className="text-[10px] text-zinc-600 tracking-widest mb-1">// NEW PROJECT</div>
+                            <div className="text-xs text-zinc-600 tracking-widest mb-1">// NEW PROJECT</div>
                             <h3 className="text-base font-bold text-white">建立新專案</h3>
                         </div>
                         <div>
-                            <label className="text-[10px] text-zinc-600 block mb-1.5">PROJECT NAME</label>
+                            <label className="text-xs text-zinc-600 block mb-1.5">PROJECT NAME</label>
                             <input
                                 type="text"
                                 value={newProjectName}
@@ -712,14 +717,14 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setShowNewProject(false)}
-                                className="flex-1 py-2.5 text-[11px] text-zinc-500 border border-zinc-800 rounded-lg hover:border-zinc-600 transition-colors"
+                                className="flex-1 py-2.5 text-[13px] text-zinc-500 border border-zinc-800 rounded-lg hover:border-zinc-600 transition-colors"
                             >
                                 取消
                             </button>
                             <button
                                 onClick={handleCreateProject}
                                 disabled={!newProjectName.trim()}
-                                className="flex-1 py-2.5 text-[11px] font-bold bg-[#FF5500] text-black rounded-lg hover:bg-white transition-colors disabled:opacity-40"
+                                className="flex-1 py-2.5 text-[13px] font-bold bg-[#FF5500] text-black rounded-lg hover:bg-white transition-colors disabled:opacity-40"
                             >
                                 建立 →
                             </button>

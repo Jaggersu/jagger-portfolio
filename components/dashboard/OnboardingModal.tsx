@@ -1,105 +1,109 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useUserFlow, UserProfile } from '../../lib/userFlow';
-import ContractPanel from './ContractPanel';
 import DashboardPanel from './DashboardPanel';
+import AdminDashboard from './AdminDashboard';
+import XIcon from '../icons/XIcon';
+import type { AnimatedIconHandle } from '../icons/types';
 
 interface OnboardingModalProps {
     plan: string;
     onClose: () => void;
 }
 
-const STAGE_LABELS = ['REGISTER', 'CONTRACT', 'DASHBOARD'];
-
 export default function OnboardingModal({ plan, onClose }: OnboardingModalProps) {
-    const { flowState, register, profile } = useUserFlow();
+    const { flowState, register, profile, closeDashboard } = useUserFlow();
 
-    const [form, setForm] = useState<UserProfile>({ id: '', name: '', email: '', phone: '', company: '', plan });
+    const [form, setForm] = useState<UserProfile>({ id: '', name: '', email: '', phone: '', company: '', plan, role: 'client' });
+    const [registerError, setRegisterError] = useState<string | null>(null);
+    const [registering, setRegistering] = useState(false);
 
-    const currentStage = flowState === 'GUEST' ? 0 : flowState === 'REGISTERED' ? 1 : 2;
-    const isFullscreen = flowState === 'REGISTERED' || flowState === 'ACTIVE' || flowState === 'SIGNED';
+    // GUEST → 填表, REGISTERED → Magic Link 已寄出等待頁, ACTIVE → Dashboard
+    const isWaiting = flowState === 'REGISTERED';
+    const isDashboard = flowState === 'ACTIVE';
+    const closeIconRef = useRef<AnimatedIconHandle>(null);
+    const isFullscreen = isDashboard;
 
-    // Lock body scroll while modal is open
+    const handleClose = useCallback(() => {
+        if (isDashboard) closeDashboard();
+        else onClose();
+    }, [isDashboard, onClose, closeDashboard]);
+
     useEffect(() => {
+        if (isDashboard) return;
         document.body.style.overflow = 'hidden';
         return () => { document.body.style.overflow = ''; };
-    }, []);
+    }, [isDashboard]);
 
-    // Close on Escape
     useEffect(() => {
-        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && flowState !== 'ACTIVE') onClose(); };
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !isDashboard) onClose();
+        };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [flowState, onClose]);
+    }, [isDashboard, onClose]);
 
-    const handleRegister = useCallback((e: React.FormEvent) => {
+    const handleRegister = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.name || !form.email) return;
-        register(form, plan);
+        setRegisterError(null);
+        setRegistering(true);
+        const { error } = await register(form, plan);
+        setRegistering(false);
+        if (error) setRegisterError(error);
     }, [form, plan, register]);
 
-    const stageTitle = ['填寫資料 · REGISTER', '線上簽約 · CONTRACT', '任務看板 · DASHBOARD'][currentStage];
+    if (isDashboard) {
+        return (
+            <div className="fixed inset-0 z-[100] bg-[#000000]">
+                {profile?.role === 'admin'
+                    ? <AdminDashboard onClose={handleClose} />
+                    : <DashboardPanel onClose={handleClose} />}
+            </div>
+        );
+    }
 
     return (
-        <div className={`fixed inset-0 z-[100] flex items-center justify-center ${isFullscreen ? 'p-0' : 'p-6'}`}>
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-                onClick={flowState !== 'ACTIVE' ? onClose : undefined}
-            />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-            {/* Modal — small for register/contract, fullscreen for dashboard */}
-            <div className={`relative bg-[#000000] border border-zinc-800/60 shadow-2xl flex flex-col transition-all duration-500 ${
-                isFullscreen
-                    ? 'w-full h-full rounded-none'
-                    : 'w-full max-w-lg rounded-2xl max-h-[90vh]'
-            }`}>
+            <div className="relative bg-[#000000] border border-zinc-800/60 shadow-2xl flex flex-col w-full max-w-lg rounded-2xl max-h-[90vh]">
 
-                {/* Header — hidden on fullscreen (each panel has its own topbar) */}
-                {!isFullscreen && <div className="border-b border-zinc-800 px-5 py-3.5 flex items-center justify-between shrink-0">
+                {/* Header */}
+                <div className="border-b border-zinc-800 px-5 py-3.5 flex items-center justify-between shrink-0">
                     <div>
                         <span className="text-[10px] font-mono text-zinc-600 tracking-widest block">// JAGGER OS · ONBOARDING</span>
-                        <h2 className="text-sm font-mono font-bold text-white mt-0.5">{stageTitle}</h2>
+                        <h2 className="text-sm font-mono font-bold text-white mt-0.5">
+                            {isWaiting ? '驗證信箕 · CHECK EMAIL' : '填寫資料 · REGISTER'}
+                        </h2>
                     </div>
-                    <div className="flex items-center gap-4">
-                        {/* Stage indicator */}
-                        <div className="flex items-center gap-1.5">
-                            {STAGE_LABELS.map((label, i) => (
-                                <React.Fragment key={label}>
-                                    <div className={`flex items-center gap-1 text-[9px] font-mono tracking-widest transition-colors ${i === currentStage ? 'text-[#FF5500]' : i < currentStage ? 'text-emerald-500' : 'text-zinc-700'}`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${i === currentStage ? 'bg-[#FF5500] animate-pulse' : i < currentStage ? 'bg-emerald-500' : 'bg-zinc-700'}`} />
-                                        <span className="hidden sm:inline">{label}</span>
-                                    </div>
-                                    {i < STAGE_LABELS.length - 1 && (
-                                        <span className="text-zinc-800 text-[9px]">›</span>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </div>
-                        <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors ml-2">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>}
-
+                    <button
+                        onClick={onClose}
+                        onMouseEnter={() => closeIconRef.current?.startAnimation()}
+                        onMouseLeave={() => closeIconRef.current?.stopAnimation()}
+                        className="text-zinc-600 hover:text-zinc-300 transition-colors"
+                    >
+                        <span className="pointer-events-none">
+                            <XIcon ref={closeIconRef} size={14} strokeWidth={2} color="currentColor" />
+                        </span>
+                    </button>
+                </div>
 
                 {/* Body */}
-                <div className={`flex-1 min-h-0 ${isFullscreen ? 'p-0 h-full' : 'px-5 py-4 overflow-y-auto'}`}>
+                <div className="flex-1 min-h-0 px-5 py-5 overflow-y-auto">
 
-                    {/* Stage 0: Register */}
-                    {currentStage === 0 && (
+                    {/* 填表 */}
+                    {!isWaiting && (
                         <form onSubmit={handleRegister} className="flex flex-col gap-4">
                             <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
-                                填妥資料後，系統將開通你的合約簽署頁面。所有資料僅用於服務合約與開案追蹤。
+                                填妥後系統將寄送一封登入連結至你的信箱，點擊即可開通 Dashboard 並進入簽約流程。
                             </p>
                             {[
-                                { key: 'name', label: 'NAME *', placeholder: '姓名 / 代號', type: 'text', required: true },
-                                { key: 'email', label: 'EMAIL *', placeholder: 'your@email.com', type: 'email', required: true },
-                                { key: 'phone', label: 'PHONE', placeholder: '+886 9xx xxx xxx', type: 'tel', required: false },
-                                { key: 'company', label: 'COMPANY', placeholder: '公司 / 品牌名稱（選填）', type: 'text', required: false },
+                                { key: 'name',    label: 'NAME *',    placeholder: '姓名 / 代號',         type: 'text',  required: true },
+                                { key: 'email',   label: 'EMAIL *',   placeholder: 'your@email.com',      type: 'email', required: true },
+                                { key: 'phone',   label: 'PHONE',     placeholder: '+886 9xx xxx xxx',    type: 'tel',   required: false },
+                                { key: 'company', label: 'COMPANY',   placeholder: '公司 / 品牌名稱（選填）', type: 'text',  required: false },
                             ].map(({ key, label, placeholder, type, required }) => (
                                 <div key={key}>
                                     <label className="text-[11px] font-mono text-[#FF5500] tracking-widest block mb-1.5">{label}</label>
@@ -113,34 +117,60 @@ export default function OnboardingModal({ plan, onClose }: OnboardingModalProps)
                                     />
                                 </div>
                             ))}
+                            {registerError && (
+                                <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{registerError}</p>
+                            )}
                             <button
                                 type="submit"
-                                disabled={!form.name || !form.email}
-                                className={`w-full py-3 mt-1 rounded font-mono font-bold text-[11px] tracking-widest uppercase transition-all duration-200 ${form.name && form.email
-                                    ? 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
-                                    : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
-                                    }`}
+                                disabled={!form.name || !form.email || registering}
+                                className={`w-full py-3 mt-1 rounded font-mono font-bold text-[11px] tracking-widest uppercase transition-all duration-200 ${
+                                    form.name && form.email && !registering
+                                        ? 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
+                                        : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
+                                }`}
                             >
-                                確認資料 · 前往簽約
+                                {registering ? '⟳ 寄送登入連結中…' : '送出資料 · 取得登入連結 →'}
                             </button>
                         </form>
                     )}
 
-                    {/* Stage 1: Contract — fullscreen */}
-                    {currentStage === 1 && <ContractPanel plan={plan} onClose={onClose} />}
-
-                    {/* Stage 2: Dashboard — fullscreen */}
-                    {currentStage === 2 && <DashboardPanel onClose={onClose} />}
+                    {/* Magic Link 已寄出 */}
+                    {isWaiting && (
+                        <div className="flex flex-col items-center text-center gap-5 py-6">
+                            <div className="w-14 h-14 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p className="text-white font-mono font-bold text-sm">登入連結已寄出</p>
+                                <p className="text-zinc-400 text-[12px] font-mono mt-2 leading-relaxed">
+                                    請檢查 <span className="text-[#FF5500]">{profile?.email}</span> 的收件匣<br/>
+                                    點擊信中的連結即可自動登入並開通 Dashboard
+                                </p>
+                            </div>
+                            <div className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-left space-y-2">
+                                <p className="text-[10px] font-mono text-zinc-600 tracking-widest">// 注意事項</p>
+                                <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">· 連結 60 分鐘內有效，點擊後自動失效</p>
+                                <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">· 沒收到？請檢查垃圾郵件資料夾</p>
+                                <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">· 下次登入同樣使用此信箱取得登入連結</p>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="text-[11px] font-mono text-zinc-600 hover:text-zinc-400 transition-colors tracking-widest"
+                            >
+                                關閉此視窗
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {/* Footer — small modal only */}
-                {!isFullscreen && (
-                    <div className="border-t border-zinc-900 px-5 py-2.5 shrink-0">
-                        <span className="text-[9px] font-mono text-zinc-700 tracking-widest">
-                            // JAGGER OS · STUDIO 99+ · SECURE ONBOARDING FLOW
-                        </span>
-                    </div>
-                )}
+                <div className="border-t border-zinc-900 px-5 py-2.5 shrink-0">
+                    <span className="text-[9px] font-mono text-zinc-700 tracking-widest">
+                        // JAGGER OS · PASSWORDLESS AUTH · SECURE ONBOARDING
+                    </span>
+                </div>
             </div>
         </div>
     );

@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import BrandTelegramIcon from './icons/BrandTelegramIcon';
+import type { AnimatedIconHandle } from './icons/types';
 
 export default function ContactSection() {
     const [form, setForm] = useState({ name: '', email: '', message: '' });
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
+    const telegramIconRef = useRef<AnimatedIconHandle>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -42,11 +45,13 @@ export default function ContactSection() {
 
                 <div className="grid md:grid-cols-2 gap-12">
                     {/* Left — Telegram */}
-                    <div className="flex flex-col items-center justify-center p-8 border border-[#1F1F23] rounded-xl bg-[#0c0c0e] hover:border-[#FF5500]/30 transition-colors">
-                        <div className="w-14 h-14 rounded-full bg-[#FF5500]/10 flex items-center justify-center mb-5">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.073l3.9 1.205a.75.75 0 0 0 .722-.163l6.293-5.725a.75.75 0 0 1 1.01 1.11l-5.447 5.96a.75.75 0 0 0-.062.87l2.527 3.987a2.25 2.25 0 0 0 4.024-.633l3.66-16.106a2.25 2.25 0 0 0-1.231-2.293z" />
-                            </svg>
+                    <div
+                        className="flex flex-col items-center justify-center p-8 border border-[#1F1F23] rounded-xl bg-[#0c0c0e] hover:border-[#FF5500]/30 transition-colors"
+                        onMouseEnter={() => telegramIconRef.current?.startAnimation()}
+                        onMouseLeave={() => telegramIconRef.current?.stopAnimation()}
+                    >
+                        <div className="w-14 h-14 rounded-full bg-[#FF5500]/10 flex items-center justify-center mb-5 pointer-events-none">
+                            <BrandTelegramIcon ref={telegramIconRef} size={28} color="#FF5500" strokeWidth={1.5} />
                         </div>
                         <h3 className="text-lg font-bold text-white mb-2 font-mono">Telegram</h3>
                         <p className="text-zinc-500 text-xs text-center mb-6 font-mono leading-relaxed">

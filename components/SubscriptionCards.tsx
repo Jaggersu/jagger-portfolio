@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useUserFlow } from '../lib/userFlow';
 import OnboardingModal from './dashboard/OnboardingModal';
+import LoginModal from './LoginModal';
 
 interface PlanItem {
     tag: string;
@@ -18,12 +19,23 @@ interface PlanItem {
 }
 
 function SubscriptionContent() {
-    const { flowState } = useUserFlow();
+    const { flowState, openDashboard } = useUserFlow();
     const [spotsAvailable, setSpotsAvailable] = useState<number>(2);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [activeModal, setActiveModal] = useState<string | null>(null);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
-    const openModal = useCallback((planTitle: string) => setActiveModal(planTitle), []);
+    const openModal = useCallback((planTitle: string) => {
+        if (flowState === 'ACTIVE') {
+            openDashboard();
+            return;
+        }
+        if (planTitle === '散戶單件計價') {
+            setShowLoginModal(true);
+            return;
+        }
+        setActiveModal(planTitle);
+    }, [flowState, openDashboard]);
     const closeModal = useCallback(() => setActiveModal(null), []);
 
     useEffect(() => {
@@ -36,12 +48,11 @@ function SubscriptionContent() {
                     .eq('key', 'subscription_spots')
                     .single();
 
-                if (error) throw error;
-                if (data) {
+                if (!error && data) {
                     setSpotsAvailable(data.value_int);
                 }
             } catch (err) {
-                console.error('無法讀取 Supabase 席位設定:', err);
+                // site_config 表尚未建立時靜默失敗，使用預設席位數
             } finally {
                 setIsLoading(false);
             }
@@ -238,6 +249,11 @@ function SubscriptionContent() {
                     plan={activeModal}
                     onClose={closeModal}
                 />
+            )}
+
+            {/* Login Modal (ON-DEMAND) */}
+            {showLoginModal && (
+                <LoginModal onClose={() => setShowLoginModal(false)} />
             )}
         </section>
     );

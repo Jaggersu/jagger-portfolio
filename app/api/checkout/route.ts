@@ -54,6 +54,16 @@ export async function POST(req: NextRequest) {
                 .update({ plan_type: plan, status: 'ACTIVE' })
                 .eq('id', userId);
 
+            // 自動初始化籌備期任務
+            const INIT_TASKS = [
+                { title: '與 AI 助理 JAVIS 完成核心需求規格收斂',    status: 'QUEUED', priority: 'HIGH', type: 'GENERAL' },
+                { title: '上傳既有品牌資產與參考範例至 Files 組件',    status: 'QUEUED', priority: 'MED',  type: 'GENERAL' },
+                { title: '預約第一次線上啟動會議（透過 Telegram）',   status: 'QUEUED', priority: 'HIGH', type: 'GENERAL' },
+            ];
+            await supabase.from('tasks').insert(
+                INIT_TASKS.map(t => ({ ...t, project_id: project.id, user_id: userId }))
+            );
+
             return NextResponse.json({
                 mock: true,
                 projectId: project.id,

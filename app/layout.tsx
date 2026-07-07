@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { UserFlowProvider } from '../lib/userFlow';
+import CookieBanner from '../components/CookieBanner';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +30,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <UserFlowProvider>{children}</UserFlowProvider>
+        <UserFlowProvider>
+          {children}
+          <CookieBanner />
+        </UserFlowProvider>
       </body>
     </html>
   );

@@ -102,6 +102,25 @@ body {
 }
 /* ── end scrollbar ───────────────────────────────────────────────────────── */
 
+/* ── Header Dashboard 按鈕動畫 ───────────────────────────────────────────── */
+@keyframes db-glow {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+@keyframes db-bar-1 {
+  0%, 100% { width: 0.75rem; opacity: 1; }
+  50%       { width: 0.875rem; opacity: 0.8; }
+}
+@keyframes db-bar-2 {
+  0%, 100% { width: 0.5rem; opacity: 0.5; }
+  50%       { width: 0.875rem; opacity: 1; }
+}
+@keyframes db-bar-3 {
+  0%, 100% { width: 0.875rem; opacity: 0.25; }
+  50%       { width: 0.625rem; opacity: 0.6; }
+}
+/* ── end header dashboard ───────────────────────────────────────────────── */
+
 @layer base {
   html {
     @apply scroll-smooth bg-[#0A0A0B] text-white font-mono;
