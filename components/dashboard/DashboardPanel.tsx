@@ -9,6 +9,7 @@ import { ContractIcon } from '../icons/ContractIcon';
 import { SettingsIcon } from '../icons/SettingsIcon';
 import AskAIDialog from './AskAIDialog';
 import ContractPanel from './ContractPanel';
+import SatelliteDishIcon from '../icons/SatelliteDishIcon';
 
 interface DashboardPanelProps {
     onClose: () => void;
@@ -488,7 +489,10 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
 
                     {/* Unified Timeline Chat Feed */}
                     <div className="border border-zinc-900 rounded-lg p-4 flex-1 flex flex-col min-h-[300px] bg-zinc-950/40">
-                        <div className="text-[10px] text-zinc-600 tracking-widest mb-3 font-mono">// DISCUSSION & FEED</div>
+                        <div className="text-[10px] text-zinc-600 tracking-widest mb-3 font-mono flex items-center gap-1.5">
+                            <SatelliteDishIcon size={12} className="text-[#FF5500]" />
+                            <span>// DISCUSSION & FEED</span>
+                        </div>
                         
                         {/* Feed Messages */}
                         <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-4 max-h-[350px]" style={{ scrollbarWidth: 'thin' }}>

@@ -11,6 +11,7 @@ import LayoutDashboardIcon from '../icons/LayoutDashboardIcon';
 import { ContractIcon } from '../icons/ContractIcon';
 import AdminContractPanel from './AdminContractPanel';
 import type { AnimatedIconHandle } from '../icons/types';
+import SatelliteDishIcon from '../icons/SatelliteDishIcon';
 
 interface AdminDashboardProps {
     onClose: () => void;
@@ -733,7 +734,10 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
                                                                                     {/* Unified Chronological Feed */}
                                                                                     <div className="border border-zinc-900 rounded p-2 bg-zinc-950/40 space-y-2 flex flex-col">
-                                                                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono">// DISCUSSION & ACTIVITIES</div>
+                                                                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono flex items-center gap-1.5">
+                                                                                            <SatelliteDishIcon size={11} className="text-[#3b82f6]" />
+                                                                                            <span>// DISCUSSION & ACTIVITIES</span>
+                                                                                        </div>
                                                                                         <div className="max-h-48 overflow-y-auto space-y-2.5 pr-1" style={{ scrollbarWidth: 'thin' }}>
                                                                                             {taskComments.length === 0 ? (
                                                                                                 <div className="text-[10px] text-zinc-700 italic text-center py-2">尚無對話或動態</div>
