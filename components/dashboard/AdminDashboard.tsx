@@ -206,7 +206,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
             {/* Sidebar */}
             <aside className="w-52 shrink-0 border-r border-zinc-900 flex flex-col bg-[#000000]">
                 <div className="px-4 py-4 border-b border-zinc-900">
-                    <div className="text-xs text-[#FF5500] tracking-widest mb-0.5">ADMIN CONSOLE</div>
+                    <div className="text-xs text-[#3b82f6] tracking-widest mb-0.5">ADMIN CONSOLE</div>
                     <div className="text-sm font-bold text-white tracking-wide">JAGGER OS</div>
                 </div>
                 <nav className="flex-1 px-2 py-3 space-y-0.5">
@@ -295,7 +295,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                 <span className={`inline-flex items-center text-xs border rounded px-1.5 py-0.5 w-fit tracking-widest ${STATUS_COLOR[c.status] ?? 'text-zinc-600 border-zinc-800'}`}>
                                                     {c.status}
                                                 </span>
-                                                <span className={`text-xs tracking-widest ${c.role === 'admin' ? 'text-[#FF5500]' : 'text-zinc-600'}`}>
+                                                <span className={`text-xs tracking-widest ${c.role === 'admin' ? 'text-[#3b82f6]' : 'text-zinc-600'}`}>
                                                     {c.role?.toUpperCase() ?? 'CLIENT'}
                                                 </span>
                                             </button>
@@ -366,7 +366,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                         <button
                                                             onClick={createProject}
                                                             disabled={newProjectLoading || !newProjectName.trim() || !newProjectClientId}
-                                                            className="text-xs bg-[#FF5500] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
+                                                            className="text-xs bg-[#3b82f6] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
                                                         >
                                                             {newProjectLoading ? '…' : '+ New Project'}
                                                         </button>
@@ -393,7 +393,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                         <span className="text-zinc-400">{progress}%</span>
                                                                     </div>
                                                                     <div className="flex-1 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-                                                                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: '#FF5500' }} />
+                                                                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: '#3b82f6' }} />
                                                                     </div>
                                                                     <div className="flex flex-wrap gap-1.5 pt-1">
                                                                         {statusList.map(s => {
@@ -465,7 +465,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                                 </select>
                                                                                                 <div className="flex gap-1.5">
                                                                                                     <button onClick={() => setSelectedTaskId(null)} className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1 rounded">取消</button>
-                                                                                                    <button onClick={() => submitTaskActivity(t.id)} disabled={activityLoading || !activityDraft.trim()} className="text-[10px] bg-[#FF5500] text-black px-2 py-1 rounded font-bold disabled:opacity-50">{activityLoading ? '…' : 'Save'}</button>
+                                                                                                    <button onClick={() => submitTaskActivity(t.id)} disabled={activityLoading || !activityDraft.trim()} className="text-[10px] bg-[#3b82f6] text-black px-2 py-1 rounded font-bold disabled:opacity-50">{activityLoading ? '…' : 'Save'}</button>
                                                                                                 </div>
                                                                                             </div>
                                                                                         </div>
@@ -547,7 +547,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                         <div key={name} className="flex items-center gap-2">
                                                             <span className="text-xs text-zinc-500 w-20 truncate shrink-0">{name}</span>
                                                             <div className="flex-1 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-                                                                <div className="h-full rounded-full bg-[#FF5500] transition-all duration-500"
+                                                                <div className="h-full rounded-full bg-[#3b82f6] transition-all duration-500"
                                                                     style={{ width: `${(cnt / maxBar) * 100}%` }} />
                                                             </div>
                                                             <span className="text-xs text-zinc-400 w-4 text-right">{cnt}</span>
@@ -592,7 +592,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                             <span className="text-xs text-zinc-600 w-7 text-right shrink-0">{pct}%</span>
                                                             <button
                                                                 onClick={() => setSelectedTaskId(isExpanded ? null : t.id)}
-                                                                className={`text-xs px-2 py-0.5 rounded border transition-colors ${isExpanded ? 'text-[#FF5500] border-[#FF5500]/40 bg-[#FF5500]/10' : 'text-zinc-600 border-zinc-800 hover:border-zinc-600'}`}
+                                                                className={`text-xs px-2 py-0.5 rounded border transition-colors ${isExpanded ? 'text-[#3b82f6] border-[#3b82f6]/40 bg-[#3b82f6]/10' : 'text-zinc-600 border-zinc-800 hover:border-zinc-600'}`}
                                                             >
                                                                 {isExpanded ? 'Close' : 'Update'}
                                                             </button>
@@ -607,7 +607,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                     onChange={e => setActivityDraft(e.target.value)}
                                                                     placeholder="輸入進度更新，Client 會在 task 面板看到…"
                                                                     rows={3}
-                                                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60 resize-none"
+                                                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-[#3b82f6]/60 resize-none"
                                                                 />
                                                                 <div className="flex items-center justify-end gap-2">
                                                                     <button
@@ -619,7 +619,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                     <button
                                                                         onClick={() => submitTaskActivity(t.id)}
                                                                         disabled={activityLoading || !activityDraft.trim()}
-                                                                        className="text-xs bg-[#FF5500] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
+                                                                        className="text-xs bg-[#3b82f6] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
                                                                     >
                                                                         {activityLoading ? '…' : 'Save Update'}
                                                                     </button>
@@ -657,7 +657,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                         </div>
                                         <div className="flex items-center justify-between border border-zinc-900 rounded px-4 py-3">
                                             <span>Admin Role</span>
-                                            <span className="text-[#FF5500] text-xs">● ACTIVE</span>
+                                            <span className="text-[#3b82f6] text-xs">● ACTIVE</span>
                                         </div>
                                     </div>
                                 </div>
