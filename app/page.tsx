@@ -624,10 +624,9 @@ export default function Home() {
 
       <BackToTop />
 
-      {/* 訪客浮動 Ask AI 按鈕 */}
       <button
         onClick={() => setShowVisitorAI(true)}
-        className="fixed bottom-6 right-6 z-[100] flex items-center gap-2 bg-[#0A0A0B] border border-[#FF5500]/40 hover:border-[#FF5500] text-[#FF5500] hover:text-white px-4 py-2.5 rounded-full font-mono text-[11px] font-bold tracking-wider shadow-lg shadow-black/40 transition-all hover:bg-[#FF5500] group"
+        className="fixed bottom-6 right-6 z-[50] flex items-center gap-2 bg-[#0A0A0B] border border-[#FF5500]/40 hover:border-[#FF5500] text-[#FF5500] hover:text-white px-4 py-2.5 rounded-full font-mono text-[11px] font-bold tracking-wider shadow-lg shadow-black/40 transition-all hover:bg-[#FF5500] group"
       >
         <span className="w-2 h-2 rounded-full bg-[#FF5500] group-hover:bg-white animate-pulse" />
         Jag Agent
