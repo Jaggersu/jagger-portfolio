@@ -20,12 +20,17 @@ create table if not exists public.profiles (
   created_at timestamptz default now()
 );
 
+create or replace function public.current_user_role()
+returns text as $$
+  select role from public.profiles where id = auth.uid();
+$$ language sql stable security definer;
+
 alter table public.profiles enable row level security;
 drop policy if exists "read_own_or_admin" on public.profiles;
 create policy "read_own_or_admin" on public.profiles
   for select using (
     auth.uid() = id
-    or (select role from public.profiles where id = auth.uid()) = 'admin'
+    or public.current_user_role() = 'admin'
   );
 drop policy if exists "write_own" on public.profiles;
 create policy "write_own" on public.profiles
@@ -63,7 +68,7 @@ create policy "用戶可完全控制自身專案" on public.projects
 drop policy if exists "admin可讀寫所有專案" on public.projects;
 create policy "admin可讀寫所有專案" on public.projects
   for all using (
-    (select role from public.profiles where id = auth.uid()) = 'admin'
+    public.current_user_role() = 'admin'
   );
 
 -- ── 3. contracts ────────────────────────────────────────────
@@ -85,7 +90,7 @@ create policy "用戶可檢視自身合約" on public.contracts
 drop policy if exists "admin可讀寫所有合約" on public.contracts;
 create policy "admin可讀寫所有合約" on public.contracts
   for all using (
-    (select role from public.profiles where id = auth.uid()) = 'admin'
+    public.current_user_role() = 'admin'
   );
 
 -- ── 4. tasks ────────────────────────────────────────────────
@@ -112,7 +117,7 @@ create policy "用戶可完全控制自身任務" on public.tasks
 drop policy if exists "admin可讀寫所有任務" on public.tasks;
 create policy "admin可讀寫所有任務" on public.tasks
   for all using (
-    (select role from public.profiles where id = auth.uid()) = 'admin'
+    public.current_user_role() = 'admin'
   );
 
 -- 啟用 tasks 與 contracts 表的 Realtime 變更訂閱（idempotent）
@@ -146,7 +151,7 @@ create policy "用戶可讀寫自身任務活動" on public.task_activities
 drop policy if exists "admin可讀寫所有任務活動" on public.task_activities;
 create policy "admin可讀寫所有任務活動" on public.task_activities
   for all using (
-    (select role from public.profiles where id = auth.uid()) = 'admin'
+    public.current_user_role() = 'admin'
   );
 
 -- ── 7. task_comments ────────────────────────────────────────
@@ -171,7 +176,7 @@ create policy "用戶可讀寫自身任務留言" on public.task_comments
 drop policy if exists "admin可讀寫所有任務留言" on public.task_comments;
 create policy "admin可讀寫所有任務留言" on public.task_comments
   for all using (
-    (select role from public.profiles where id = auth.uid()) = 'admin'
+    public.current_user_role() = 'admin'
   );
 
 -- 啟用 task_activities 與 task_comments 的 Realtime（idempotent）
@@ -203,3 +208,8 @@ alter table public.files enable row level security;
 drop policy if exists "用戶可完全控制自身檔案" on public.files;
 create policy "用戶可完全控制自身檔案" on public.files
   for all using (auth.uid() = user_id);
+drop policy if exists "admin可讀寫所有檔案" on public.files;
+create policy "admin可讀寫所有檔案" on public.files
+  for all using (
+    public.current_user_role() = 'admin'
+  );

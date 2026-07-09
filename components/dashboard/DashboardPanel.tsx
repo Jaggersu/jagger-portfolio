@@ -120,7 +120,6 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     const [showAskAI, setShowAskAI]         = useState(false);
     const [fileSearch, setFileSearch]       = useState('');
     const [driveLoading, setDriveLoading]   = useState<string | null>(null);
-    const [seedLoading, setSeedLoading]     = useState(false);
     const [settingsTab, setSettingsTab]     = useState<SettingsTab>('account');
     const [settingsForm, setSettingsForm]   = useState({
         displayName: profile?.name ?? '',
@@ -371,35 +370,6 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         }
     }, [commentDraft, selectedTask]);
 
-    const seedDemoTasks = useCallback(async () => {
-        if (!profile?.id) return;
-        setSeedLoading(true);
-        try {
-            const { data: project, error: pErr } = await supabase
-                .from('projects')
-                .insert({ user_id: profile.id, name: 'JAGGER OS 啟動專案', status: 'ACTIVE' })
-                .select()
-                .single();
-            if (pErr || !project) throw pErr ?? new Error('無法建立專案');
-
-            const demoTasks = [
-                { title: '與 AI 助理 JAVIS 完成核心需求規格收斂', status: 'QUEUED', priority: 'HIGH', type: 'GENERAL', description: '確認需求範圍與交付物', eta: '2d' },
-                { title: '上傳既有品牌資產與參考範例至 Files', status: 'IN_PROGRESS', priority: 'MED', type: 'GENERAL', description: '請將品牌相關檔案上傳到 Files 區', eta: '3d' },
-                { title: '預約第一次線上啟動會議', status: 'REVIEW', priority: 'HIGH', type: 'GENERAL', description: '透過 Telegram 或 Email 預約會議', eta: '1d' },
-                { title: '品牌 Logo 主視覺設計', status: 'DELIVERED', priority: 'MED', type: 'BRAND', description: '已完成初稿', eta: '—' },
-            ];
-            const { error: tErr } = await supabase.from('tasks').insert(
-                demoTasks.map(t => ({ ...t, project_id: project.id, user_id: profile.id }))
-            );
-            if (tErr) throw tErr;
-            fetchTasks();
-        } catch (e: any) {
-            alert(`建立測試任務失敗：${e.message}`);
-        } finally {
-            setSeedLoading(false);
-        }
-    }, [profile, fetchTasks]);
-
     return (
         <div className="flex h-full w-full bg-[#000000] font-mono overflow-hidden relative">
 
@@ -578,14 +548,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                     {!loading && tasks.length === 0 && (
                                         <div className="px-6 py-12 text-center">
                                             <div className="text-zinc-600 text-[13px] font-mono mb-2">目前沒有任務</div>
-                                            <div className="text-zinc-700 text-xs font-mono mb-4">專案建立後，任務會顯示在這裡</div>
-                                            <button
-                                                onClick={seedDemoTasks}
-                                                disabled={seedLoading}
-                                                className="text-xs bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 px-4 py-2 rounded transition-colors disabled:opacity-50"
-                                            >
-                                                {seedLoading ? '建立中…' : '+ 建立測試任務'}
-                                            </button>
+                                            <div className="text-zinc-700 text-xs font-mono">完成合約簽署後，任務會顯示在這裡</div>
                                         </div>
                                     )}
                                     {tasks.map(task => {
