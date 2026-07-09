@@ -110,8 +110,8 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [activityDraft, setActivityDraft]   = useState('');
     const [activityLoading, setActivityLoading] = useState(false);
 
-    // Comments per task
-    const [taskComments, setTaskComments]     = useState<TaskCommentRow[]>([]);
+    // Comments and activities feed per task
+    const [taskComments, setTaskComments]     = useState<any[]>([]);
     const [commentsTaskId, setCommentsTaskId] = useState<string | null>(null);
 
     // New project form
