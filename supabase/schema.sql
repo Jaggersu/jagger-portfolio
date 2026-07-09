@@ -21,11 +21,13 @@ create table if not exists public.profiles (
 );
 
 alter table public.profiles enable row level security;
+drop policy if exists "read_own_or_admin" on public.profiles;
 create policy "read_own_or_admin" on public.profiles
   for select using (
     auth.uid() = id
     or (select role from public.profiles where id = auth.uid()) = 'admin'
   );
+drop policy if exists "write_own" on public.profiles;
 create policy "write_own" on public.profiles
   for all using (auth.uid() = id);
 
