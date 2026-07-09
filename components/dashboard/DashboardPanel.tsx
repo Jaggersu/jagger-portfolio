@@ -272,11 +272,11 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     // 監聽 activity / comment realtime
     useEffect(() => {
         if (!selectedTask?.real_id) return;
-        const aCh = supabase.channel('client-activities')
+        const aCh = supabase.channel(`client-task-activities-${selectedTask.real_id}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'task_activities', filter: `task_id=eq.${selectedTask.real_id}` },
                 () => fetchActivities(selectedTask.real_id))
             .subscribe();
-        const cCh = supabase.channel('client-comments')
+        const cCh = supabase.channel(`client-task-comments-${selectedTask.real_id}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments', filter: `task_id=eq.${selectedTask.real_id}` },
                 () => fetchComments(selectedTask.real_id))
             .subscribe();
