@@ -58,6 +58,7 @@
   - `7ee4ec7`: realtime idempotent
   - `cc0465a`: return route fallback
   - `9d0ffdc`: seed demo tasks button
+  - `09dfdde`: fix recursive RLS, remove seed button
 
 ---
 
@@ -65,10 +66,12 @@
 
 | 問題 | 原因 | 解法 |
 |------|------|------|
-| Client Dashboard 沒有任務 | 資料庫中 tasks 屬於舊 auth user id，與目前瀏覽器 session 的 user_id 不一致 | 新增「建立測試任務」按鈕，以目前登入者身份自動重建 |
+| Client Dashboard 沒有任務 | 資料庫中 tasks 屬於舊 auth user id，與目前瀏覽器 session 的 user_id 不一致 | 正常流程應由付款 callback / return 建立；暫時的 seed 按鈕已移除 |
 | 重跑合約沒有產生 tasks | 藍新測試環境 NotifyURL 不穩定；return route 修正尚未部署 | return route 增加 fallback 建立 tasks |
 | schema.sql 重複執行報錯 | policies 與 realtime publication 已存在 | 改為 `drop policy if exists` 與 `if not exists` 條件加入 |
 | `task_activities` 不存在錯誤 | SQL 執行順序問題 | 提供正確順序：先 CREATE TABLE，再加 publication |
+| Supabase API 500 錯誤 | RLS policy 中 `(select role from public.profiles...)` 子查詢與 profiles RLS 形成遞迴/異常 | 新增 `current_user_role()` security definer 函式，所有 admin 檢查改呼叫此函式 |
+| 使用者不接受 seed 按鈕 | 測試應走正常流程，不該有 fake data 入口 | 移除 Client Dashboard 的 `+ 建立測試任務` 按鈕 |
 
 ---
 
