@@ -734,8 +734,8 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
                                                                                     {/* Unified Chronological Feed */}
                                                                                     <div className="border border-zinc-900 rounded p-2 bg-zinc-950/40 space-y-2 flex flex-col">
-                                                                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono flex items-center gap-1.5">
-                                                                                            <SatelliteDishIcon size={11} className="text-[#3b82f6]" />
+                                                                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono flex items-center gap-2">
+                                                                                            <SatelliteDishIcon size={20} className="text-[#3b82f6]" />
                                                                                             <span>// DISCUSSION & ACTIVITIES</span>
                                                                                         </div>
                                                                                         <div className="max-h-48 overflow-y-auto space-y-2.5 pr-1" style={{ scrollbarWidth: 'thin' }}>

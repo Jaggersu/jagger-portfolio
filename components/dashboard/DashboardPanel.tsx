@@ -489,8 +489,8 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
 
                     {/* Unified Timeline Chat Feed */}
                     <div className="border border-zinc-900 rounded-lg p-4 flex-1 flex flex-col min-h-[300px] bg-zinc-950/40">
-                        <div className="text-[10px] text-zinc-600 tracking-widest mb-3 font-mono flex items-center gap-1.5">
-                            <SatelliteDishIcon size={12} className="text-[#FF5500]" />
+                        <div className="text-[10px] text-zinc-600 tracking-widest mb-3 font-mono flex items-center gap-2">
+                            <SatelliteDishIcon size={20} className="text-[#FF5500]" />
                             <span>// DISCUSSION & FEED</span>
                         </div>
                         
