@@ -115,9 +115,16 @@ create policy "admin可讀寫所有任務" on public.tasks
     (select role from public.profiles where id = auth.uid()) = 'admin'
   );
 
--- 啟用 tasks 與 contracts 表的 Realtime 變更訂閱
-alter publication supabase_realtime add table public.tasks;
-alter publication supabase_realtime add table public.contracts;
+-- 啟用 tasks 與 contracts 表的 Realtime 變更訂閱（idempotent）
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'tasks') then
+    alter publication supabase_realtime add table public.tasks;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'contracts') then
+    alter publication supabase_realtime add table public.contracts;
+  end if;
+end $$;
 
 -- ── 6. task_activities ────────────────────────────────────────
 create table if not exists public.task_activities (
@@ -167,9 +174,16 @@ create policy "admin可讀寫所有任務留言" on public.task_comments
     (select role from public.profiles where id = auth.uid()) = 'admin'
   );
 
--- 啟用 task_activities 與 task_comments 的 Realtime
-alter publication supabase_realtime add table public.task_activities;
-alter publication supabase_realtime add table public.task_comments;
+-- 啟用 task_activities 與 task_comments 的 Realtime（idempotent）
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'task_activities') then
+    alter publication supabase_realtime add table public.task_activities;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'task_comments') then
+    alter publication supabase_realtime add table public.task_comments;
+  end if;
+end $$;
 
 -- ── 8. files ────────────────────────────────────────────────
 create table if not exists public.files (
