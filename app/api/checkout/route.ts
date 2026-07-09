@@ -131,6 +131,7 @@ export async function POST(req: NextRequest) {
         console.log('HashKey 是否存在:', !!HashKey, 'len:', HashKey?.length);
         console.log('HashIV 是否存在:', !!HashIV, 'len:', HashIV?.length);
         console.log('MerchantID 是否存在:', !!MerchantID, 'len:', MerchantID?.length);
+        console.log('gatewayUrl:', gatewayUrl);
         console.log('plainParams:', plainParams);
         console.log('tradeData (raw):', tradeData);
         console.log('encodedTradeData:', encodedTradeData);
