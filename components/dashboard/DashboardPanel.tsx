@@ -270,11 +270,59 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     }, []);
 
     const fetchAdminActivityTaskIds = useCallback(async () => {
-        const { data } = await supabase
-            .from('task_activities')
-            .select('task_id');
-        setAdminActivityTaskIds(new Set((data ?? []).map((a: any) => a.task_id)));
+        const [{ data: acts }, { data: cmts }] = await Promise.all([
+            supabase
+                .from('task_activities')
+                .select('id, task_id, created_at')
+                .order('created_at', { ascending: false }),
+            supabase
+                .from('task_comments')
+                .select('id, task_id, created_at')
+                .eq('is_admin', true)
+                .order('created_at', { ascending: false })
+        ]);
+
+        const latestIds: Record<string, { id: string; time: number }> = {};
+
+        if (acts) {
+            acts.forEach((a: any) => {
+                const t = new Date(a.created_at).getTime();
+                if (!latestIds[a.task_id] || t > latestIds[a.task_id].time) {
+                    latestIds[a.task_id] = { id: `act-${a.id}`, time: t };
+                }
+            });
+        }
+        if (cmts) {
+            cmts.forEach((c: any) => {
+                const t = new Date(c.created_at).getTime();
+                if (!latestIds[c.task_id] || t > latestIds[c.task_id].time) {
+                    latestIds[c.task_id] = { id: `cmt-${c.id}`, time: t };
+                }
+            });
+        }
+
+        const unread = new Set<string>();
+        Object.entries(latestIds).forEach(([taskId, item]) => {
+            const seenId = localStorage.getItem(`seen-client-task-${taskId}`);
+            if (seenId !== item.id) {
+                unread.add(taskId);
+            }
+        });
+        setAdminActivityTaskIds(unread);
     }, []);
+
+    useEffect(() => {
+        if (!selectedTask?.real_id || timeline.length === 0) return;
+        const latest = timeline[timeline.length - 1];
+        if (latest) {
+            localStorage.setItem(`seen-client-task-${selectedTask.real_id}`, latest.id);
+            setAdminActivityTaskIds(prev => {
+                const next = new Set(prev);
+                next.delete(selectedTask.real_id);
+                return next;
+            });
+        }
+    }, [selectedTask?.real_id, timeline]);
 
     const fetchFiles = useCallback(async () => {
         const { data, error } = await supabase
@@ -320,10 +368,17 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 { event: '*', schema: 'public', table: 'task_activities' },
                 () => { fetchAdminActivityTaskIds(); }
             ).subscribe();
+        const cmtCh = supabase
+            .channel('client-comments-dot')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'task_comments' },
+                () => { fetchAdminActivityTaskIds(); }
+            ).subscribe();
         return () => {
             supabase.removeChannel(taskCh);
             supabase.removeChannel(projCh);
             supabase.removeChannel(actCh);
+            supabase.removeChannel(cmtCh);
         };
     }, [profile?.id, fetchTasks, fetchProjects, fetchAdminActivityTaskIds]);
 

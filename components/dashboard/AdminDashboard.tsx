@@ -182,10 +182,42 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const fetchClientCommentTaskIds = useCallback(async () => {
         const { data } = await supabase
             .from('task_comments')
-            .select('task_id')
-            .eq('is_admin', false);
-        setClientCommentTaskIds(new Set((data ?? []).map((c: any) => c.task_id)));
+            .select('id, task_id, created_at')
+            .eq('is_admin', false)
+            .order('created_at', { ascending: false });
+
+        if (!data) return;
+
+        const latestIds: Record<string, string> = {};
+        data.forEach((c: any) => {
+            if (!latestIds[c.task_id]) {
+                latestIds[c.task_id] = c.id;
+            }
+        });
+
+        const unread = new Set<string>();
+        Object.entries(latestIds).forEach(([taskId, commentId]) => {
+            const seenId = localStorage.getItem(`seen-admin-task-${taskId}`);
+            if (seenId !== commentId) {
+                unread.add(taskId);
+            }
+        });
+        setClientCommentTaskIds(unread);
     }, []);
+
+    useEffect(() => {
+        if (!expandedTaskId || taskComments.length === 0) return;
+        const latestClientCmt = [...taskComments].reverse().find(item => item.type === 'comment' && !item.is_admin);
+        if (latestClientCmt) {
+            const cmtId = latestClientCmt.id.replace('cmt-', '');
+            localStorage.setItem(`seen-admin-task-${expandedTaskId}`, cmtId);
+            setClientCommentTaskIds(prev => {
+                const next = new Set(prev);
+                next.delete(expandedTaskId);
+                return next;
+            });
+        }
+    }, [expandedTaskId, taskComments]);
 
     const fetchClientExtras = useCallback(async (clientId: string) => {
         const [{ data: ps }, { data: cs }] = await Promise.all([
