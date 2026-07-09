@@ -245,6 +245,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 merged.push({
                     id: `act-${a.id}`,
                     type: 'activity',
+                    task_id: a.task_id,
                     content: a.content,
                     created_at: a.created_at,
                     user_name: a.profiles?.name ?? 'Admin',
@@ -256,6 +257,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 merged.push({
                     id: `cmt-${c.id}`,
                     type: 'comment',
+                    task_id: c.task_id,
                     content: c.content,
                     created_at: c.created_at,
                     user_name: c.profiles?.name ?? (c.is_admin ? 'Admin' : 'Client'),
@@ -314,7 +316,7 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     useEffect(() => {
         if (!selectedTask?.real_id || timeline.length === 0) return;
         const latest = timeline[timeline.length - 1];
-        if (latest) {
+        if (latest && latest.task_id === selectedTask.real_id) {
             localStorage.setItem(`seen-client-task-${selectedTask.real_id}`, latest.id);
             setAdminActivityTaskIds(prev => {
                 const next = new Set(prev);
@@ -384,8 +386,8 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
 
     // 選取 task 時載入 timeline
     useEffect(() => {
+        setTimeline([]);
         if (!selectedTask) {
-            setTimeline([]);
             setCommentDraft(''); setAiCommentDraft('');
             return;
         }

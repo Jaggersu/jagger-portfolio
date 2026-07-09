@@ -50,6 +50,7 @@ interface TaskRow {
     user_id: string;
     project_id: string;
     client_name?: string;
+    description?: string;
 }
 
 interface TaskCommentRow {
@@ -208,7 +209,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     useEffect(() => {
         if (!expandedTaskId || taskComments.length === 0) return;
         const latestClientCmt = [...taskComments].reverse().find(item => item.type === 'comment' && !item.is_admin);
-        if (latestClientCmt) {
+        if (latestClientCmt && latestClientCmt.task_id === expandedTaskId) {
             const cmtId = latestClientCmt.id.replace('cmt-', '');
             localStorage.setItem(`seen-admin-task-${expandedTaskId}`, cmtId);
             setClientCommentTaskIds(prev => {
@@ -256,6 +257,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                 merged.push({
                     id: `act-${a.id}`,
                     type: 'activity',
+                    task_id: a.task_id,
                     content: a.content,
                     created_at: a.created_at,
                     user_name: a.profiles?.name ?? 'Admin',
@@ -267,6 +269,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                 merged.push({
                     id: `cmt-${c.id}`,
                     type: 'comment',
+                    task_id: c.task_id,
                     content: c.content,
                     created_at: c.created_at,
                     user_name: c.profiles?.name ?? (c.is_admin ? 'Admin' : 'Client'),
@@ -290,12 +293,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     }, [selectedClient, fetchClientExtras]);
 
     useEffect(() => {
-        if (!expandedTaskId) { setTaskComments([]); setCommentsTaskId(null); return; }
-        if (commentsTaskId !== expandedTaskId) {
-            setCommentsTaskId(expandedTaskId);
-            fetchTaskTimeline(expandedTaskId);
-        }
-    }, [expandedTaskId, commentsTaskId, fetchTaskTimeline]);
+        setTaskComments([]);
+        if (!expandedTaskId) { setCommentsTaskId(null); return; }
+        setCommentsTaskId(expandedTaskId);
+        fetchTaskTimeline(expandedTaskId);
+    }, [expandedTaskId, fetchTaskTimeline]);
 
     // ── Realtime ─────────────────────────────────────────────────
     useEffect(() => {
@@ -696,33 +698,38 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                 );
                                             })()}
                                         </div>
-                                        {/* Kanban columns */}
-                                        <div className="flex-1 overflow-x-auto p-5">
-                                            <div className="flex gap-4 min-w-[900px] h-full">
-                                                {KANBAN_COLS.map(colStatus => {
-                                                    const colTasks = tasks.filter(t => t.project_id === selectedProject.id && t.status === colStatus);
-                                                    const isAdding = addingToColumn === colStatus;
-                                                    return (
-                                                        <div key={colStatus} className="flex-1 flex flex-col min-w-[220px] bg-zinc-950/50 border border-zinc-900 rounded-lg">
-                                                            {/* Column header */}
-                                                            <div className="px-3 py-2.5 border-b border-zinc-900 flex items-center gap-2 shrink-0">
-                                                                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: STATUS_COLOR[colStatus] }} />
-                                                                <span className="text-xs font-bold" style={{ color: STATUS_COLOR[colStatus] }}>{STATUS_LABEL[colStatus]}</span>
-                                                                <span className="text-xs text-zinc-600 ml-auto">{colTasks.length}</span>
-                                                            </div>
-                                                            {/* Task cards */}
-                                                            <div className="flex-1 overflow-y-auto p-2 space-y-2"
-                                                                style={{ scrollbarWidth: 'thin', scrollbarColor: '#27272a transparent' }}>
-                                                                {colTasks.map(t => {
-                                                                    const isExpanded = expandedTaskId === t.id;
-                                                                    return (
-                                                                        <div key={t.id} className="bg-zinc-900/60 border border-zinc-900 rounded-lg">
-                                                                            {/* Card header */}
-                                                                            <div className="p-2.5 cursor-pointer"
+                                        {/* Kanban columns + Drawer side-by-side */}
+                                        <div className="flex-1 flex overflow-hidden">
+                                            {/* Column Scroll Container */}
+                                            <div className="flex-1 overflow-x-auto p-5">
+                                                <div className="flex gap-4 min-w-[900px] h-full">
+                                                    {KANBAN_COLS.map(colStatus => {
+                                                        const colTasks = tasks.filter(t => t.project_id === selectedProject.id && t.status === colStatus);
+                                                        const isAdding = addingToColumn === colStatus;
+                                                        return (
+                                                            <div key={colStatus} className="flex-1 flex flex-col min-w-[220px] bg-zinc-950/50 border border-zinc-900 rounded-lg">
+                                                                {/* Column header */}
+                                                                <div className="px-3 py-2.5 border-b border-zinc-900 flex items-center gap-2 shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: STATUS_COLOR[colStatus] }} />
+                                                                    <span className="text-xs font-bold" style={{ color: STATUS_COLOR[colStatus] }}>{STATUS_LABEL[colStatus]}</span>
+                                                                    <span className="text-xs text-zinc-600 ml-auto">{colTasks.length}</span>
+                                                                </div>
+                                                                {/* Task cards */}
+                                                                <div className="flex-1 overflow-y-auto p-2 space-y-2"
+                                                                    style={{ scrollbarWidth: 'thin', scrollbarColor: '#27272a transparent' }}>
+                                                                    {colTasks.map(t => {
+                                                                        const isSelected = expandedTaskId === t.id;
+                                                                        return (
+                                                                            <div
+                                                                                key={t.id}
                                                                                 onClick={() => {
-                                                                                    setExpandedTaskId(isExpanded ? null : t.id);
-                                                                                    if (!isExpanded) setActivityDraft('');
-                                                                                }}>
+                                                                                    setExpandedTaskId(isSelected ? null : t.id);
+                                                                                    if (!isSelected) setActivityDraft('');
+                                                                                }}
+                                                                                className={`bg-zinc-900/60 border rounded-lg p-2.5 cursor-pointer transition-all ${
+                                                                                    isSelected ? 'border-[#3b82f6]/60 bg-zinc-900' : 'border-zinc-900 hover:border-zinc-800'
+                                                                                }`}
+                                                                            >
                                                                                 <div className="flex items-start justify-between gap-2">
                                                                                     <div className="flex-1 min-w-0">
                                                                                         <div className="flex items-center gap-1.5">
@@ -746,164 +753,252 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                     <div className="text-[10px] text-zinc-600 mt-1">ETA: {t.eta}</div>
                                                                                 )}
                                                                             </div>
+                                                                        );
+                                                                    })}
 
-                                                                            {/* Expanded panel */}
-                                                                            {isExpanded && (
-                                                                                <div className="border-t border-zinc-900 p-2.5 space-y-3">
-                                                                                    {/* Status dropdown */}
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="text-[10px] text-zinc-600 shrink-0">STATUS</span>
-                                                                                        <select
-                                                                                            value={t.status}
-                                                                                            onChange={e => updateTaskStatus(t.id, e.target.value)}
-                                                                                            className="flex-1 bg-zinc-950 text-[10px] border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none cursor-pointer"
-                                                                                        >
-                                                                                            {KANBAN_COLS.map(s => (
-                                                                                                <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-                                                                                            ))}
-                                                                                        </select>
-                                                                                    </div>
-
-                                                                                    {/* Unified Chronological Feed */}
-                                                                                    <div className="border border-zinc-900 rounded p-2 bg-zinc-950/40 space-y-2 flex flex-col">
-                                                                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono flex items-center gap-2">
-                                                                                            <SatelliteDishIcon size={20} className="text-[#3b82f6]" />
-                                                                                            <span>// DISCUSSION & ACTIVITIES</span>
-                                                                                        </div>
-                                                                                        <div className="max-h-48 overflow-y-auto space-y-2.5 pr-1" style={{ scrollbarWidth: 'thin' }}>
-                                                                                            {taskComments.length === 0 ? (
-                                                                                                <div className="text-[10px] text-zinc-700 italic text-center py-2">尚無對話或動態</div>
-                                                                                            ) : (
-                                                                                                taskComments.map(item => {
-                                                                                                    if (item.type === 'activity') {
-                                                                                                        return (
-                                                                                                            <div key={item.id} className="flex flex-col items-center">
-                                                                                                                <div className="bg-zinc-900/60 border border-zinc-900 rounded px-2 py-0.5 text-center max-w-[95%]">
-                                                                                                                    <span className="text-[8px] text-zinc-500 font-mono block">{new Date(item.created_at).toLocaleString('zh-TW')}</span>
-                                                                                                                    <span className="text-[10px] text-zinc-400 font-mono">⚡ {item.user_name}: {item.content}</span>
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        );
-                                                                                                    } else {
-                                                                                                        const isAdmin = item.is_admin;
-                                                                                                        return (
-                                                                                                            <div key={item.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
-                                                                                                                <div className="flex items-center gap-1 px-1 text-[8px] text-zinc-500 font-mono">
-                                                                                                                    <span className="font-bold">{isAdmin ? 'Admin' : 'Client'}</span>
-                                                                                                                    <span>·</span>
-                                                                                                                    <span>{new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                                                                </div>
-                                                                                                                <div className={`max-w-[90%] rounded px-2 py-1 text-[11px] leading-relaxed border ${
-                                                                                                                    isAdmin 
-                                                                                                                        ? 'bg-zinc-900/80 border-zinc-800 text-zinc-200' 
-                                                                                                                        : 'bg-[#3b82f6]/5 border-[#3b82f6]/20 text-[#3b82f6]'
-                                                                                                                }`}>
-                                                                                                                    {item.content}
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        );
-                                                                                                    }
-                                                                                                })
-                                                                                            )}
-                                                                                            <div ref={adminChatEndRef} />
-                                                                                        </div>
-                                                                                    </div>
-
-                                                                                    {/* Actions/Textarea */}
-                                                                                    <div className="space-y-2">
-                                                                                        <textarea
-                                                                                            value={activityDraft}
-                                                                                            onChange={e => setActivityDraft(e.target.value)}
-                                                                                            placeholder="輸入訊息或進度更新..."
-                                                                                            rows={2}
-                                                                                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-xs text-zinc-200 placeholder-zinc-700 outline-none resize-none focus:border-[#3b82f6]/40"
-                                                                                        />
-                                                                                        <div className="flex items-center justify-between gap-1.5">
-                                                                                            <button onClick={() => { setExpandedTaskId(null); setActivityDraft(''); }}
-                                                                                                className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1.5 rounded hover:border-zinc-600 transition-colors">
-                                                                                                收合
-                                                                                            </button>
-                                                                                            <div className="flex-1" />
-                                                                                            <button
-                                                                                                onClick={() => submitComment(t.id)}
-                                                                                                disabled={activityLoading || !activityDraft.trim()}
-                                                                                                className="text-[10px] border border-[#3b82f6]/40 text-[#3b82f6] px-2.5 py-1.5 rounded font-bold disabled:opacity-50 transition-colors hover:bg-[#3b82f6]/10"
-                                                                                            >
-                                                                                                傳送留言
-                                                                                            </button>
-                                                                                            <button
-                                                                                                onClick={() => submitActivity(t.id)}
-                                                                                                disabled={activityLoading || !activityDraft.trim()}
-                                                                                                className="text-[10px] bg-[#3b82f6] text-black px-2.5 py-1.5 rounded font-bold disabled:opacity-50 transition-colors hover:bg-white"
-                                                                                            >
-                                                                                                發布動態
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
+                                                                    {/* Add Task inline form */}
+                                                                    {isAdding ? (
+                                                                        <div className="bg-zinc-900/80 border border-[#3b82f6]/30 rounded-lg p-3 space-y-2">
+                                                                            <input
+                                                                                type="text"
+                                                                                value={newTaskTitle}
+                                                                                onChange={e => setNewTaskTitle(e.target.value)}
+                                                                                placeholder="Task title…"
+                                                                                autoFocus
+                                                                                className="w-full bg-zinc-950 text-xs border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 placeholder-zinc-700 outline-none focus:border-[#3b82f6]/60"
+                                                                                onKeyDown={e => e.key === 'Enter' && createTask(selectedProject.id, clientUserId, colStatus)}
+                                                                            />
+                                                                            <div className="grid grid-cols-2 gap-1.5">
+                                                                                <select value={newTaskType} onChange={e => setNewTaskType(e.target.value)}
+                                                                                    className="bg-zinc-950 text-[10px] border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none">
+                                                                                    {['GENERAL','BRAND','WEB','PRINT','DEV','DESIGN'].map(typeOpt => <option key={typeOpt} value={typeOpt}>{typeOpt}</option>)}
+                                                                                </select>
+                                                                                <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value)}
+                                                                                    className="bg-zinc-950 text-[10px] border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none">
+                                                                                    <option value="HIGH">↑ High</option>
+                                                                                    <option value="MED">→ Medium</option>
+                                                                                    <option value="LOW">↓ Low</option>
+                                                                                </select>
+                                                                            </div>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={newTaskEta}
+                                                                                onChange={e => setNewTaskEta(e.target.value)}
+                                                                                placeholder="ETA (e.g. 3d)"
+                                                                                className="w-full bg-zinc-950 text-[10px] border border-zinc-800 rounded px-2 py-1.5 text-zinc-400 placeholder-zinc-700 outline-none"
+                                                                            />
+                                                                            <div className="flex gap-1.5">
+                                                                                <button onClick={() => { setAddingToColumn(null); setNewTaskTitle(''); }}
+                                                                                    className="flex-1 text-[10px] text-zinc-500 border border-zinc-800 py-1 rounded hover:border-zinc-600 transition-colors">
+                                                                                    Cancel
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => createTask(selectedProject.id, clientUserId, colStatus)}
+                                                                                    disabled={newTaskLoading || !newTaskTitle.trim()}
+                                                                                    className="flex-1 text-[10px] bg-[#3b82f6] text-black py-1 rounded font-bold disabled:opacity-50 hover:bg-white transition-colors"
+                                                                                >
+                                                                                    {newTaskLoading ? '…' : 'Add'}
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
-                                                                    );
-                                                                })}
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => { setAddingToColumn(colStatus); setExpandedTaskId(null); setNewTaskTitle(''); }}
+                                                                            className="w-full text-[10px] text-zinc-600 hover:text-zinc-400 border border-dashed border-zinc-800 hover:border-zinc-600 rounded py-1.5 transition-colors"
+                                                                        >
+                                                                            + Add Task
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
 
-                                                                {/* Add Task inline form */}
-                                                                {isAdding ? (
-                                                                    <div className="bg-zinc-900/80 border border-[#3b82f6]/30 rounded-lg p-3 space-y-2">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={newTaskTitle}
-                                                                            onChange={e => setNewTaskTitle(e.target.value)}
-                                                                            placeholder="Task title…"
-                                                                            autoFocus
-                                                                            className="w-full bg-zinc-950 text-xs border border-zinc-800 rounded px-2 py-1.5 text-zinc-200 placeholder-zinc-700 outline-none focus:border-[#3b82f6]/60"
-                                                                            onKeyDown={e => e.key === 'Enter' && createTask(selectedProject.id, clientUserId, colStatus)}
-                                                                        />
-                                                                        <div className="grid grid-cols-2 gap-1.5">
-                                                                            <select value={newTaskType} onChange={e => setNewTaskType(e.target.value)}
-                                                                                className="bg-zinc-950 text-[10px] border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none">
-                                                                                {['GENERAL','BRAND','WEB','PRINT','DEV','DESIGN'].map(t => <option key={t} value={t}>{t}</option>)}
-                                                                            </select>
-                                                                            <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value)}
-                                                                                className="bg-zinc-950 text-[10px] border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none">
-                                                                                <option value="HIGH">↑ High</option>
-                                                                                <option value="MED">→ Medium</option>
-                                                                                <option value="LOW">↓ Low</option>
-                                                                            </select>
-                                                                        </div>
-                                                                        <input
-                                                                            type="text"
-                                                                            value={newTaskEta}
-                                                                            onChange={e => setNewTaskEta(e.target.value)}
-                                                                            placeholder="ETA (e.g. 3d)"
-                                                                            className="w-full bg-zinc-950 text-[10px] border border-zinc-800 rounded px-2 py-1.5 text-zinc-400 placeholder-zinc-700 outline-none"
-                                                                        />
-                                                                        <div className="flex gap-1.5">
-                                                                            <button onClick={() => { setAddingToColumn(null); setNewTaskTitle(''); }}
-                                                                                className="flex-1 text-[10px] text-zinc-500 border border-zinc-800 py-1 rounded hover:border-zinc-600 transition-colors">
-                                                                                Cancel
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => createTask(selectedProject.id, clientUserId, colStatus)}
-                                                                                disabled={newTaskLoading || !newTaskTitle.trim()}
-                                                                                className="flex-1 text-[10px] bg-[#3b82f6] text-black py-1 rounded font-bold disabled:opacity-50 hover:bg-white transition-colors"
-                                                                            >
-                                                                                {newTaskLoading ? '…' : 'Add'}
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                ) : (
-                                                                    <button
-                                                                        onClick={() => { setAddingToColumn(colStatus); setExpandedTaskId(null); setNewTaskTitle(''); }}
-                                                                        className="w-full text-[10px] text-zinc-600 hover:text-zinc-400 border border-dashed border-zinc-800 hover:border-zinc-600 rounded py-1.5 transition-colors"
+                                            {/* ── Slide-in right drawer for task details (Linear style) ── */}
+                                            {(() => {
+                                                const activeTask = tasks.find(t => t.id === expandedTaskId);
+                                                if (!activeTask) return null;
+                                                return (
+                                                    <div className="w-[460px] shrink-0 border-l border-zinc-900 flex flex-col bg-[#0A0A0B] overflow-hidden relative"
+                                                        style={{ animation: 'slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                                                        <style dangerouslySetInnerHTML={{__html: `
+                                                            @keyframes slideInRight {
+                                                                from { transform: translateX(100%); }
+                                                                to { transform: translateX(0); }
+                                                            }
+                                                        `}} />
+                                                        {/* Header */}
+                                                        <div className="px-5 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
+                                                            <div className="min-w-0 flex-1 pr-4">
+                                                                <span className="text-[10px] text-zinc-600 font-mono tracking-widest">{activeTask.id}</span>
+                                                                <h2 className="text-sm font-bold text-white leading-snug mt-0.5 truncate" title={activeTask.title}>{activeTask.title}</h2>
+                                                            </div>
+                                                            <button onClick={() => setExpandedTaskId(null)} className="text-zinc-600 hover:text-zinc-400 text-[13px] transition-colors p-1">✕</button>
+                                                        </div>
+                                                        {/* Body */}
+                                                        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4"
+                                                            style={{ scrollbarWidth: 'thin', scrollbarColor: '#27272a transparent' }}>
+
+                                                            {/* Properties Grid (Linear style) */}
+                                                            <div className="border border-zinc-900 rounded-lg p-3 bg-zinc-950/20 text-xs space-y-3">
+                                                                <div className="flex items-center justify-between py-1 border-b border-zinc-900/40">
+                                                                    <span className="text-zinc-500 tracking-wider font-mono">STATUS</span>
+                                                                    <select
+                                                                        value={activeTask.status}
+                                                                        onChange={e => updateTaskStatus(activeTask.id, e.target.value)}
+                                                                        className="bg-zinc-950 text-xs border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none cursor-pointer w-32"
                                                                     >
-                                                                        + Add Task
-                                                                    </button>
-                                                                )}
+                                                                        {KANBAN_COLS.map(s => (
+                                                                            <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                                <div className="flex items-center justify-between py-1 border-b border-zinc-900/40">
+                                                                    <span className="text-zinc-500 tracking-wider font-mono">PRIORITY</span>
+                                                                    <select
+                                                                        value={activeTask.priority}
+                                                                        onChange={async (e) => {
+                                                                            const newVal = e.target.value;
+                                                                            const { error } = await supabase.from('tasks').update({ priority: newVal }).eq('id', activeTask.id);
+                                                                            if (!error) fetchTasks();
+                                                                        }}
+                                                                        className="bg-zinc-950 text-xs border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none cursor-pointer w-32"
+                                                                    >
+                                                                        <option value="HIGH">↑ High</option>
+                                                                        <option value="MED">→ Medium</option>
+                                                                        <option value="LOW">↓ Low</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div className="flex items-center justify-between py-1 border-b border-zinc-900/40">
+                                                                    <span className="text-zinc-500 tracking-wider font-mono">TYPE</span>
+                                                                    <select
+                                                                        value={activeTask.type}
+                                                                        onChange={async (e) => {
+                                                                            const newVal = e.target.value;
+                                                                            const { error } = await supabase.from('tasks').update({ type: newVal }).eq('id', activeTask.id);
+                                                                            if (!error) fetchTasks();
+                                                                        }}
+                                                                        className="bg-zinc-950 text-xs border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none cursor-pointer w-32"
+                                                                    >
+                                                                        {['GENERAL','BRAND','WEB','PRINT','DEV','DESIGN'].map(typeOpt => <option key={typeOpt} value={typeOpt}>{typeOpt}</option>)}
+                                                                    </select>
+                                                                </div>
+                                                                <div className="flex items-center justify-between py-1">
+                                                                    <span className="text-zinc-500 tracking-wider font-mono">ETA</span>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={activeTask.eta || ''}
+                                                                        placeholder="ETA (e.g. 3d)"
+                                                                        onChange={async (e) => {
+                                                                            const newVal = e.target.value;
+                                                                            setTasks(prev => prev.map(x => x.id === activeTask.id ? { ...x, eta: newVal } : x));
+                                                                        }}
+                                                                        onBlur={async (e) => {
+                                                                            await supabase.from('tasks').update({ eta: e.target.value }).eq('id', activeTask.id);
+                                                                            fetchTasks();
+                                                                        }}
+                                                                        className="bg-zinc-950 text-xs border border-zinc-800 rounded px-2 py-1 text-zinc-300 outline-none w-32 text-right"
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Description */}
+                                                            <div className="border border-zinc-900 rounded-lg p-3 bg-zinc-950/20">
+                                                                <div className="text-[10px] text-zinc-600 tracking-widest mb-1.5 font-mono">// DESCRIPTION</div>
+                                                                <textarea
+                                                                    value={activeTask.description || ''}
+                                                                    placeholder="點擊輸入任務描述..."
+                                                                    onChange={(e) => {
+                                                                        const newVal = e.target.value;
+                                                                        setTasks(prev => prev.map(x => x.id === activeTask.id ? { ...x, description: newVal } : x));
+                                                                    }}
+                                                                    onBlur={async (e) => {
+                                                                        await supabase.from('tasks').update({ description: e.target.value }).eq('id', activeTask.id);
+                                                                        fetchTasks();
+                                                                    }}
+                                                                    rows={3}
+                                                                    className="w-full bg-transparent text-xs text-zinc-400 placeholder-zinc-700 outline-none resize-none focus:text-zinc-200"
+                                                                />
+                                                            </div>
+
+                                                            {/* Unified Chronological Feed */}
+                                                            <div className="border border-zinc-900 rounded-lg p-4 flex-1 flex flex-col min-h-[300px] bg-zinc-950/40">
+                                                                <div className="text-[10px] text-zinc-600 tracking-widest mb-3 font-mono flex items-center gap-2">
+                                                                    <SatelliteDishIcon size={20} className="text-[#3b82f6]" />
+                                                                    <span>// DISCUSSION & ACTIVITIES</span>
+                                                                </div>
+                                                                <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-4 max-h-[320px]" style={{ scrollbarWidth: 'thin' }}>
+                                                                    {taskComments.length === 0 ? (
+                                                                        <div className="text-xs text-zinc-700 italic text-center py-6">尚無對話或動態</div>
+                                                                    ) : (
+                                                                        taskComments.map(item => {
+                                                                            if (item.type === 'activity') {
+                                                                                return (
+                                                                                    <div key={item.id} className="flex flex-col items-center py-1">
+                                                                                        <div className="bg-zinc-900/40 border border-zinc-900 rounded px-2.5 py-1 text-center max-w-[90%]">
+                                                                                            <span className="text-[9px] text-zinc-600 block mb-0.5 font-mono">{new Date(item.created_at).toLocaleString('zh-TW')}</span>
+                                                                                            <span className="text-[11px] text-zinc-400 font-mono">⚡ {item.user_name}: {item.content}</span>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            } else {
+                                                                                const isAdmin = item.is_admin;
+                                                                                return (
+                                                                                    <div key={item.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
+                                                                                        <div className="flex items-center gap-1.5 px-1 text-[9px] text-zinc-600 font-mono">
+                                                                                            <span className={isAdmin ? 'text-[#3b82f6]' : 'text-zinc-400'}>{isAdmin ? 'Jagger Team' : 'Client'}</span>
+                                                                                            <span>·</span>
+                                                                                            <span>{new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                                        </div>
+                                                                                        <div className={`mt-1 max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
+                                                                                            isAdmin
+                                                                                                ? 'bg-zinc-900 text-zinc-200 border border-zinc-800'
+                                                                                                : 'bg-[#3b82f6]/5 text-[#3b82f6] border border-[#3b82f6]/20'
+                                                                                        }`}>
+                                                                                            {item.content}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                        })
+                                                                    )}
+                                                                    <div ref={adminChatEndRef} />
+                                                                </div>
+
+                                                                {/* Action Input Box */}
+                                                                <div className="space-y-2.5 mt-auto">
+                                                                    <textarea
+                                                                        value={activityDraft}
+                                                                        onChange={e => setActivityDraft(e.target.value)}
+                                                                        placeholder="輸入訊息或進度更新..."
+                                                                        rows={2}
+                                                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-700 outline-none resize-none focus:border-[#3b82f6]/40"
+                                                                    />
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="flex-1" />
+                                                                        <button
+                                                                            onClick={() => submitComment(activeTask.id)}
+                                                                            disabled={activityLoading || !activityDraft.trim()}
+                                                                            className="text-[10px] border border-[#3b82f6]/40 text-[#3b82f6] px-3 py-1.5 rounded font-bold disabled:opacity-50 transition-colors hover:bg-[#3b82f6]/10"
+                                                                        >
+                                                                            傳送留言
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => submitActivity(activeTask.id)}
+                                                                            disabled={activityLoading || !activityDraft.trim()}
+                                                                            className="text-[10px] bg-[#3b82f6] text-black px-3 py-1.5 rounded font-bold disabled:opacity-50 transition-colors hover:bg-white"
+                                                                        >
+                                                                            發布動態
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    );
-                                                })}
-                                            </div>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 );
