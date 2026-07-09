@@ -129,6 +129,9 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     const [commentLoading, setCommentLoading]   = useState(false);
     const [commentAiLoading, setCommentAiLoading] = useState(false);
 
+    // Unread dots: tasks that have admin activity updates
+    const [adminActivityTaskIds, setAdminActivityTaskIds] = useState<Set<string>>(new Set());
+
     // ── Supabase: fetch helpers ───────────────────────────────────
     const fetchProjects = useCallback(async () => {
         const { data, error } = await supabase
@@ -197,6 +200,13 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         }
     }, []);
 
+    const fetchAdminActivityTaskIds = useCallback(async () => {
+        const { data } = await supabase
+            .from('task_activities')
+            .select('task_id');
+        setAdminActivityTaskIds(new Set((data ?? []).map((a: any) => a.task_id)));
+    }, []);
+
     const fetchFiles = useCallback(async () => {
         const { data, error } = await supabase
             .from('files')
@@ -216,8 +226,8 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     }, []);
 
     useEffect(() => {
-        Promise.all([fetchProjects(), fetchTasks()]);
-    }, [fetchProjects, fetchTasks]);
+        Promise.all([fetchProjects(), fetchTasks(), fetchAdminActivityTaskIds()]);
+    }, [fetchProjects, fetchTasks, fetchAdminActivityTaskIds]);
     useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
     // ── Supabase Realtime ─────────────────────────────────────────
@@ -235,11 +245,18 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${profile.id}` },
                 () => { fetchProjects(); fetchTasks(); }
             ).subscribe();
+        const actCh = supabase
+            .channel('client-activities')
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'task_activities' },
+                () => { fetchAdminActivityTaskIds(); }
+            ).subscribe();
         return () => {
             supabase.removeChannel(taskCh);
             supabase.removeChannel(projCh);
+            supabase.removeChannel(actCh);
         };
-    }, [profile?.id, fetchTasks, fetchProjects]);
+    }, [profile?.id, fetchTasks, fetchProjects, fetchAdminActivityTaskIds]);
 
     // 選取 task 時載入 activity / comments
     useEffect(() => {
@@ -763,9 +780,14 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                     onClick={() => setSelectedTask(isSelected ? null : task)}
                                                     className={`grid grid-cols-12 gap-4 px-6 py-3.5 cursor-pointer transition-colors ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/40'}`}>
                                                     <div className={`col-span-1 text-[13px] font-bold ${p.color}`}>{p.icon}</div>
-                                                    <div className="col-span-5">
-                                                        <div className="text-sm text-zinc-200 truncate">{task.title}</div>
-                                                        <div className="text-xs text-zinc-700 mt-0.5">{task.id}</div>
+                                                    <div className="col-span-5 flex flex-col justify-center min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm text-zinc-200 truncate block">{task.title}</span>
+                                                            {adminActivityTaskIds.has(task.id) && (
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] shrink-0" title="Admin 新更新" />
+                                                            )}
+                                                        </div>
+                                                        <div className="text-xs text-zinc-700 mt-0.5 truncate">{task.id}</div>
                                                     </div>
                                                     <div className="col-span-2">
                                                         <span className="text-xs text-zinc-500 border border-zinc-800 px-1.5 py-0.5 rounded">{task.type}</span>

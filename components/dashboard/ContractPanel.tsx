@@ -155,6 +155,19 @@ export default function ContractPanel({ plan, onClose, embedded = false }: Contr
         if (formSubmitRef.current) return;
         formSubmitRef.current = true;
         setPaying(true);
+
+        // Build full contract text for storage
+        const timeline = contractParams.timeline || '待確認';
+        const contractContent = CONTRACT_CLAUSES
+            .map(c => `${c.num}. ${c.title}\n${c.body}`)
+            .join('\n\n')
+            .replace('[[AMOUNT]]', `NT$ ${amount.toLocaleString()}`)
+            .replace('[[TIMELINE]]', timeline);
+        // Project name: plan + timeline if available
+        const projectTitle = contractParams.timeline?.trim()
+            ? `${plan} — ${contractParams.timeline.trim()}`
+            : `${plan} 新案件`;
+
         try {
             const res = await fetch('/api/checkout', {
                 method: 'POST',
@@ -162,10 +175,12 @@ export default function ContractPanel({ plan, onClose, embedded = false }: Contr
                 body: JSON.stringify({
                     projectId: 'new',
                     amount,
-                    title: `${plan} — ${contractParams.timeline}`,
-                    email: profile?.email ?? '',
-                    userId: profile?.id ?? '',
+                    title: projectTitle,
+                    email:    profile?.email ?? '',
+                    userId:   profile?.id ?? '',
                     plan,
+                    timeline,
+                    content:  contractContent,
                 }),
             });
             const data = await res.json();

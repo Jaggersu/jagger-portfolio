@@ -126,6 +126,10 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [newTaskPriority, setNewTaskPriority] = useState('MED');
     const [newTaskEta, setNewTaskEta]         = useState('');
     const [newTaskLoading, setNewTaskLoading] = useState(false);
+    const [newProjectError, setNewProjectError] = useState('');
+
+    // Unread dots: task IDs that have client (is_admin=false) comments
+    const [clientCommentTaskIds, setClientCommentTaskIds] = useState<Set<string>>(new Set());
 
     const closeIconRef = useRef<AnimatedIconHandle>(null);
     const iconRefs     = useRef<(AnimatedIconHandle | null)[]>([]);
@@ -169,6 +173,14 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         })));
     }, []);
 
+    const fetchClientCommentTaskIds = useCallback(async () => {
+        const { data } = await supabase
+            .from('task_comments')
+            .select('task_id')
+            .eq('is_admin', false);
+        setClientCommentTaskIds(new Set((data ?? []).map((c: any) => c.task_id)));
+    }, []);
+
     const fetchClientExtras = useCallback(async (clientId: string) => {
         const [{ data: ps }, { data: cs }] = await Promise.all([
             supabase.from('projects').select('id,name,status,created_at,user_id,tasks(status)').eq('user_id', clientId),
@@ -206,8 +218,8 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
     useEffect(() => {
         setLoading(true);
-        Promise.all([fetchClients(), fetchProjects(), fetchTasks()]).finally(() => setLoading(false));
-    }, [fetchClients, fetchProjects, fetchTasks]);
+        Promise.all([fetchClients(), fetchProjects(), fetchTasks(), fetchClientCommentTaskIds()]).finally(() => setLoading(false));
+    }, [fetchClients, fetchProjects, fetchTasks, fetchClientCommentTaskIds]);
 
     useEffect(() => {
         if (selectedClient) fetchClientExtras(selectedClient.id);
@@ -233,6 +245,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         const commentCh = supabase.channel('admin-comments')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments' }, () => {
                 if (commentsTaskId) fetchTaskComments(commentsTaskId);
+                fetchClientCommentTaskIds();
             })
             .subscribe();
         return () => {
@@ -244,7 +257,9 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
     // ── Actions ──────────────────────────────────────────────────
     const createProject = useCallback(async () => {
-        if (!newProjectName.trim() || !newProjectClientId) return;
+        if (!newProjectClientId) { setNewProjectError('請先選擇 client'); return; }
+        if (!newProjectName.trim()) { setNewProjectError('請填寫專案名稱'); return; }
+        setNewProjectError('');
         setNewProjectLoading(true);
         const { error } = await supabase
             .from('projects')
@@ -521,12 +536,15 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                     />
                                                     <button
                                                         onClick={createProject}
-                                                        disabled={newProjectLoading || !newProjectName.trim() || !newProjectClientId}
+                                                        disabled={newProjectLoading}
                                                         className="text-xs bg-[#3b82f6] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
                                                     >
                                                         {newProjectLoading ? '…' : '+ New Project'}
                                                     </button>
                                                 </div>
+                                                {newProjectError && (
+                                                    <div className="text-[10px] text-red-400 mt-1.5">⚠ {newProjectError}</div>
+                                                )}
                                             </div>
                                             {/* Cards */}
                                             <div className="grid grid-cols-3 gap-4 p-5">
@@ -625,7 +643,12 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                 }}>
                                                                                 <div className="flex items-start justify-between gap-2">
                                                                                     <div className="flex-1 min-w-0">
-                                                                                        <div className="text-xs text-zinc-300 font-medium leading-snug">{t.title}</div>
+                                                                                        <div className="flex items-center gap-1.5">
+                                                                                            <span className="text-xs text-zinc-300 font-medium leading-snug">{t.title}</span>
+                                                                                            {clientCommentTaskIds.has(t.id) && (
+                                                                                                <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] shrink-0" title="Client 留言" />
+                                                                                            )}
+                                                                                        </div>
                                                                                         <div className="text-[10px] text-zinc-600 mt-0.5">{t.client_name} · {t.type}</div>
                                                                                     </div>
                                                                                     <div className="flex items-center gap-1 shrink-0">

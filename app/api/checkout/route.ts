@@ -19,7 +19,7 @@ function sha256Sign(data: string): string {
 
 export async function POST(req: NextRequest) {
     try {
-        const { projectId, amount, title, email, userId, plan } = await req.json();
+        const { projectId, amount, title, email, userId, plan, timeline, content } = await req.json();
 
         // ── Mock 模式：不跳藍新，直接寫入 DB ──
         if (process.env.PAYMENT_MOCK === 'true') {
@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
                     project_id: project.id,
                     user_id: userId,
                     status: 'SIGNED',
-                    metadata: { plan, amount, mock: true },
+                    content: content || null,
+                    metadata: { plan, amount, timeline: timeline || null, mock: true },
                     signed_at: new Date().toISOString(),
                 });
             if (contractErr) throw contractErr;

@@ -154,14 +154,16 @@ export default function AdminContractPanel() {
                         {/* Meta grid */}
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             {[
-                                { label: 'PROJECT',   value: selected.project_name ?? '—' },
-                                { label: 'PLAN',      value: selected.plan_type ?? '—' },
-                                { label: 'CREATED',   value: new Date(selected.created_at).toLocaleDateString('zh-TW') },
+                                { label: 'PROJECT',  value: selected.project_name ?? '—' },
+                                { label: 'PLAN',     value: selected.plan_type ?? '—' },
+                                { label: 'AMOUNT',   value: selected.metadata?.amount ? `NT$ ${Number(selected.metadata.amount).toLocaleString()}` : '—', highlight: true },
+                                { label: 'TIMELINE', value: selected.metadata?.timeline || '—', highlight: !!selected.metadata?.timeline },
+                                { label: 'CREATED',  value: new Date(selected.created_at).toLocaleDateString('zh-TW') },
                                 { label: 'SIGNED AT', value: selected.signed_at ? new Date(selected.signed_at).toLocaleString('zh-TW') : '—' },
-                            ].map(({ label, value }) => (
+                            ].map(({ label, value, highlight }) => (
                                 <div key={label} className="border border-zinc-900 rounded-lg p-3">
                                     <div className="text-xs text-zinc-600 mb-1 tracking-widest">{label}</div>
-                                    <div className="text-zinc-300">{value}</div>
+                                    <div className={highlight ? 'text-white font-bold' : 'text-zinc-300'}>{value}</div>
                                 </div>
                             ))}
                         </div>
