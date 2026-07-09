@@ -811,7 +811,12 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                         >
                                                             <div className="flex items-start justify-between mb-4">
                                                                 <div>
-                                                                    <div className="text-[15px] font-bold text-white group-hover:text-[#FF5500] transition-colors leading-snug">{project.name}</div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="text-[15px] font-bold text-white group-hover:text-[#FF5500] transition-colors leading-snug">{project.name}</div>
+                                                                        {ptasks.some(t => adminActivityTaskIds.has(t.real_id)) && (
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] shrink-0 animate-pulse" title="有未讀更新" />
+                                                                        )}
+                                                                    </div>
                                                                     <div className="text-xs text-zinc-600 mt-0.5">{ptasks.length} tasks</div>
                                                                 </div>
                                                                 <span className="text-[10px] text-emerald-400 border border-emerald-900/60 px-2 py-0.5 rounded tracking-widest shrink-0 ml-3">ACTIVE</span>
