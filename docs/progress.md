@@ -121,13 +121,22 @@
 
 8. **測試與正式部署**
    - 完整走過付款流程驗證 callback / return 都能建立 tasks
-   - 移除測試用 seed 按鈕或加上 dev-only flag
+   - 已在 Client Dashboard 移除測試用 seed 按鈕
+   - 驗證 RLS 修復後 Supabase 不再回傳 500
 
 ---
 
-### 明日建議優先順序
+### 下一步優先順序
 
-1. 先驗證目前已完成的 Client Task Detail Panel 與 Admin Activity Update 功能是否正常運作
-2. 接著做 **Project-centric 重構**（Admin 開 Project、Client 看 Project cards）
-3. 再做 **Client Submit Request** 與 **Admin Kanban board**
-4. 最後處理 Contracts 內容儲存與 fuzzy search
+1. **Client Project-centric 顯示**（最高）
+   - Client Dashboard 改為顯示 Project cards + 進度條
+   - 點開 Project 後顯示其下的 tasks
+2. **Client Submit Request**
+   - 取代原本 New Project 按鈕，讓客戶提交新需求
+3. **Contracts 強化**
+   - 簽約時寫入 contract content + signature snapshot
+   - Admin Contract Panel 加入 fuzzy search
+4. **Realtime 同步驗證**
+   - Admin 改 task / 加 activity 後 Client 即時更新
+   - Client 加 comment 後 Admin 即時更新
+5. **UI 優化與部署驗證**
