@@ -14,6 +14,57 @@ interface DashboardPanelProps {
     onClose: () => void;
 }
 
+function StatusIcon({ status, className }: { status: string; className?: string }) {
+    if (status === 'QUEUED') {
+        return (
+            <svg className={`w-3.5 h-3.5 ${className}`} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+        );
+    }
+    if (status === 'IN_PROGRESS') {
+        return (
+            <svg className={`w-3.5 h-3.5 ${className}`} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M8 1.75C11.4518 1.75 14.25 4.54822 14.25 8C14.25 11.4518 11.4518 14.25 8 14.25V1.75Z" fill="currentColor" />
+            </svg>
+        );
+    }
+    if (status === 'REVIEW') {
+        return (
+            <svg className={`w-3.5 h-3.5 ${className}`} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2.5 2.5" />
+            </svg>
+        );
+    }
+    if (status === 'DELIVERED') {
+        return (
+            <svg className={`w-3.5 h-3.5 ${className}`} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.25" fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M5.5 8L7 9.5L10.5 6" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+        );
+    }
+    return (
+        <svg className={`w-3.5 h-3.5 ${className}`} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+    );
+}
+
+function PriorityIcon({ priority, className }: { priority: string; className?: string }) {
+    const isLow = priority === 'LOW';
+    const isMed = priority === 'MED';
+    const isHigh = priority === 'HIGH';
+    return (
+        <svg className={`w-3.5 h-3.5 ${className}`} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="10" width="2.5" height="4" rx="0.5" fill={isLow || isMed || isHigh ? 'currentColor' : '#27272a'} />
+            <rect x="6.75" y="7" width="2.5" height="7" rx="0.5" fill={isMed || isHigh ? 'currentColor' : '#27272a'} />
+            <rect x="11.5" y="4" width="2.5" height="10" rx="0.5" fill={isHigh ? 'currentColor' : '#27272a'} />
+        </svg>
+    );
+}
+
 type TaskStatus = 'QUEUED' | 'IN_PROGRESS' | 'REVIEW' | 'DELIVERED';
 type NavItem = 'projects' | 'files' | 'contract' | 'settings';
 type SettingsTab = 'account' | 'billing' | 'integrations';
@@ -121,13 +172,21 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         telegramWebhook:  '',
     });
 
-    // ── Task detail: activity & comments ─────────────────────────
-    const [activities, setActivities]           = useState<TaskActivity[]>([]);
-    const [comments, setComments]               = useState<TaskComment[]>([]);
+    // ── Task detail: unified timeline feed ────────────────────────
+    const [timeline, setTimeline]               = useState<any[]>([]);
     const [commentDraft, setCommentDraft]       = useState('');
     const [aiCommentDraft, setAiCommentDraft]   = useState('');
     const [commentLoading, setCommentLoading]   = useState(false);
     const [commentAiLoading, setCommentAiLoading] = useState(false);
+    const chatEndRef                            = React.useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = useCallback(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, []);
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [timeline, scrollToBottom]);
 
     // Unread dots: tasks that have admin activity updates
     const [adminActivityTaskIds, setAdminActivityTaskIds] = useState<Set<string>>(new Set());
@@ -164,40 +223,49 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         setLoading(false);
     }, []);
 
-    const fetchActivities = useCallback(async (taskId: string) => {
-        const { data, error } = await supabase
-            .from('task_activities')
-            .select('id,task_id,content,created_at,profiles(name)')
-            .eq('task_id', taskId)
-            .order('created_at', { ascending: false });
-        if (!error && data) {
-            setActivities(data.map((a: any) => ({
-                id:         a.id,
-                task_id:    a.task_id,
-                content:    a.content,
-                created_at: a.created_at,
-                user_name:  a.profiles?.name ?? 'Admin',
-            })));
-        }
-    }, []);
+    const fetchTaskTimeline = useCallback(async (taskId: string) => {
+        const [{ data: acts, error: actErr }, { data: cmts, error: cmtErr }] = await Promise.all([
+            supabase
+                .from('task_activities')
+                .select('id,task_id,content,created_at,profiles(name)')
+                .eq('task_id', taskId),
+            supabase
+                .from('task_comments')
+                .select('id,task_id,user_id,content,is_admin,created_at,profiles(name)')
+                .eq('task_id', taskId)
+        ]);
 
-    const fetchComments = useCallback(async (taskId: string) => {
-        const { data, error } = await supabase
-            .from('task_comments')
-            .select('id,task_id,user_id,content,is_admin,created_at,profiles(name)')
-            .eq('task_id', taskId)
-            .order('created_at', { ascending: true });
-        if (!error && data) {
-            setComments(data.map((c: any) => ({
-                id:         c.id,
-                task_id:    c.task_id,
-                user_id:    c.user_id,
-                content:    c.content,
-                is_admin:   c.is_admin,
-                created_at: c.created_at,
-                user_name:  c.profiles?.name ?? (c.is_admin ? 'Admin' : 'Client'),
-            })));
+        if (actErr) console.error(actErr);
+        if (cmtErr) console.error(cmtErr);
+
+        const merged: any[] = [];
+        if (acts) {
+            acts.forEach((a: any) => {
+                merged.push({
+                    id: `act-${a.id}`,
+                    type: 'activity',
+                    content: a.content,
+                    created_at: a.created_at,
+                    user_name: a.profiles?.name ?? 'Admin',
+                });
+            });
         }
+        if (cmts) {
+            cmts.forEach((c: any) => {
+                merged.push({
+                    id: `cmt-${c.id}`,
+                    type: 'comment',
+                    content: c.content,
+                    created_at: c.created_at,
+                    user_name: c.profiles?.name ?? (c.is_admin ? 'Admin' : 'Client'),
+                    is_admin: c.is_admin,
+                });
+            });
+        }
+
+        // Sort chronologically (oldest first, newest last)
+        merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        setTimeline(merged);
     }, []);
 
     const fetchAdminActivityTaskIds = useCallback(async () => {
@@ -258,30 +326,29 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         };
     }, [profile?.id, fetchTasks, fetchProjects, fetchAdminActivityTaskIds]);
 
-    // 選取 task 時載入 activity / comments
+    // 選取 task 時載入 timeline
     useEffect(() => {
         if (!selectedTask) {
-            setActivities([]); setComments([]);
+            setTimeline([]);
             setCommentDraft(''); setAiCommentDraft('');
             return;
         }
-        fetchActivities(selectedTask.real_id);
-        fetchComments(selectedTask.real_id);
-    }, [selectedTask, fetchActivities, fetchComments]);
+        fetchTaskTimeline(selectedTask.real_id);
+    }, [selectedTask, fetchTaskTimeline]);
 
     // 監聽 activity / comment realtime
     useEffect(() => {
         if (!selectedTask?.real_id) return;
         const aCh = supabase.channel(`client-task-activities-${selectedTask.real_id}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'task_activities', filter: `task_id=eq.${selectedTask.real_id}` },
-                () => fetchActivities(selectedTask.real_id))
+                () => fetchTaskTimeline(selectedTask.real_id))
             .subscribe();
         const cCh = supabase.channel(`client-task-comments-${selectedTask.real_id}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments', filter: `task_id=eq.${selectedTask.real_id}` },
-                () => fetchComments(selectedTask.real_id))
+                () => fetchTaskTimeline(selectedTask.real_id))
             .subscribe();
         return () => { supabase.removeChannel(aCh); supabase.removeChannel(cCh); };
-    }, [selectedTask?.real_id, fetchActivities, fetchComments]);
+    }, [selectedTask?.real_id, fetchTaskTimeline]);
 
     const handleSignOut = () => { reset(); onClose(); };
 
@@ -342,9 +409,9 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
             alert(`留言失敗：${error.message}`);
         } else {
             setCommentDraft(''); setAiCommentDraft('');
-            fetchComments(selectedTask.real_id);
+            fetchTaskTimeline(selectedTask.real_id);
         }
-    }, [commentDraft, aiCommentDraft, selectedTask, profile, fetchComments]);
+    }, [commentDraft, aiCommentDraft, selectedTask, profile, fetchTaskTimeline]);
 
     const handleAiComment = useCallback(async () => {
         if (!selectedTask?.real_id || !commentDraft.trim()) return;
@@ -369,126 +436,125 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     const renderTaskDetail = (task: Task) => {
         const s = STATUS_CONFIG[task.status] || { label: task.status || 'Unknown', color: 'text-zinc-500', bg: 'bg-zinc-900', dot: 'bg-zinc-600', progress: 0 };
         const p = PRIORITY_CONFIG[task.priority] || { label: task.priority || 'Unknown', color: 'text-zinc-500', icon: '•' };
-        const latestActivity = activities[0];
         return (
-            <div className="w-1/2 flex flex-col overflow-hidden bg-[#0A0A0B]">
+            <div className="w-[460px] shrink-0 border-l border-zinc-900 flex flex-col bg-[#0A0A0B] overflow-hidden relative"
+                style={{ animation: 'slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+                <style dangerouslySetInnerHTML={{__html: `
+                    @keyframes slideInRight {
+                        from { transform: translateX(100%); }
+                        to { transform: translateX(0); }
+                    }
+                `}} />
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
-                    <div>
-                        <span className="text-xs text-zinc-600">{task.id}</span>
-                        <h2 className="text-base font-bold text-white leading-snug mt-0.5">{task.title}</h2>
+                    <div className="min-w-0 flex-1 pr-4">
+                        <span className="text-[10px] text-zinc-600 font-mono tracking-widest">{task.id}</span>
+                        <h2 className="text-sm font-bold text-white leading-snug mt-0.5 truncate" title={task.title}>{task.title}</h2>
                     </div>
-                    <button onClick={() => setSelectedTask(null)} className="text-zinc-700 hover:text-zinc-400 text-[13px] transition-colors">✕</button>
+                    <button onClick={() => setSelectedTask(null)} className="text-zinc-600 hover:text-zinc-400 text-[13px] transition-colors p-1">✕</button>
                 </div>
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4"
                     style={{ scrollbarWidth: 'thin', scrollbarColor: '#27272a transparent' }}>
 
-                    {/* Status + Priority */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="border border-zinc-900 rounded-lg p-3">
-                            <div className="text-[11px] text-zinc-600 tracking-widest mb-2">STATUS</div>
-                            <div className={`flex items-center gap-1.5 text-[13px] ${s.color} mb-2.5`}>
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
-                                {s.label}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-                                    <div className="h-full rounded-full transition-all duration-500"
-                                        style={{
-                                            width: `${s.progress}%`,
-                                            background: task.status === 'DELIVERED' ? '#34d399'
-                                                : task.status === 'REVIEW' ? '#facc15'
-                                                : task.status === 'IN_PROGRESS' ? '#FF5500'
-                                                : '#52525b'
-                                        }} />
-                                </div>
-                                <span className="text-xs text-zinc-500 w-8 text-right">{s.progress}%</span>
+                    {/* Properties grid (Linear style) */}
+                    <div className="border border-zinc-900 rounded-lg p-3.5 space-y-3 bg-zinc-950/20 text-xs">
+                        <div className="flex items-center justify-between py-1 border-b border-zinc-900/40">
+                            <span className="text-zinc-500 tracking-wider font-mono">STATUS</span>
+                            <div className="flex items-center gap-1.5 font-medium">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+                                <span className={s.color}>{s.label}</span>
                             </div>
                         </div>
-                        <div className="border border-zinc-900 rounded-lg p-3">
-                            <div className="text-[11px] text-zinc-600 tracking-widest mb-1.5">PRIORITY</div>
-                            <span className={`text-[13px] ${p.color}`}>{p.icon} {p.label}</span>
+                        <div className="flex items-center justify-between py-1 border-b border-zinc-900/40">
+                            <span className="text-zinc-500 tracking-wider font-mono">PRIORITY</span>
+                            <span className={`font-medium ${p.color}`}>{p.icon} {p.label}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-1 border-b border-zinc-900/40">
+                            <span className="text-zinc-500 tracking-wider font-mono">TYPE</span>
+                            <span className="text-zinc-300 font-mono border border-zinc-800 px-1.5 py-0.5 rounded text-[10px]">{task.type}</span>
+                        </div>
+                        <div className="flex items-center justify-between py-1">
+                            <span className="text-zinc-500 tracking-wider font-mono">ETA</span>
+                            <span className="text-zinc-300">{task.eta}</span>
                         </div>
                     </div>
 
-                    {/* Type + ETA + Description */}
-                    <div className="border border-zinc-900 rounded-lg p-4">
-                        <div className="grid grid-cols-2 gap-4 mb-3">
-                            <div>
-                                <div className="text-[11px] text-zinc-600 tracking-widest mb-1">TYPE</div>
-                                <span className="text-[13px] text-zinc-400 border border-zinc-800 px-1.5 py-0.5 rounded">{task.type}</span>
-                            </div>
-                            <div>
-                                <div className="text-[11px] text-zinc-600 tracking-widest mb-1">ETA</div>
-                                <span className="text-[13px] text-zinc-400">{task.eta}</span>
-                            </div>
+                    {/* Description */}
+                    <div className="border border-zinc-900 rounded-lg p-4 bg-zinc-950/20">
+                        <div className="text-[10px] text-zinc-600 tracking-widest mb-1.5 font-mono">// DESCRIPTION</div>
+                        <p className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap">{task.description ?? '無描述。'}</p>
+                    </div>
+
+                    {/* Unified Timeline Chat Feed */}
+                    <div className="border border-zinc-900 rounded-lg p-4 flex-1 flex flex-col min-h-[300px] bg-zinc-950/40">
+                        <div className="text-[10px] text-zinc-600 tracking-widest mb-3 font-mono">// DISCUSSION & FEED</div>
+                        
+                        {/* Feed Messages */}
+                        <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-4 max-h-[350px]" style={{ scrollbarWidth: 'thin' }}>
+                            {timeline.length === 0 ? (
+                                <div className="text-xs text-zinc-700 italic text-center py-6">尚無對話或動態更新</div>
+                            ) : (
+                                timeline.map((item) => {
+                                    if (item.type === 'activity') {
+                                        return (
+                                            <div key={item.id} className="flex flex-col items-center py-1">
+                                                <div className="bg-zinc-900/40 border border-zinc-900 rounded px-2.5 py-1 text-center max-w-[90%]">
+                                                    <span className="text-[9px] text-zinc-600 block mb-0.5 font-mono">{new Date(item.created_at).toLocaleString('zh-TW')}</span>
+                                                    <span className="text-[11px] text-zinc-400 font-mono">⚡ {item.user_name}: {item.content}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    } else {
+                                        // Comment bubble
+                                        const isAdmin = item.is_admin;
+                                        return (
+                                            <div key={item.id} className={`flex flex-col ${isAdmin ? 'items-start' : 'items-end'}`}>
+                                                <div className="flex items-center gap-1.5 mb-1 px-1 text-[9px] text-zinc-500 font-mono">
+                                                    <span className="font-bold">{isAdmin ? 'Jagger Team' : item.user_name}</span>
+                                                    <span>·</span>
+                                                    <span>{new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                                <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap border ${
+                                                    isAdmin 
+                                                        ? 'bg-zinc-900/80 border-zinc-800 text-zinc-200' 
+                                                        : 'bg-[#FF5500]/5 border-[#FF5500]/20 text-[#FF5500]'
+                                                }`}>
+                                                    {item.content}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                })
+                            )}
+                            <div ref={chatEndRef} />
                         </div>
-                        <div className="text-[11px] text-zinc-600 tracking-widest mb-1.5">DESCRIPTION</div>
-                        <p className="text-sm text-zinc-400 leading-relaxed">{task.description ?? '—'}</p>
-                    </div>
 
-                    {/* Activity Update (A → C) */}
-                    <div className="border border-zinc-900 rounded-lg p-4">
-                        <div className="text-[11px] text-zinc-600 tracking-widest mb-3">// ACTIVITY UPDATE</div>
-                        {latestActivity ? (
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-[#FF5500]">{latestActivity.user_name}</span>
-                                    <span className="text-xs text-zinc-600">{new Date(latestActivity.created_at).toLocaleString('zh-TW')}</span>
-                                </div>
-                                <p className="text-sm text-zinc-300 leading-relaxed border-l-2 border-yellow-500/70 pl-3">
-                                    {latestActivity.content}
-                                </p>
-                                {activities.length > 1 && (
-                                    <div className="text-xs text-zinc-600 pt-1">+ {activities.length - 1} 則較早更新</div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="text-xs text-zinc-700 italic">No activity update yet.</div>
-                        )}
-                    </div>
-
-                    {/* Comments (C → A) */}
-                    <div className="border border-zinc-900 rounded-lg p-4 space-y-4">
-                        <div className="text-[11px] text-zinc-600 tracking-widest">// COMMENTS</div>
-                        {comments.length > 0 && (
-                            <div className="space-y-3">
-                                {comments.map(c => (
-                                    <div key={c.id} className={`rounded-lg p-3 border ${c.is_admin ? 'border-zinc-800 bg-zinc-900/50' : 'border-[#FF5500]/20 bg-[#FF5500]/5'}`}>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="text-xs font-bold text-zinc-300">{c.user_name}</span>
-                                            <span className="text-[10px] text-zinc-500">{new Date(c.created_at).toLocaleString('zh-TW')}</span>
-                                        </div>
-                                        <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{c.content}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="space-y-2">
+                        {/* Textarea Input */}
+                        <div className="space-y-2 pt-2 border-t border-zinc-900">
                             <textarea
                                 value={aiCommentDraft || commentDraft}
                                 onChange={e => { setCommentDraft(e.target.value); setAiCommentDraft(''); }}
-                                placeholder="Write a comment…"
-                                rows={3}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60 resize-none"
+                                placeholder="留下留言與 Jagger Team 對話..."
+                                rows={2}
+                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60 resize-none font-sans"
                             />
                             {commentDraft.trim() && (
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={handleAiComment}
                                         disabled={commentAiLoading}
-                                        className="text-xs text-[#FF5500] border border-[#FF5500]/40 hover:bg-[#FF5500]/10 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                                        className="text-[10px] text-[#FF5500] border border-[#FF5500]/40 hover:bg-[#FF5500]/10 px-2.5 py-1 rounded transition-colors disabled:opacity-50 font-mono"
                                     >
-                                        {commentAiLoading ? '⚡ Generating…' : '⚡ /ai Polish'}
+                                        {commentAiLoading ? '⚡ Generating…' : '⚡ /ai 修飾'}
                                     </button>
                                     <div className="flex-1" />
                                     <button
                                         onClick={handleSubmitComment}
                                         disabled={commentLoading || !(aiCommentDraft || commentDraft).trim()}
-                                        className="text-xs bg-[#FF5500] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
+                                        className="text-[10px] bg-[#FF5500] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50 font-mono"
                                     >
-                                        {commentLoading ? '…' : 'Send'}
+                                        {commentLoading ? '…' : '送出'}
                                     </button>
                                 </div>
                             )}
@@ -718,9 +784,9 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
 
                         /* ── Task List inside selected project ── */
                         return (
-                            <div className="flex h-full w-full">
+                            <div className="flex h-full w-full overflow-hidden">
                                 {/* Left: Task List */}
-                                <div className={`flex flex-col border-r border-zinc-900 overflow-hidden transition-all ${selectedTask ? 'w-1/2' : 'w-full'}`}>
+                                <div className="flex flex-col flex-1 min-w-0 overflow-hidden border-r border-zinc-900">
                                     {/* Project header */}
                                     <div className="px-6 py-3 border-b border-zinc-900 shrink-0">
                                         <button
@@ -779,7 +845,9 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                 <div key={task.id}
                                                     onClick={() => setSelectedTask(isSelected ? null : task)}
                                                     className={`grid grid-cols-12 gap-4 px-6 py-3.5 cursor-pointer transition-colors ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/40'}`}>
-                                                    <div className={`col-span-1 text-[13px] font-bold ${p.color}`}>{p.icon}</div>
+                                                    <div className={`col-span-1 flex items-center justify-start ${p.color}`}>
+                                                        <PriorityIcon priority={task.priority} />
+                                                    </div>
                                                     <div className="col-span-5 flex flex-col justify-center min-w-0">
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-sm text-zinc-200 truncate block">{task.title}</span>
@@ -789,14 +857,14 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                         </div>
                                                         <div className="text-xs text-zinc-700 mt-0.5 truncate">{task.id}</div>
                                                     </div>
-                                                    <div className="col-span-2">
+                                                    <div className="col-span-2 flex items-center">
                                                         <span className="text-xs text-zinc-500 border border-zinc-800 px-1.5 py-0.5 rounded">{task.type}</span>
                                                     </div>
                                                     <div className="col-span-2 flex items-center gap-1.5">
-                                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
+                                                        <StatusIcon status={task.status} className={s.color} />
                                                         <span className={`text-xs ${s.color}`}>{s.label}</span>
                                                     </div>
-                                                    <div className={`col-span-2 text-xs ${task.eta === '—' ? 'text-zinc-700' : 'text-zinc-400'}`}>{task.eta}</div>
+                                                    <div className={`col-span-2 flex items-center text-xs ${task.eta === '—' ? 'text-zinc-700' : 'text-zinc-400'}`}>{task.eta}</div>
                                                 </div>
                                             );
                                         })}

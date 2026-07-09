@@ -133,6 +133,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
     const closeIconRef = useRef<AnimatedIconHandle>(null);
     const iconRefs     = useRef<(AnimatedIconHandle | null)[]>([]);
+    const adminChatEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        adminChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [taskComments]);
 
     // ── Fetch helpers ────────────────────────────────────────────
     const fetchClients = useCallback(async () => {
@@ -200,20 +205,45 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         setClientContracts(cs ?? []);
     }, []);
 
-    const fetchTaskComments = useCallback(async (taskId: string) => {
-        const { data } = await supabase
-            .from('task_comments')
-            .select('id,task_id,content,is_admin,created_at,profiles(name)')
-            .eq('task_id', taskId)
-            .order('created_at', { ascending: true });
-        setTaskComments((data ?? []).map((c: any) => ({
-            id:         c.id,
-            task_id:    c.task_id,
-            content:    c.content,
-            is_admin:   c.is_admin,
-            created_at: c.created_at,
-            user_name:  c.profiles?.name ?? (c.is_admin ? 'Admin' : 'Client'),
-        })));
+    const fetchTaskTimeline = useCallback(async (taskId: string) => {
+        const [{ data: acts }, { data: cmts }] = await Promise.all([
+            supabase
+                .from('task_activities')
+                .select('id,task_id,content,created_at,profiles(name)')
+                .eq('task_id', taskId),
+            supabase
+                .from('task_comments')
+                .select('id,task_id,content,is_admin,created_at,profiles(name)')
+                .eq('task_id', taskId)
+        ]);
+
+        const merged: any[] = [];
+        if (acts) {
+            acts.forEach((a: any) => {
+                merged.push({
+                    id: `act-${a.id}`,
+                    type: 'activity',
+                    content: a.content,
+                    created_at: a.created_at,
+                    user_name: a.profiles?.name ?? 'Admin',
+                });
+            });
+        }
+        if (cmts) {
+            cmts.forEach((c: any) => {
+                merged.push({
+                    id: `cmt-${c.id}`,
+                    type: 'comment',
+                    content: c.content,
+                    created_at: c.created_at,
+                    user_name: c.profiles?.name ?? (c.is_admin ? 'Admin' : 'Client'),
+                    is_admin: c.is_admin,
+                });
+            });
+        }
+
+        merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        setTaskComments(merged);
     }, []);
 
     useEffect(() => {
@@ -230,9 +260,9 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         if (!expandedTaskId) { setTaskComments([]); setCommentsTaskId(null); return; }
         if (commentsTaskId !== expandedTaskId) {
             setCommentsTaskId(expandedTaskId);
-            fetchTaskComments(expandedTaskId);
+            fetchTaskTimeline(expandedTaskId);
         }
-    }, [expandedTaskId, commentsTaskId, fetchTaskComments]);
+    }, [expandedTaskId, commentsTaskId, fetchTaskTimeline]);
 
     // ── Realtime ─────────────────────────────────────────────────
     useEffect(() => {
@@ -244,16 +274,22 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
             .subscribe();
         const commentCh = supabase.channel('admin-comments')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments' }, () => {
-                if (commentsTaskId) fetchTaskComments(commentsTaskId);
+                if (commentsTaskId) fetchTaskTimeline(commentsTaskId);
                 fetchClientCommentTaskIds();
+            })
+            .subscribe();
+        const actCh = supabase.channel('admin-activities')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'task_activities' }, () => {
+                if (commentsTaskId) fetchTaskTimeline(commentsTaskId);
             })
             .subscribe();
         return () => {
             supabase.removeChannel(taskCh);
             supabase.removeChannel(projCh);
             supabase.removeChannel(commentCh);
+            supabase.removeChannel(actCh);
         };
-    }, [fetchTasks, fetchProjects, commentsTaskId, fetchTaskComments]);
+    }, [fetchTasks, fetchProjects, commentsTaskId, fetchTaskTimeline]);
 
     // ── Actions ──────────────────────────────────────────────────
     const createProject = useCallback(async () => {
@@ -285,8 +321,21 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
             .insert({ task_id: taskId, user_id: userId, content: activityDraft.trim() });
         setActivityLoading(false);
         if (error) { alert(`Activity 更新失敗：${error.message}`); }
-        else { setActivityDraft(''); setExpandedTaskId(null); }
-    }, [activityDraft]);
+        else { setActivityDraft(''); fetchTaskTimeline(taskId); }
+    }, [activityDraft, fetchTaskTimeline]);
+
+    const submitComment = useCallback(async (taskId: string) => {
+        if (!activityDraft.trim()) return;
+        setActivityLoading(true);
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData?.user?.id;
+        if (!userId) { setActivityLoading(false); alert('請先登入'); return; }
+        const { error } = await supabase.from('task_comments')
+            .insert({ task_id: taskId, user_id: userId, content: activityDraft.trim(), is_admin: true });
+        setActivityLoading(false);
+        if (error) { alert(`留言失敗：${error.message}`); }
+        else { setActivityDraft(''); fetchTaskTimeline(taskId); }
+    }, [activityDraft, fetchTaskTimeline]);
 
     const createTask = useCallback(async (projectId: string, clientUserId: string, status: string) => {
         if (!newTaskTitle.trim()) return;
@@ -682,43 +731,76 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                         </select>
                                                                                     </div>
 
-                                                                                    {/* Client Comments (read-only) */}
-                                                                                    {taskComments.length > 0 && (
-                                                                                        <div className="space-y-2">
-                                                                                            <div className="text-[10px] text-zinc-600 tracking-widest">// CLIENT COMMENTS</div>
-                                                                                            {taskComments.map(c => (
-                                                                                                <div key={c.id} className={`rounded p-2 border text-[11px] ${c.is_admin ? 'border-zinc-800 bg-zinc-900/50 text-zinc-500' : 'border-[#3b82f6]/20 bg-[#3b82f6]/5 text-zinc-300'}`}>
-                                                                                                    <div className="flex items-center gap-1.5 mb-1">
-                                                                                                        <span className="font-bold text-[10px]">{c.user_name}</span>
-                                                                                                        <span className="text-zinc-600 text-[9px]">{new Date(c.created_at).toLocaleString('zh-TW')}</span>
-                                                                                                    </div>
-                                                                                                    <p className="leading-relaxed whitespace-pre-wrap">{c.content}</p>
-                                                                                                </div>
-                                                                                            ))}
+                                                                                    {/* Unified Chronological Feed */}
+                                                                                    <div className="border border-zinc-900 rounded p-2 bg-zinc-950/40 space-y-2 flex flex-col">
+                                                                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono">// DISCUSSION & ACTIVITIES</div>
+                                                                                        <div className="max-h-48 overflow-y-auto space-y-2.5 pr-1" style={{ scrollbarWidth: 'thin' }}>
+                                                                                            {taskComments.length === 0 ? (
+                                                                                                <div className="text-[10px] text-zinc-700 italic text-center py-2">尚無對話或動態</div>
+                                                                                            ) : (
+                                                                                                taskComments.map(item => {
+                                                                                                    if (item.type === 'activity') {
+                                                                                                        return (
+                                                                                                            <div key={item.id} className="flex flex-col items-center">
+                                                                                                                <div className="bg-zinc-900/60 border border-zinc-900 rounded px-2 py-0.5 text-center max-w-[95%]">
+                                                                                                                    <span className="text-[8px] text-zinc-500 font-mono block">{new Date(item.created_at).toLocaleString('zh-TW')}</span>
+                                                                                                                    <span className="text-[10px] text-zinc-400 font-mono">⚡ {item.user_name}: {item.content}</span>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        );
+                                                                                                    } else {
+                                                                                                        const isAdmin = item.is_admin;
+                                                                                                        return (
+                                                                                                            <div key={item.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
+                                                                                                                <div className="flex items-center gap-1 px-1 text-[8px] text-zinc-500 font-mono">
+                                                                                                                    <span className="font-bold">{isAdmin ? 'Admin' : 'Client'}</span>
+                                                                                                                    <span>·</span>
+                                                                                                                    <span>{new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                                                                </div>
+                                                                                                                <div className={`max-w-[90%] rounded px-2 py-1 text-[11px] leading-relaxed border ${
+                                                                                                                    isAdmin 
+                                                                                                                        ? 'bg-zinc-900/80 border-zinc-800 text-zinc-200' 
+                                                                                                                        : 'bg-[#3b82f6]/5 border-[#3b82f6]/20 text-[#3b82f6]'
+                                                                                                                }`}>
+                                                                                                                    {item.content}
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        );
+                                                                                                    }
+                                                                                                })
+                                                                                            )}
+                                                                                            <div ref={adminChatEndRef} />
                                                                                         </div>
-                                                                                    )}
+                                                                                    </div>
 
-                                                                                    {/* Activity Update */}
+                                                                                    {/* Actions/Textarea */}
                                                                                     <div className="space-y-2">
-                                                                                        <div className="text-[10px] text-zinc-600 tracking-widest">// ACTIVITY UPDATE → Client</div>
                                                                                         <textarea
                                                                                             value={activityDraft}
                                                                                             onChange={e => setActivityDraft(e.target.value)}
-                                                                                            placeholder="輸入進度更新，Client 會看到最新一則…"
+                                                                                            placeholder="輸入訊息或進度更新..."
                                                                                             rows={2}
                                                                                             className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-xs text-zinc-200 placeholder-zinc-700 outline-none resize-none focus:border-[#3b82f6]/40"
                                                                                         />
-                                                                                        <div className="flex items-center justify-between gap-2">
+                                                                                        <div className="flex items-center justify-between gap-1.5">
                                                                                             <button onClick={() => { setExpandedTaskId(null); setActivityDraft(''); }}
-                                                                                                className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1 rounded hover:border-zinc-600 transition-colors">
-                                                                                                取消
+                                                                                                className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1.5 rounded hover:border-zinc-600 transition-colors">
+                                                                                                收合
+                                                                                            </button>
+                                                                                            <div className="flex-1" />
+                                                                                            <button
+                                                                                                onClick={() => submitComment(t.id)}
+                                                                                                disabled={activityLoading || !activityDraft.trim()}
+                                                                                                className="text-[10px] border border-[#3b82f6]/40 text-[#3b82f6] px-2.5 py-1.5 rounded font-bold disabled:opacity-50 transition-colors hover:bg-[#3b82f6]/10"
+                                                                                            >
+                                                                                                傳送留言
                                                                                             </button>
                                                                                             <button
                                                                                                 onClick={() => submitActivity(t.id)}
                                                                                                 disabled={activityLoading || !activityDraft.trim()}
-                                                                                                className="text-[10px] bg-[#3b82f6] text-black px-2 py-1 rounded font-bold disabled:opacity-50 transition-colors hover:bg-white"
+                                                                                                className="text-[10px] bg-[#3b82f6] text-black px-2.5 py-1.5 rounded font-bold disabled:opacity-50 transition-colors hover:bg-white"
                                                                                             >
-                                                                                                {activityLoading ? '…' : 'Post Update'}
+                                                                                                發布動態
                                                                                             </button>
                                                                                         </div>
                                                                                     </div>
