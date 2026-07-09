@@ -7,6 +7,7 @@ import UsersGroupIcon from '../icons/UsersGroupIcon';
 import Stack3Icon from '../icons/Stack3Icon';
 import FileDescriptionIcon from '../icons/FileDescriptionIcon';
 import GearIcon from '../icons/GearIcon';
+import LayoutDashboardIcon from '../icons/LayoutDashboardIcon';
 import { ContractIcon } from '../icons/ContractIcon';
 import AdminContractPanel from './AdminContractPanel';
 import type { AnimatedIconHandle } from '../icons/types';
@@ -15,7 +16,17 @@ interface AdminDashboardProps {
     onClose: () => void;
 }
 
-type AdminNav = 'clients' | 'contracts' | 'tasks' | 'files' | 'settings';
+type AdminNav = 'clients' | 'contracts' | 'projects' | 'tasks' | 'files' | 'settings';
+
+interface ProjectRow {
+    id: string;
+    name: string;
+    user_id: string;
+    status: string;
+    created_at: string;
+    client_name?: string;
+    task_stats?: { status: string; count: number }[];
+}
 
 interface ClientRow {
     id: string;
@@ -36,12 +47,14 @@ interface TaskRow {
     priority: string;
     eta: string;
     user_id: string;
+    project_id: string;
     client_name?: string;
 }
 
 const NAV_ITEMS: { key: AdminNav; label: string }[] = [
     { key: 'clients',   label: 'Clients' },
     { key: 'contracts', label: 'Contracts' },
+    { key: 'projects',  label: 'Projects' },
     { key: 'tasks',     label: 'Tasks' },
     { key: 'files',     label: 'Files' },
     { key: 'settings',  label: 'Settings' },
@@ -59,12 +72,17 @@ const STATUS_COLOR: Record<string, string> = {
 export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [activeNav, setActiveNav] = useState<AdminNav>('clients');
     const [clients, setClients] = useState<ClientRow[]>([]);
+    const [projects, setProjects] = useState<ProjectRow[]>([]);
     const [tasks, setTasks] = useState<TaskRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null);
+    const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [activityDraft, setActivityDraft] = useState('');
     const [activityLoading, setActivityLoading] = useState(false);
+    const [newProjectName, setNewProjectName] = useState('');
+    const [newProjectClientId, setNewProjectClientId] = useState<string>('');
+    const [newProjectLoading, setNewProjectLoading] = useState(false);
     const closeIconRef = useRef<AnimatedIconHandle>(null);
     const iconRefs = useRef<(AnimatedIconHandle | null)[]>([]);
 
@@ -76,13 +94,46 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         setClients(data ?? []);
     }, []);
 
+    const fetchProjects = useCallback(async () => {
+        const { data } = await supabase
+            .from('projects')
+            .select('*, profiles(name), tasks(status)')
+            .order('created_at', { ascending: false });
+        setProjects((data ?? []).map((p: any) => ({
+            ...p,
+            client_name: p.profiles?.name ?? '—',
+            task_stats: (p.tasks as { status: string }[] || []).reduce((acc: { status: string; count: number }[], t: { status: string }) => {
+                const found = acc.find(x => x.status === t.status);
+                if (found) found.count += 1;
+                else acc.push({ status: t.status, count: 1 });
+                return acc;
+            }, []),
+        })));
+    }, []);
+
     const fetchTasks = useCallback(async () => {
         const { data } = await supabase
             .from('tasks')
-            .select('*, profiles(name)')
+            .select('*, profiles(name), projects(name)')
             .order('created_at', { ascending: false });
         setTasks((data ?? []).map((t: any) => ({ ...t, client_name: t.profiles?.name ?? '—' })));
     }, []);
+
+    const createProject = useCallback(async () => {
+        if (!newProjectName.trim() || !newProjectClientId) return;
+        setNewProjectLoading(true);
+        const { error } = await supabase
+            .from('projects')
+            .insert({ name: newProjectName.trim(), user_id: newProjectClientId, status: 'ACTIVE' });
+        setNewProjectLoading(false);
+        if (error) {
+            alert(`建立專案失敗：${error.message}`);
+        } else {
+            setNewProjectName('');
+            setNewProjectClientId('');
+            fetchProjects();
+        }
+    }, [newProjectName, newProjectClientId, fetchProjects]);
 
     const updateTaskStatus = useCallback(async (taskId: string, newStatus: string) => {
         const { error } = await supabase
@@ -122,21 +173,32 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
     useEffect(() => {
         setLoading(true);
-        Promise.all([fetchClients(), fetchTasks()]).finally(() => setLoading(false));
-    }, [fetchClients, fetchTasks]);
+        Promise.all([fetchClients(), fetchProjects(), fetchTasks()]).finally(() => setLoading(false));
+    }, [fetchClients, fetchProjects, fetchTasks]);
 
-    // ── Supabase Realtime: 監聽所有任務變更 ─────────────────────
+    // ── Supabase Realtime: 監聽所有任務與專案變更 ─────────────────────
     useEffect(() => {
-        const channel = supabase
+        const taskChannel = supabase
             .channel('admin-tasks')
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'tasks' },
-                () => { fetchTasks(); }
+                () => { fetchTasks(); fetchProjects(); }
             )
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
-    }, [fetchTasks]);
+        const projectChannel = supabase
+            .channel('admin-projects')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'projects' },
+                () => { fetchProjects(); }
+            )
+            .subscribe();
+        return () => {
+            supabase.removeChannel(taskChannel);
+            supabase.removeChannel(projectChannel);
+        };
+    }, [fetchTasks, fetchProjects]);
 
     return (
         <div className="flex h-full w-full bg-[#000000] font-mono overflow-hidden">
@@ -159,6 +221,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                             <span className="shrink-0 pointer-events-none">
                                 {item.key === 'clients'   && <UsersGroupIcon      ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'contracts' && <ContractIcon size={16} animate={activeNav === 'contracts' ? 'hover' : 'idle'} />}
+                                {item.key === 'projects'  && <LayoutDashboardIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'tasks'     && <Stack3Icon          ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'files'     && <FileDescriptionIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'settings'  && <GearIcon            ref={el => { iconRefs.current[i] = el; }} size={16} />}
@@ -270,6 +333,157 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                             {activeNav === 'contracts' && (
                                 <AdminContractPanel />
                             )}
+
+                            {/* PROJECTS */}
+                            {activeNav === 'projects' && (() => {
+                                const statusList = ['QUEUED','IN_PROGRESS','REVIEW','DELIVERED'] as const;
+                                const statusLabel: Record<string,string> = { QUEUED:'Todo', IN_PROGRESS:'In Progress', REVIEW:'In Review', DELIVERED:'Done' };
+                                const statusClr: Record<string,string> = { QUEUED:'#52525b', IN_PROGRESS:'#60a5fa', REVIEW:'#facc15', DELIVERED:'#34d399' };
+                                return (
+                                    <div className="flex flex-col h-full overflow-y-auto">
+                                        {!selectedProject ? (
+                                            <>
+                                                <div className="px-5 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
+                                                    <div className="text-sm text-zinc-300 tracking-wide">PROJECTS</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <select
+                                                            value={newProjectClientId}
+                                                            onChange={e => setNewProjectClientId(e.target.value)}
+                                                            className="bg-zinc-950 text-xs border border-zinc-800 rounded px-2 py-1.5 text-zinc-400 outline-none"
+                                                        >
+                                                            <option value="">Select client</option>
+                                                            {clients.filter(c => c.role !== 'admin').map(c => (
+                                                                <option key={c.id} value={c.id}>{c.name || c.email}</option>
+                                                            ))}
+                                                        </select>
+                                                        <input
+                                                            type="text"
+                                                            value={newProjectName}
+                                                            onChange={e => setNewProjectName(e.target.value)}
+                                                            placeholder="New project name"
+                                                            className="bg-zinc-950 text-xs border border-zinc-800 rounded px-2 py-1.5 text-zinc-300 placeholder-zinc-700 outline-none w-48"
+                                                        />
+                                                        <button
+                                                            onClick={createProject}
+                                                            disabled={newProjectLoading || !newProjectName.trim() || !newProjectClientId}
+                                                            className="text-xs bg-[#FF5500] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
+                                                        >
+                                                            {newProjectLoading ? '…' : '+ New Project'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-4 p-5">
+                                                    {projects.length === 0 ? (
+                                                        <div className="col-span-3 text-center py-12 text-zinc-700 text-sm">// NO PROJECTS YET</div>
+                                                    ) : projects.map(p => {
+                                                        const total = p.task_stats?.reduce((sum, s) => sum + s.count, 0) || 0;
+                                                        const progress = total === 0 ? 0 : Math.round((p.task_stats?.find(s => s.status === 'DELIVERED')?.count || 0) / total * 100);
+                                                        return (
+                                                            <div key={p.id} onClick={() => setSelectedProject(p)} className="bg-zinc-950 border border-zinc-900 rounded-lg p-4 cursor-pointer hover:border-zinc-700 transition-colors">
+                                                                <div className="flex items-start justify-between mb-3">
+                                                                    <div>
+                                                                        <div className="text-sm font-bold text-zinc-200 mb-1">{p.name}</div>
+                                                                        <div className="text-xs text-zinc-600">{p.client_name}</div>
+                                                                    </div>
+                                                                    <span className={`text-xs border rounded px-1.5 py-0.5 ${STATUS_COLOR[p.status] ?? 'text-zinc-600 border-zinc-800'}`}>{p.status}</span>
+                                                                </div>
+                                                                <div className="space-y-1.5">
+                                                                    <div className="flex items-center justify-between text-xs">
+                                                                        <span className="text-zinc-600">{total} tasks</span>
+                                                                        <span className="text-zinc-400">{progress}%</span>
+                                                                    </div>
+                                                                    <div className="flex-1 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+                                                                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: '#FF5500' }} />
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                                                        {statusList.map(s => {
+                                                                            const cnt = p.task_stats?.find(x => x.status === s)?.count || 0;
+                                                                            return cnt > 0 ? (
+                                                                                <span key={s} className="text-[10px] px-1.5 py-0.5 rounded border" style={{ color: statusClr[s], borderColor: `${statusClr[s]}40` }}>
+                                                                                    {statusLabel[s]} {cnt}
+                                                                                </span>
+                                                                            ) : null;
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col h-full">
+                                                <div className="px-5 py-3 border-b border-zinc-900 flex items-center justify-between shrink-0">
+                                                    <div className="flex items-center gap-3">
+                                                        <button onClick={() => setSelectedProject(null)} className="text-xs text-zinc-500 hover:text-zinc-300">← Back</button>
+                                                        <span className="text-sm font-bold text-white">{selectedProject.name}</span>
+                                                        <span className="text-xs text-zinc-600">{selectedProject.client_name}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 overflow-x-auto p-5">
+                                                    <div className="flex gap-4 min-w-[900px] h-full">
+                                                        {statusList.map(s => {
+                                                            const colTasks = tasks.filter(t => t.project_id === selectedProject.id && t.status === s);
+                                                            return (
+                                                                <div key={s} className="flex-1 flex flex-col min-w-[220px] bg-zinc-950/50 border border-zinc-900 rounded-lg">
+                                                                    <div className="px-3 py-2 border-b border-zinc-900 flex items-center gap-2 shrink-0">
+                                                                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusClr[s] }} />
+                                                                        <span className="text-xs font-bold" style={{ color: statusClr[s] }}>{statusLabel[s]}</span>
+                                                                        <span className="text-xs text-zinc-600 ml-auto">{colTasks.length}</span>
+                                                                    </div>
+                                                                    <div className="flex-1 overflow-y-auto p-2 space-y-2">
+                                                                        {colTasks.map(t => {
+                                                                            const isExpanded = selectedTaskId === t.id;
+                                                                            return (
+                                                                                <div key={t.id} className="bg-zinc-900/60 border border-zinc-900 rounded p-2.5">
+                                                                                    <div className="flex items-start justify-between gap-2 cursor-pointer" onClick={() => setSelectedTaskId(isExpanded ? null : t.id)}>
+                                                                                        <div>
+                                                                                            <div className="text-xs text-zinc-300 font-medium">{t.title}</div>
+                                                                                            <div className="text-[10px] text-zinc-600 mt-0.5">{t.client_name} · {t.type}</div>
+                                                                                        </div>
+                                                                                        <span className="text-[10px] text-zinc-500 border border-zinc-800 px-1 py-0.5 rounded">{t.priority}</span>
+                                                                                    </div>
+                                                                                    {isExpanded && (
+                                                                                        <div className="mt-2 space-y-2">
+                                                                                            <div className="text-[10px] text-zinc-600">// ADD ACTIVITY UPDATE</div>
+                                                                                            <textarea
+                                                                                                value={activityDraft}
+                                                                                                onChange={e => setActivityDraft(e.target.value)}
+                                                                                                placeholder="輸入進度更新..."
+                                                                                                rows={2}
+                                                                                                className="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 text-xs text-zinc-200 placeholder-zinc-700 outline-none resize-none"
+                                                                                            />
+                                                                                            <div className="flex justify-between items-center">
+                                                                                                <select
+                                                                                                    value={t.status}
+                                                                                                    onChange={e => updateTaskStatus(t.id, e.target.value)}
+                                                                                                    className="bg-zinc-950 text-[10px] border border-zinc-800 rounded px-1.5 py-1 text-zinc-400 outline-none"
+                                                                                                >
+                                                                                                    {statusList.map(st => (
+                                                                                                        <option key={st} value={st}>{statusLabel[st]}</option>
+                                                                                                    ))}
+                                                                                                </select>
+                                                                                                <div className="flex gap-1.5">
+                                                                                                    <button onClick={() => setSelectedTaskId(null)} className="text-[10px] text-zinc-500 border border-zinc-800 px-2 py-1 rounded">取消</button>
+                                                                                                    <button onClick={() => submitTaskActivity(t.id)} disabled={activityLoading || !activityDraft.trim()} className="text-[10px] bg-[#FF5500] text-black px-2 py-1 rounded font-bold disabled:opacity-50">{activityLoading ? '…' : 'Save'}</button>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* TASKS */}
                             {activeNav === 'tasks' && (() => {
