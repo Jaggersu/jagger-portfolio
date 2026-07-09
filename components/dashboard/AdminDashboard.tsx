@@ -62,6 +62,9 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [tasks, setTasks] = useState<TaskRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null);
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+    const [activityDraft, setActivityDraft] = useState('');
+    const [activityLoading, setActivityLoading] = useState(false);
     const closeIconRef = useRef<AnimatedIconHandle>(null);
     const iconRefs = useRef<(AnimatedIconHandle | null)[]>([]);
 
@@ -93,6 +96,29 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
             fetchTasks();
         }
     }, [fetchTasks]);
+
+    const submitTaskActivity = useCallback(async (taskId: string) => {
+        if (!activityDraft.trim()) return;
+        setActivityLoading(true);
+        const { data: userData } = await supabase.auth.getUser();
+        const userId = userData?.user?.id;
+        if (!userId) {
+            setActivityLoading(false);
+            alert('請先登入');
+            return;
+        }
+        const { error } = await supabase
+            .from('task_activities')
+            .insert({ task_id: taskId, user_id: userId, content: activityDraft.trim() });
+        setActivityLoading(false);
+        if (error) {
+            console.error('[admin] submit activity error:', error);
+            alert(`Activity 更新失敗：${error.message}`);
+        } else {
+            setActivityDraft('');
+            setSelectedTaskId(null);
+        }
+    }, [activityDraft]);
 
     useEffect(() => {
         setLoading(true);
@@ -329,26 +355,64 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                         ) : tasks.map(t => {
                                             const pct    = ({ QUEUED: 0, IN_PROGRESS: 40, REVIEW: 75, DELIVERED: 100 } as Record<string,number>)[t.status] ?? 0;
                                             const barClr = ({ QUEUED: '#52525b', IN_PROGRESS: '#60a5fa', REVIEW: '#facc15', DELIVERED: '#34d399' } as Record<string,string>)[t.status] ?? '#52525b';
+                                            const isExpanded = selectedTaskId === t.id;
                                             return (
-                                                <div key={t.id} className="grid grid-cols-6 px-4 py-3 border-b border-zinc-900/50 text-sm items-center">
-                                                    <span className="text-zinc-600 font-mono text-xs">{t.id.slice(0, 8)}</span>
-                                                    <span className="col-span-2 text-zinc-300 truncate">{t.title}</span>
-                                                    <select
-                                                        value={t.status}
-                                                        onChange={e => updateTaskStatus(t.id, e.target.value)}
-                                                        className={`bg-zinc-950 text-xs border rounded px-1.5 py-0.5 w-fit tracking-widest outline-none cursor-pointer ${STATUS_COLOR[t.status] ?? 'text-zinc-600 border-zinc-800'}`}
-                                                    >
-                                                        {['QUEUED', 'IN_PROGRESS', 'REVIEW', 'DELIVERED'].map(s => (
-                                                            <option key={s} value={s}>{s}</option>
-                                                        ))}
-                                                    </select>
-                                                    <span className="text-zinc-500 truncate">{t.client_name}</span>
-                                                    <div className="flex items-center gap-2 pr-2">
-                                                        <div className="flex-1 bg-zinc-900 rounded-full h-1 overflow-hidden">
-                                                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: barClr }} />
+                                                <div key={t.id} className="border-b border-zinc-900/50">
+                                                    <div className="grid grid-cols-6 px-4 py-3 text-sm items-center">
+                                                        <span className="text-zinc-600 font-mono text-xs">{t.id.slice(0, 8)}</span>
+                                                        <span className="col-span-2 text-zinc-300 truncate">{t.title}</span>
+                                                        <select
+                                                            value={t.status}
+                                                            onChange={e => updateTaskStatus(t.id, e.target.value)}
+                                                            className={`bg-zinc-950 text-xs border rounded px-1.5 py-0.5 w-fit tracking-widest outline-none cursor-pointer ${STATUS_COLOR[t.status] ?? 'text-zinc-600 border-zinc-800'}`}
+                                                        >
+                                                            {['QUEUED', 'IN_PROGRESS', 'REVIEW', 'DELIVERED'].map(s => (
+                                                                <option key={s} value={s}>{s}</option>
+                                                            ))}
+                                                        </select>
+                                                        <span className="text-zinc-500 truncate">{t.client_name}</span>
+                                                        <div className="flex items-center gap-2 pr-2">
+                                                            <div className="flex-1 bg-zinc-900 rounded-full h-1 overflow-hidden">
+                                                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: barClr }} />
+                                                            </div>
+                                                            <span className="text-xs text-zinc-600 w-7 text-right shrink-0">{pct}%</span>
+                                                            <button
+                                                                onClick={() => setSelectedTaskId(isExpanded ? null : t.id)}
+                                                                className={`text-xs px-2 py-0.5 rounded border transition-colors ${isExpanded ? 'text-[#FF5500] border-[#FF5500]/40 bg-[#FF5500]/10' : 'text-zinc-600 border-zinc-800 hover:border-zinc-600'}`}
+                                                            >
+                                                                {isExpanded ? 'Close' : 'Update'}
+                                                            </button>
                                                         </div>
-                                                        <span className="text-xs text-zinc-600 w-7 text-right shrink-0">{pct}%</span>
                                                     </div>
+                                                    {isExpanded && (
+                                                        <div className="px-4 pb-3">
+                                                            <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 space-y-2">
+                                                                <div className="text-xs text-zinc-600">// ADD ACTIVITY UPDATE</div>
+                                                                <textarea
+                                                                    value={activityDraft}
+                                                                    onChange={e => setActivityDraft(e.target.value)}
+                                                                    placeholder="輸入進度更新，Client 會在 task 面板看到…"
+                                                                    rows={3}
+                                                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60 resize-none"
+                                                                />
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <button
+                                                                        onClick={() => setSelectedTaskId(null)}
+                                                                        className="text-xs text-zinc-500 border border-zinc-800 px-3 py-1.5 rounded hover:border-zinc-600"
+                                                                    >
+                                                                        取消
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => submitTaskActivity(t.id)}
+                                                                        disabled={activityLoading || !activityDraft.trim()}
+                                                                        className="text-xs bg-[#FF5500] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        {activityLoading ? '…' : 'Save Update'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })}

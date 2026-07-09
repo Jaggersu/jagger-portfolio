@@ -117,7 +117,59 @@ create policy "admin可讀寫所有任務" on public.tasks
 alter publication supabase_realtime add table public.tasks;
 alter publication supabase_realtime add table public.contracts;
 
--- ── 5. files ────────────────────────────────────────────────
+-- ── 6. task_activities ────────────────────────────────────────
+create table if not exists public.task_activities (
+  id          uuid primary key default gen_random_uuid(),
+  task_id     uuid references public.tasks(id) on delete cascade not null,
+  user_id     uuid references public.profiles(id) on delete cascade not null,
+  content     text not null,
+  created_at  timestamptz default timezone('utc', now()) not null
+);
+
+alter table public.task_activities enable row level security;
+drop policy if exists "用戶可讀寫自身任務活動" on public.task_activities;
+create policy "用戶可讀寫自身任務活動" on public.task_activities
+  for all using (
+    exists (
+      select 1 from public.tasks where id = task_activities.task_id and user_id = auth.uid()
+    )
+  );
+drop policy if exists "admin可讀寫所有任務活動" on public.task_activities;
+create policy "admin可讀寫所有任務活動" on public.task_activities
+  for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+  );
+
+-- ── 7. task_comments ────────────────────────────────────────
+create table if not exists public.task_comments (
+  id          uuid primary key default gen_random_uuid(),
+  task_id     uuid references public.tasks(id) on delete cascade not null,
+  user_id     uuid references public.profiles(id) on delete cascade not null,
+  content     text not null,
+  is_admin    boolean default false,
+  created_at  timestamptz default timezone('utc', now()) not null
+);
+
+alter table public.task_comments enable row level security;
+drop policy if exists "用戶可讀寫自身任務留言" on public.task_comments;
+create policy "用戶可讀寫自身任務留言" on public.task_comments
+  for all using (
+    auth.uid() = user_id
+    or exists (
+      select 1 from public.tasks where id = task_comments.task_id and user_id = auth.uid()
+    )
+  );
+drop policy if exists "admin可讀寫所有任務留言" on public.task_comments;
+create policy "admin可讀寫所有任務留言" on public.task_comments
+  for all using (
+    (select role from public.profiles where id = auth.uid()) = 'admin'
+  );
+
+-- 啟用 task_activities 與 task_comments 的 Realtime
+alter publication supabase_realtime add table public.task_activities;
+alter publication supabase_realtime add table public.task_comments;
+
+-- ── 8. files ────────────────────────────────────────────────
 create table if not exists public.files (
   id              uuid primary key default gen_random_uuid(),
   project_id      uuid references public.projects(id) on delete cascade not null,

@@ -20,6 +20,8 @@ type SettingsTab = 'account' | 'billing' | 'integrations';
 
 interface Task {
     id: string;
+    real_id: string;
+    project_id?: string;
     title: string;
     status: TaskStatus;
     type: string;
@@ -27,6 +29,24 @@ interface Task {
     priority: 'HIGH' | 'MED' | 'LOW';
     description?: string;
     ai_summary?: string;
+}
+
+interface TaskActivity {
+    id: string;
+    task_id: string;
+    content: string;
+    created_at: string;
+    user_name?: string;
+}
+
+interface TaskComment {
+    id: string;
+    task_id: string;
+    user_id: string;
+    content: string;
+    is_admin: boolean;
+    created_at: string;
+    user_name?: string;
 }
 
 interface FileItem {
@@ -39,11 +59,11 @@ interface FileItem {
     created_at: string;
 }
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; bg: string; dot: string }> = {
-    QUEUED:      { label: 'Queued',      color: 'text-zinc-500',    bg: 'bg-zinc-900',          dot: 'bg-zinc-600' },
-    IN_PROGRESS: { label: 'In Progress', color: 'text-[#FF5500]',   bg: 'bg-[#FF5500]/10',      dot: 'bg-[#FF5500] animate-pulse' },
-    REVIEW:      { label: 'In Review',   color: 'text-yellow-400',  bg: 'bg-yellow-500/10',     dot: 'bg-yellow-400' },
-    DELIVERED:   { label: 'Delivered',   color: 'text-emerald-400', bg: 'bg-emerald-500/10',    dot: 'bg-emerald-400' },
+const STATUS_CONFIG: Record<TaskStatus, { label: string; color: string; bg: string; dot: string; progress: number }> = {
+    QUEUED:      { label: 'Todo',        color: 'text-zinc-500',    bg: 'bg-zinc-900',          dot: 'bg-zinc-600', progress: 0 },
+    IN_PROGRESS: { label: 'In Progress', color: 'text-[#FF5500]',   bg: 'bg-[#FF5500]/10',      dot: 'bg-[#FF5500] animate-pulse', progress: 50 },
+    REVIEW:      { label: 'In Review',   color: 'text-yellow-400',  bg: 'bg-yellow-500/10',     dot: 'bg-yellow-400', progress: 80 },
+    DELIVERED:   { label: 'Done',        color: 'text-emerald-400', bg: 'bg-emerald-500/10',    dot: 'bg-emerald-400', progress: 100 },
 };
 
 const PRIORITY_CONFIG = {
@@ -53,12 +73,12 @@ const PRIORITY_CONFIG = {
 };
 
 const MOCK_TASKS: Task[] = [
-    { id: 'JOS-001', title: '品牌 Logo 主視覺設計', status: 'IN_PROGRESS', type: 'BRAND', eta: '2d', priority: 'HIGH', description: '包含主標準字、輔助圖形、配色系統，交付 AI/EPS 原始檔及使用規範 PDF。' },
-    { id: 'JOS-002', title: '社群 DM 系列 ×6',     status: 'QUEUED',      type: 'PRINT', eta: '4d', priority: 'MED',  description: '針對 IG 9:16 與 FB 1:1 比例設計六款主題貼文，含動態版。' },
-    { id: 'JOS-003', title: 'Landing Page UI/UX',  status: 'REVIEW',      type: 'WEB',   eta: '1d', priority: 'HIGH', description: '首頁視覺設計與 Figma prototype，需客戶確認後進入切版階段。' },
-    { id: 'JOS-004', title: '名片 + 信封套組印刷稿', status: 'DELIVERED',   type: 'PRINT', eta: '—',  priority: 'LOW',  description: '已完成 CMYK 印刷稿，交付印刷廠確認稿與客戶電子稿備份。' },
-    { id: 'JOS-005', title: 'PWA 前端架構規劃',     status: 'QUEUED',      type: 'DEV',   eta: '7d', priority: 'MED',  description: '規劃 Next.js App Router 架構、Supabase 認證流程與 offline cache 策略。' },
-    { id: 'JOS-006', title: 'Supabase DB Schema',  status: 'QUEUED',      type: 'DEV',   eta: '5d', priority: 'HIGH', description: '設計 profiles/contracts/tasks/files 資料表及 RLS 政策。' },
+    { id: 'JOS-001', real_id: 'm-001', title: '品牌 Logo 主視覺設計', status: 'IN_PROGRESS', type: 'BRAND', eta: '2d', priority: 'HIGH', description: '包含主標準字、輔助圖形、配色系統，交付 AI/EPS 原始檔及使用規範 PDF。' },
+    { id: 'JOS-002', real_id: 'm-002', title: '社群 DM 系列 ×6',     status: 'QUEUED',      type: 'PRINT', eta: '4d', priority: 'MED',  description: '針對 IG 9:16 與 FB 1:1 比例設計六款主題貼文，含動態版。' },
+    { id: 'JOS-003', real_id: 'm-003', title: 'Landing Page UI/UX',  status: 'REVIEW',      type: 'WEB',   eta: '1d', priority: 'HIGH', description: '首頁視覺設計與 Figma prototype，需客戶確認後進入切版階段。' },
+    { id: 'JOS-004', real_id: 'm-004', title: '名片 + 信封套組印刷稿', status: 'DELIVERED',   type: 'PRINT', eta: '—',  priority: 'LOW',  description: '已完成 CMYK 印刷稿，交付印刷廠確認稿與客戶電子稿備份。' },
+    { id: 'JOS-005', real_id: 'm-005', title: 'PWA 前端架構規劃',     status: 'QUEUED',      type: 'DEV',   eta: '7d', priority: 'MED',  description: '規劃 Next.js App Router 架構、Supabase 認證流程與 offline cache 策略。' },
+    { id: 'JOS-006', real_id: 'm-006', title: 'Supabase DB Schema',  status: 'QUEUED',      type: 'DEV',   eta: '5d', priority: 'HIGH', description: '設計 profiles/contracts/tasks/files 資料表及 RLS 政策。' },
 ];
 
 const MOCK_FILES: FileItem[] = [
@@ -98,8 +118,6 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     const [loading, setLoading]             = useState(true);
     const [aiPanel, setAiPanel]             = useState<AiPanel | null>(null);
     const [showAskAI, setShowAskAI]         = useState(false);
-    const [showNewProject, setShowNewProject] = useState(false);
-    const [newProjectName, setNewProjectName] = useState('');
     const [fileSearch, setFileSearch]       = useState('');
     const [driveLoading, setDriveLoading]   = useState<string | null>(null);
     const [settingsTab, setSettingsTab]     = useState<SettingsTab>('account');
@@ -110,16 +128,26 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         telegramWebhook: '',
     });
 
+    // ── Task detail: activity & comments ────────────────────────
+    const [activities, setActivities]       = useState<TaskActivity[]>([]);
+    const [comments, setComments]           = useState<TaskComment[]>([]);
+    const [commentDraft, setCommentDraft]   = useState('');
+    const [aiCommentDraft, setAiCommentDraft] = useState('');
+    const [commentLoading, setCommentLoading] = useState(false);
+    const [commentAiLoading, setCommentAiLoading] = useState(false);
+
     // ── Supabase: fetch helpers ─────────────────────────────────
     const fetchTasks = useCallback(async () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('tasks')
-            .select('id,task_code,title,priority,type,status,eta,description,ai_summary')
+            .select('id,project_id,task_code,title,priority,type,status,eta,description,ai_summary')
             .order('created_at', { ascending: false });
         if (!error && data) {
             setTasks(data.map(r => ({
                 id:          r.task_code ?? r.id,
+                real_id:     r.id,
+                project_id:  r.project_id,
                 title:       r.title,
                 status:      r.status as TaskStatus,
                 type:        r.type ?? '—',
@@ -130,6 +158,42 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
             })));
         }
         setLoading(false);
+    }, []);
+
+    const fetchActivities = useCallback(async (taskId: string) => {
+        const { data, error } = await supabase
+            .from('task_activities')
+            .select('id,task_id,content,created_at,profiles(name)')
+            .eq('task_id', taskId)
+            .order('created_at', { ascending: false });
+        if (!error && data) {
+            setActivities(data.map((a: any) => ({
+                id: a.id,
+                task_id: a.task_id,
+                content: a.content,
+                created_at: a.created_at,
+                user_name: a.profiles?.name ?? 'Admin',
+            })));
+        }
+    }, []);
+
+    const fetchComments = useCallback(async (taskId: string) => {
+        const { data, error } = await supabase
+            .from('task_comments')
+            .select('id,task_id,user_id,content,is_admin,created_at,profiles(name)')
+            .eq('task_id', taskId)
+            .order('created_at', { ascending: true });
+        if (!error && data) {
+            setComments(data.map((c: any) => ({
+                id: c.id,
+                task_id: c.task_id,
+                user_id: c.user_id,
+                content: c.content,
+                is_admin: c.is_admin,
+                created_at: c.created_at,
+                user_name: c.profiles?.name ?? (c.is_admin ? 'Admin' : 'Client'),
+            })));
+        }
     }, []);
 
     const fetchFiles = useCallback(async () => {
@@ -166,6 +230,36 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, [profile?.id, fetchTasks]);
+
+    // 選取 task 時載入 activity / comments
+    useEffect(() => {
+        if (!selectedTask) {
+            setActivities([]);
+            setComments([]);
+            setCommentDraft('');
+            setAiCommentDraft('');
+            return;
+        }
+        fetchActivities(selectedTask.real_id);
+        fetchComments(selectedTask.real_id);
+    }, [selectedTask, fetchActivities, fetchComments]);
+
+    // 監聽 activity / comment 變更
+    useEffect(() => {
+        if (!selectedTask?.real_id) return;
+        const activityChannel = supabase
+            .channel('client-activities')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'task_activities', filter: `task_id=eq.${selectedTask.real_id}` }, () => fetchActivities(selectedTask.real_id))
+            .subscribe();
+        const commentChannel = supabase
+            .channel('client-comments')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments', filter: `task_id=eq.${selectedTask.real_id}` }, () => fetchComments(selectedTask.real_id))
+            .subscribe();
+        return () => {
+            supabase.removeChannel(activityChannel);
+            supabase.removeChannel(commentChannel);
+        };
+    }, [selectedTask?.real_id, fetchActivities, fetchComments]);
 
     const inProgress = tasks.filter(t => t.status === 'IN_PROGRESS');
     const queued     = tasks.filter(t => t.status === 'QUEUED');
@@ -238,24 +332,43 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
         f.file_name.toLowerCase().includes(fileSearch.toLowerCase())
     );
 
-    const handleCreateProject = useCallback(async () => {
-        if (!newProjectName.trim() || !profile?.id) return;
-        const { data, error } = await supabase
-            .from('projects')
-            .insert({ user_id: profile.id, name: newProjectName.trim(), status: 'ACTIVE' })
-            .select()
-            .single();
+    const handleSubmitComment = useCallback(async () => {
+        if (!selectedTask?.real_id || !commentDraft.trim() || !profile?.id) return;
+        setCommentLoading(true);
+        const { error } = await supabase
+            .from('task_comments')
+            .insert({ task_id: selectedTask.real_id, user_id: profile.id, content: aiCommentDraft || commentDraft.trim(), is_admin: false });
+        setCommentLoading(false);
         if (error) {
-            alert(`建立失敗：${error.message}`);
-            return;
+            alert(`留言失敗：${error.message}`);
+        } else {
+            setCommentDraft('');
+            setAiCommentDraft('');
+            fetchComments(selectedTask.real_id);
         }
-        alert(`✅ 專案「${data.name}」已建立！\n你可以在 Telegram 告知 Jagger 開始作業。`);
-        setNewProjectName('');
-        setShowNewProject(false);
-        setActiveNav('tasks');
-        fetchTasks();
-        fetchFiles();
-    }, [newProjectName, profile, fetchTasks, fetchFiles]);
+    }, [commentDraft, aiCommentDraft, selectedTask, profile, fetchComments]);
+
+    const handleAiComment = useCallback(async () => {
+        if (!selectedTask?.real_id || !commentDraft.trim()) return;
+        setCommentAiLoading(true);
+        try {
+            const res = await fetch('/api/ai-comment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ draft: commentDraft, context: selectedTask.title }),
+            });
+            const data = await res.json();
+            if (data.text) {
+                setAiCommentDraft(data.text);
+            } else {
+                alert(data.error ?? 'AI 生成失敗');
+            }
+        } catch (e: any) {
+            alert(e.message);
+        } finally {
+            setCommentAiLoading(false);
+        }
+    }, [commentDraft, selectedTask]);
 
     return (
         <div className="flex h-full w-full bg-[#000000] font-mono overflow-hidden relative">
@@ -393,12 +506,6 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                             <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] animate-pulse" />
                             Jag Agent
                         </button>
-                        <button
-                            onClick={() => setShowNewProject(true)}
-                            className="text-xs text-black bg-[#FF5500] hover:bg-white px-2.5 py-1 rounded font-bold tracking-wider transition-colors"
-                        >
-                            + New Project
-                        </button>
                         <span className="text-xs text-zinc-600 border border-zinc-900 px-2.5 py-1 rounded">{profile?.name ?? 'Client'}</span>
                         <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -474,59 +581,119 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                             {selectedTask && (() => {
                                 const s = STATUS_CONFIG[selectedTask.status];
                                 const p = PRIORITY_CONFIG[selectedTask.priority];
+                                const latestActivity = activities[0];
                                 return (
-                                    <div className="w-1/2 flex flex-col overflow-y-auto">
+                                    <div className="w-1/2 flex flex-col overflow-hidden bg-[#0A0A0B]">
                                         <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
-                                            <span className="text-xs text-zinc-600">{selectedTask.id}</span>
+                                            <div>
+                                                <span className="text-xs text-zinc-600">{selectedTask.id}</span>
+                                                <h2 className="text-base font-bold text-white leading-snug mt-0.5">{selectedTask.title}</h2>
+                                            </div>
                                             <button onClick={() => setSelectedTask(null)} className="text-zinc-700 hover:text-zinc-400 text-[13px]">✕</button>
                                         </div>
-                                        <div className="px-6 py-5 flex flex-col gap-5">
-                                            <h2 className="text-base font-bold text-white leading-snug">{selectedTask.title}</h2>
+                                        <div className="flex-1 overflow-y-auto linear-scroll px-6 py-5 flex flex-col gap-4">
+                                            {/* ── Green: Status + Progress + Priority ── */}
                                             <div className="grid grid-cols-2 gap-4">
-                                                {[
-                                                    { label: 'Status',   value: <span className={`text-[13px] ${s.color} flex items-center gap-1.5`}><span className={`w-1.5 h-1.5 rounded-full ${s.dot}`}/>{s.label}</span> },
-                                                    { label: 'Priority', value: <span className={`text-[13px] ${p.color}`}>{p.icon} {p.label}</span> },
-                                                    { label: 'Type',     value: <span className="text-[13px] text-zinc-400 border border-zinc-800 px-1.5 py-0.5 rounded">{selectedTask.type}</span> },
-                                                    { label: 'ETA',      value: <span className="text-[13px] text-zinc-400">{selectedTask.eta}</span> },
-                                                ].map(({ label, value }) => (
-                                                    <div key={label} className="border border-zinc-900 rounded-lg p-3">
-                                                        <div className="text-[13px] text-zinc-600 mb-1.5">{label.toUpperCase()}</div>
-                                                        {value}
+                                                <div className="border border-zinc-900 rounded-lg p-3">
+                                                    <div className="text-[13px] text-zinc-600 mb-2">STATUS</div>
+                                                    <div className={`flex items-center gap-1.5 text-[13px] ${s.color} mb-2`}>
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                                                        {s.label}
                                                     </div>
-                                                ))}
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+                                                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${s.progress}%`, background: s.dot.includes('emerald') ? '#34d399' : s.dot.includes('yellow') ? '#facc15' : s.dot.includes('FF5500') ? '#FF5500' : '#52525b' }} />
+                                                        </div>
+                                                        <span className="text-xs text-zinc-500 w-8 text-right">{s.progress}%</span>
+                                                    </div>
+                                                </div>
+                                                <div className="border border-zinc-900 rounded-lg p-3">
+                                                    <div className="text-[13px] text-zinc-600 mb-1.5">PRIORITY</div>
+                                                    <span className={`text-[13px] ${p.color}`}>{p.icon} {p.label}</span>
+                                                </div>
                                             </div>
 
+                                            {/* Meta: Type, ETA, Description */}
                                             <div className="border border-zinc-900 rounded-lg p-4">
-                                                <div className="text-[13px] text-zinc-600 mb-2">DESCRIPTION</div>
+                                                <div className="grid grid-cols-2 gap-4 mb-3">
+                                                    <div>
+                                                        <div className="text-[13px] text-zinc-600 mb-1">TYPE</div>
+                                                        <span className="text-[13px] text-zinc-400 border border-zinc-800 px-1.5 py-0.5 rounded">{selectedTask.type}</span>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-[13px] text-zinc-600 mb-1">ETA</div>
+                                                        <span className="text-[13px] text-zinc-400">{selectedTask.eta}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-[13px] text-zinc-600 mb-1.5">DESCRIPTION</div>
                                                 <p className="text-sm text-zinc-400 leading-relaxed">{selectedTask.description ?? '—'}</p>
                                             </div>
 
-                                            {/* AI Summary */}
-                                            <div className="border border-zinc-900 rounded-lg p-4 space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="text-[13px] text-zinc-600">// AI EXECUTIVE SUMMARY</div>
-                                                    <button
-                                                        onClick={() => handleAiSummary(selectedTask)}
-                                                        disabled={aiPanel?.state === 'generating'}
-                                                        className={`text-xs font-mono px-3 py-1.5 rounded border transition-all ${
-                                                            aiPanel?.state === 'generating'
-                                                                ? 'text-zinc-600 border-zinc-800 cursor-not-allowed'
-                                                                : 'text-[#FF5500] border-[#FF5500]/40 hover:bg-[#FF5500]/10 cursor-pointer'
-                                                        }`}
-                                                    >
-                                                        ⚡ /ai Generate
-                                                    </button>
-                                                </div>
-                                                {selectedTask.ai_summary ? (
-                                                    <p className="text-sm text-zinc-300 leading-relaxed border-l-2 border-[#FF5500] pl-3">{selectedTask.ai_summary}</p>
+                                            {/* ── Yellow: Activity Update ── */}
+                                            <div className="border border-zinc-900 rounded-lg p-4">
+                                                <div className="text-[13px] text-zinc-600 mb-3">// ACTIVITY UPDATE</div>
+                                                {latestActivity ? (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-[#FF5500]">{latestActivity.user_name}</span>
+                                                            <span className="text-xs text-zinc-600">{new Date(latestActivity.created_at).toLocaleString('zh-TW')}</span>
+                                                        </div>
+                                                        <p className="text-sm text-zinc-300 leading-relaxed border-l-2 border-yellow-500 pl-3">{latestActivity.content}</p>
+                                                        {activities.length > 1 && (
+                                                            <div className="text-xs text-zinc-600 pt-1">+ {activities.length - 1} 則較早更新</div>
+                                                        )}
+                                                    </div>
                                                 ) : (
-                                                    <p className="text-[13px] text-zinc-700 italic">Press ⚡ /ai Generate to create a summary and notify the client.</p>
+                                                    <div className="text-xs text-zinc-700 italic">No activity update yet.</div>
                                                 )}
                                             </div>
 
-                                            <div className="border border-zinc-900 rounded-lg p-4">
-                                                <div className="text-[13px] text-zinc-600 mb-3">ACTIVITY</div>
-                                                <div className="text-xs text-zinc-700 italic">No activity yet.</div>
+                                            {/* ── Blue: Comments + AI Generate ── */}
+                                            <div className="border border-zinc-900 rounded-lg p-4 space-y-4">
+                                                <div className="text-[13px] text-zinc-600">// COMMENTS</div>
+
+                                                {comments.length > 0 && (
+                                                    <div className="space-y-3">
+                                                        {comments.map(c => (
+                                                            <div key={c.id} className={`rounded-lg p-3 border ${c.is_admin ? 'border-zinc-800 bg-zinc-900/50' : 'border-[#FF5500]/20 bg-[#FF5500]/5'}`}>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <span className="text-xs font-bold text-zinc-300">{c.user_name}</span>
+                                                                    <span className="text-[10px] text-zinc-500">{new Date(c.created_at).toLocaleString('zh-TW')}</span>
+                                                                </div>
+                                                                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">{c.content}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                <div className="space-y-2">
+                                                    <textarea
+                                                        value={aiCommentDraft || commentDraft}
+                                                        onChange={e => { setCommentDraft(e.target.value); setAiCommentDraft(''); }}
+                                                        placeholder="Write a comment…"
+                                                        rows={3}
+                                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60 resize-none"
+                                                    />
+                                                    {commentDraft.trim() && (
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={handleAiComment}
+                                                                disabled={commentAiLoading}
+                                                                className="text-xs text-[#FF5500] border border-[#FF5500]/40 hover:bg-[#FF5500]/10 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+                                                            >
+                                                                {commentAiLoading ? '⚡ Generating…' : '⚡ /ai Polish'}
+                                                            </button>
+                                                            <div className="flex-1" />
+                                                            <button
+                                                                onClick={handleSubmitComment}
+                                                                disabled={commentLoading || !(aiCommentDraft || commentDraft).trim()}
+                                                                className="text-xs bg-[#FF5500] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
+                                                            >
+                                                                {commentLoading ? '…' : 'Send'}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -709,43 +876,6 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                 />
             )}
 
-            {showNewProject && (
-                <div className="absolute inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowNewProject(false)}>
-                    <div className="bg-[#0A0A0B] border border-zinc-800 rounded-xl w-full max-w-sm p-6 space-y-5" onClick={e => e.stopPropagation()}>
-                        <div>
-                            <div className="text-xs text-zinc-600 tracking-widest mb-1">// NEW PROJECT</div>
-                            <h3 className="text-base font-bold text-white">建立新專案</h3>
-                        </div>
-                        <div>
-                            <label className="text-xs text-zinc-600 block mb-1.5">PROJECT NAME</label>
-                            <input
-                                type="text"
-                                value={newProjectName}
-                                onChange={e => setNewProjectName(e.target.value)}
-                                placeholder="e.g. 品牌重塑專案"
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
-                                autoFocus
-                                onKeyDown={e => e.key === 'Enter' && handleCreateProject()}
-                            />
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowNewProject(false)}
-                                className="flex-1 py-2.5 text-[13px] text-zinc-500 border border-zinc-800 rounded-lg hover:border-zinc-600 transition-colors"
-                            >
-                                取消
-                            </button>
-                            <button
-                                onClick={handleCreateProject}
-                                disabled={!newProjectName.trim()}
-                                className="flex-1 py-2.5 text-[13px] font-bold bg-[#FF5500] text-black rounded-lg hover:bg-white transition-colors disabled:opacity-40"
-                            >
-                                建立 →
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
