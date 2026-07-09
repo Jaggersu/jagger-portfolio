@@ -367,8 +367,8 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
 
     // ── Task detail right panel (shared) ─────────────────────────
     const renderTaskDetail = (task: Task) => {
-        const s = STATUS_CONFIG[task.status];
-        const p = PRIORITY_CONFIG[task.priority];
+        const s = STATUS_CONFIG[task.status] || { label: task.status || 'Unknown', color: 'text-zinc-500', bg: 'bg-zinc-900', dot: 'bg-zinc-600', progress: 0 };
+        const p = PRIORITY_CONFIG[task.priority] || { label: task.priority || 'Unknown', color: 'text-zinc-500', icon: '•' };
         const latestActivity = activities[0];
         return (
             <div className="w-1/2 flex flex-col overflow-hidden bg-[#0A0A0B]">
@@ -772,8 +772,8 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
                                                 此專案尚無任務
                                             </div>
                                         ) : projectTasks.map(task => {
-                                            const s = STATUS_CONFIG[task.status];
-                                            const p = PRIORITY_CONFIG[task.priority];
+                                            const s = STATUS_CONFIG[task.status] || { label: task.status || 'Unknown', color: 'text-zinc-500', bg: 'bg-zinc-900', dot: 'bg-zinc-600', progress: 0 };
+                                            const p = PRIORITY_CONFIG[task.priority] || { label: task.priority || 'Unknown', color: 'text-zinc-500', icon: '•' };
                                             const isSelected = selectedTask?.id === task.id;
                                             return (
                                                 <div key={task.id}
