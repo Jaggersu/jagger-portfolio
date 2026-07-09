@@ -153,6 +153,20 @@ export default function DashboardPanel({ onClose }: DashboardPanelProps) {
     useEffect(() => { fetchTasks(); }, [fetchTasks]);
     useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
+    // ── Supabase Realtime: 監聽任務變更 ─────────────────────────
+    useEffect(() => {
+        if (!profile?.id) return;
+        const channel = supabase
+            .channel('client-tasks')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${profile.id}` },
+                () => { fetchTasks(); }
+            )
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [profile?.id, fetchTasks]);
+
     const inProgress = tasks.filter(t => t.status === 'IN_PROGRESS');
     const queued     = tasks.filter(t => t.status === 'QUEUED');
     const review     = tasks.filter(t => t.status === 'REVIEW');

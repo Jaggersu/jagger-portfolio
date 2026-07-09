@@ -113,6 +113,10 @@ create policy "admin可讀寫所有任務" on public.tasks
     (select role from public.profiles where id = auth.uid()) = 'admin'
   );
 
+-- 啟用 tasks 與 contracts 表的 Realtime 變更訂閱
+alter publication supabase_realtime add table public.tasks;
+alter publication supabase_realtime add table public.contracts;
+
 -- ── 5. files ────────────────────────────────────────────────
 create table if not exists public.files (
   id              uuid primary key default gen_random_uuid(),

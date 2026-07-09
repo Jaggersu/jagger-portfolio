@@ -7,13 +7,15 @@ import UsersGroupIcon from '../icons/UsersGroupIcon';
 import Stack3Icon from '../icons/Stack3Icon';
 import FileDescriptionIcon from '../icons/FileDescriptionIcon';
 import GearIcon from '../icons/GearIcon';
+import { ContractIcon } from '../icons/ContractIcon';
+import AdminContractPanel from './AdminContractPanel';
 import type { AnimatedIconHandle } from '../icons/types';
 
 interface AdminDashboardProps {
     onClose: () => void;
 }
 
-type AdminNav = 'clients' | 'tasks' | 'files' | 'settings';
+type AdminNav = 'clients' | 'contracts' | 'tasks' | 'files' | 'settings';
 
 interface ClientRow {
     id: string;
@@ -38,10 +40,11 @@ interface TaskRow {
 }
 
 const NAV_ITEMS: { key: AdminNav; label: string }[] = [
-    { key: 'clients',  label: 'Clients' },
-    { key: 'tasks',    label: 'Tasks' },
-    { key: 'files',    label: 'Files' },
-    { key: 'settings', label: 'Settings' },
+    { key: 'clients',   label: 'Clients' },
+    { key: 'contracts', label: 'Contracts' },
+    { key: 'tasks',     label: 'Tasks' },
+    { key: 'files',     label: 'Files' },
+    { key: 'settings',  label: 'Settings' },
 ];
 
 const STATUS_COLOR: Record<string, string> = {
@@ -78,10 +81,36 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         setTasks((data ?? []).map((t: any) => ({ ...t, client_name: t.profiles?.name ?? '—' })));
     }, []);
 
+    const updateTaskStatus = useCallback(async (taskId: string, newStatus: string) => {
+        const { error } = await supabase
+            .from('tasks')
+            .update({ status: newStatus })
+            .eq('id', taskId);
+        if (error) {
+            console.error('[admin] update task status error:', error);
+            alert(`更新失敗：${error.message}`);
+        } else {
+            fetchTasks();
+        }
+    }, [fetchTasks]);
+
     useEffect(() => {
         setLoading(true);
         Promise.all([fetchClients(), fetchTasks()]).finally(() => setLoading(false));
     }, [fetchClients, fetchTasks]);
+
+    // ── Supabase Realtime: 監聽所有任務變更 ─────────────────────
+    useEffect(() => {
+        const channel = supabase
+            .channel('admin-tasks')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'tasks' },
+                () => { fetchTasks(); }
+            )
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [fetchTasks]);
 
     return (
         <div className="flex h-full w-full bg-[#000000] font-mono overflow-hidden">
@@ -102,10 +131,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${activeNav === item.key ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}`}
                         >
                             <span className="shrink-0 pointer-events-none">
-                                {item.key === 'clients'  && <UsersGroupIcon      ref={el => { iconRefs.current[i] = el; }} size={16} />}
-                                {item.key === 'tasks'    && <Stack3Icon          ref={el => { iconRefs.current[i] = el; }} size={16} />}
-                                {item.key === 'files'    && <FileDescriptionIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
-                                {item.key === 'settings' && <GearIcon            ref={el => { iconRefs.current[i] = el; }} size={16} />}
+                                {item.key === 'clients'   && <UsersGroupIcon      ref={el => { iconRefs.current[i] = el; }} size={16} />}
+                                {item.key === 'contracts' && <ContractIcon size={16} animate={activeNav === 'contracts' ? 'hover' : 'idle'} />}
+                                {item.key === 'tasks'     && <Stack3Icon          ref={el => { iconRefs.current[i] = el; }} size={16} />}
+                                {item.key === 'files'     && <FileDescriptionIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
+                                {item.key === 'settings'  && <GearIcon            ref={el => { iconRefs.current[i] = el; }} size={16} />}
                             </span>
                             {item.label}
                         </button>
@@ -210,6 +240,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                 </div>
                             )}
 
+                            {/* CONTRACTS */}
+                            {activeNav === 'contracts' && (
+                                <AdminContractPanel />
+                            )}
+
                             {/* TASKS */}
                             {activeNav === 'tasks' && (() => {
                                 const statusList = ['QUEUED','IN_PROGRESS','REVIEW','DELIVERED'] as const;
@@ -298,9 +333,15 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                 <div key={t.id} className="grid grid-cols-6 px-4 py-3 border-b border-zinc-900/50 text-sm items-center">
                                                     <span className="text-zinc-600 font-mono text-xs">{t.id.slice(0, 8)}</span>
                                                     <span className="col-span-2 text-zinc-300 truncate">{t.title}</span>
-                                                    <span className={`inline-flex items-center text-xs border rounded px-1.5 py-0.5 w-fit tracking-widest ${STATUS_COLOR[t.status] ?? 'text-zinc-600 border-zinc-800'}`}>
-                                                        {t.status}
-                                                    </span>
+                                                    <select
+                                                        value={t.status}
+                                                        onChange={e => updateTaskStatus(t.id, e.target.value)}
+                                                        className={`bg-zinc-950 text-xs border rounded px-1.5 py-0.5 w-fit tracking-widest outline-none cursor-pointer ${STATUS_COLOR[t.status] ?? 'text-zinc-600 border-zinc-800'}`}
+                                                    >
+                                                        {['QUEUED', 'IN_PROGRESS', 'REVIEW', 'DELIVERED'].map(s => (
+                                                            <option key={s} value={s}>{s}</option>
+                                                        ))}
+                                                    </select>
                                                     <span className="text-zinc-500 truncate">{t.client_name}</span>
                                                     <div className="flex items-center gap-2 pr-2">
                                                         <div className="flex-1 bg-zinc-900 rounded-full h-1 overflow-hidden">

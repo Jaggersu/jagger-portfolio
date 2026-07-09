@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
     const payment = searchParams.get('payment') ?? 'success';
     const redirectUrl = new URL('/', request.url);
     redirectUrl.searchParams.set('payment', payment);
-    return NextResponse.redirect(redirectUrl, 303);
+    return NextResponse.redirect(redirectUrl, 302);
 }
 
 export async function GET(request: NextRequest) {
@@ -13,5 +13,5 @@ export async function GET(request: NextRequest) {
     const payment = searchParams.get('payment') ?? 'success';
     const redirectUrl = new URL('/', request.url);
     redirectUrl.searchParams.set('payment', payment);
-    return NextResponse.redirect(redirectUrl, 303);
+    return NextResponse.redirect(redirectUrl, 302);
 }
