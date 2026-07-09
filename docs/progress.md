@@ -44,12 +44,21 @@
   - 從 form body 或 query string 解析 `MerchantOrderNo`
   - 避免重複初始化：檢查 contract status 與是否已有 tasks
 
-#### 6. 測試用資料種子按鈕（已完成）
-- 在 Client Dashboard 無任務空白狀態新增 `+ 建立測試任務` 按鈕
-- 一鍵為目前登入者建立專案與 4 個涵蓋各狀態的測試 tasks
-- 解決反覆手動找 UUID /貼 SQL 的問題
+#### 6. Admin Project-centric 重構（已完成）
+- Admin 側邊欄新增 **Projects** 導航
+- Projects 總覽：Project cards，每張顯示客戶名、狀態、任務總數、進度條、各狀態 task 數量
+- 點開 Project 進入 **Kanban board**：四欄 Todo / In Progress / In Review / Done
+- Kanban 卡片內可直接：
+  - 切換 task status
+  - 撰寫 **Activity Update**
+- Admin 可建立新 Project（選客戶 + 輸入名稱）
+- Realtime 同步 projects 與 tasks
 
-#### 7. 部署與程式碼提交
+#### 7. 測試用資料種子按鈕（已移除）
+- 原本在 Client Dashboard 無任務空白狀態新增 `+ 建立測試任務` 按鈕
+- 因測試應走正常流程，已移除
+
+#### 8. 部署與程式碼提交
 - TypeScript 檢查通過
 - 多次 git commit 並 push 至 `main` 分支
 - 重要 commits：
@@ -59,6 +68,7 @@
   - `cc0465a`: return route fallback
   - `9d0ffdc`: seed demo tasks button
   - `09dfdde`: fix recursive RLS, remove seed button
+  - `406c3b7`: admin project-centric view
 
 ---
 
@@ -78,8 +88,7 @@
 ### 尚未製作 / 待完成項目
 
 #### 高優先
-1. **Project-centric 重構**
-   - Admin 開 Project 並將 tasks 歸屬於 project
+1. **Client Project-centric 顯示**
    - Client Dashboard 改為顯示 Project cards，每張卡片內含進度條
    - 點開 Project 後才顯示其下的 tasks
 
@@ -87,9 +96,9 @@
    - 取代原本 `+ New Project` 按鈕的功能
    - 提供表單讓 Client 描述新需求，送出後通知 Admin
 
-3. **Admin Projects 看板**
-   - 將 Admin Dashboard 的 tasks 列表改為 Kanban-style board
-   - 支援拖曳任務切換狀態
+3. **Admin Projects 看板增強**
+   - 目前 Kanban 已支援四欄顯示、status 切換、activity update
+   - 後續可加入拖曳任務切換狀態
 
 #### 中優先
 4. **Contracts 強化**
