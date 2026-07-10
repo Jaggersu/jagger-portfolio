@@ -464,7 +464,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                                     ? 'text-emerald-400 border-emerald-950 bg-emerald-950/20'
                                                     : 'text-yellow-400 border-yellow-950 bg-yellow-950/20'
                                             }`}>
-                                                {c.status === 'SIGNED' ? '✓ 已簽署' : '● 待付款'}
+                                                {c.status === 'SIGNED' ? '✓ 已簽署' : '待付款'}
                                             </span>
                                         </div>
                                     </div>

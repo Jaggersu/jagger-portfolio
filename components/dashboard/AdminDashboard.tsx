@@ -8,7 +8,7 @@ import Stack3Icon from '../icons/Stack3Icon';
 import FileDescriptionIcon from '../icons/FileDescriptionIcon';
 import GearIcon from '../icons/GearIcon';
 import LayoutDashboardIcon from '../icons/LayoutDashboardIcon';
-import { ContractIcon } from '../icons/ContractIcon';
+import PenIcon from '../icons/PenIcon';
 import AdminContractPanel from './AdminContractPanel';
 import type { AnimatedIconHandle } from '../icons/types';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
@@ -95,6 +95,44 @@ const BADGE_COLOR: Record<string, string> = {
 };
 const KANBAN_COLS = ['QUEUED', 'IN_PROGRESS', 'REVIEW', 'DELIVERED'] as const;
 
+function StatusIcon({ status, className, style }: { status: string; className?: string; style?: React.CSSProperties }) {
+    if (status === 'QUEUED') {
+        return (
+            <svg className={`w-3.5 h-3.5 ${className}`} style={style} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+        );
+    }
+    if (status === 'IN_PROGRESS') {
+        return (
+            <svg className={`w-3.5 h-3.5 ${className}`} style={style} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M8 1.75C11.4518 1.75 14.25 4.54822 14.25 8C14.25 11.4518 11.4518 14.25 8 14.25V1.75Z" fill="currentColor" />
+            </svg>
+        );
+    }
+    if (status === 'REVIEW') {
+        return (
+            <svg className={`w-3.5 h-3.5 ${className}`} style={style} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2.5 2.5" />
+            </svg>
+        );
+    }
+    if (status === 'DELIVERED') {
+        return (
+            <svg className={`w-3.5 h-3.5 ${className}`} style={style} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="6.25" fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M5.5 8L7 9.5L10.5 6" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+        );
+    }
+    return (
+        <svg className={`w-3.5 h-3.5 ${className}`} style={style} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+    );
+}
+
 export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const { reset } = useUserFlow();
     const handleSignOut = () => { reset(); onClose(); };
@@ -107,6 +145,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null);
     const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
     const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+    const [projectTabClientId, setProjectTabClientId] = useState<string | null>(null);
 
     // Client detail extras
     const [clientProjects, setClientProjects]   = useState<ProjectRow[]>([]);
@@ -432,7 +471,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                         >
                             <span className="shrink-0 pointer-events-none">
                                 {item.key === 'clients'   && <UsersGroupIcon      ref={el => { iconRefs.current[i] = el; }} size={16} />}
-                                {item.key === 'contracts' && <ContractIcon size={16} animate={activeNav === 'contracts' ? 'hover' : 'idle'} />}
+                                {item.key === 'contracts' && <PenIcon             ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'projects'  && <LayoutDashboardIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'files'     && <FileDescriptionIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'settings'  && <GearIcon            ref={el => { iconRefs.current[i] = el; }} size={16} />}
@@ -460,18 +499,41 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
             <main className="flex-1 flex flex-col overflow-hidden">
                 {/* Topbar */}
                 <div className="h-12 border-b border-zinc-900 flex items-center justify-between px-6 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs text-zinc-600">ADMIN</span>
+                    <div className="flex items-center gap-3 select-none">
+                        <span className="text-xs text-zinc-650 font-mono">ADMIN</span>
                         <span className="text-zinc-800">›</span>
-                        <span className="text-sm text-zinc-300 uppercase">{activeNav}</span>
+                        <button
+                            onClick={() => {
+                                if (activeNav === 'projects') {
+                                    setSelectedProject(null);
+                                    setExpandedTaskId(null);
+                                    setAddingToColumn(null);
+                                } else if (activeNav === 'clients') {
+                                    setSelectedClient(null);
+                                }
+                            }}
+                            className={`text-xs uppercase font-mono transition-colors ${
+                                (activeNav === 'projects' && selectedProject) || (activeNav === 'clients' && selectedClient)
+                                    ? 'text-zinc-500 hover:text-zinc-350 cursor-pointer'
+                                    : 'text-zinc-300 pointer-events-none'
+                            }`}
+                        >
+                            {activeNav}
+                        </button>
                         {activeNav === 'projects' && selectedProject && (
                             <>
                                 <span className="text-zinc-800">›</span>
-                                <span className="text-sm text-zinc-300 truncate max-w-[200px]">{selectedProject.name}</span>
+                                <span className="text-xs text-zinc-350 truncate max-w-[200px] font-mono">{selectedProject.name}</span>
                             </>
                         )}
-                        {activeNav === 'clients' && (
-                            <span className="text-xs text-zinc-600 border border-zinc-900 px-1.5 py-0.5 rounded">
+                        {activeNav === 'clients' && selectedClient && (
+                            <>
+                                <span className="text-zinc-800">›</span>
+                                <span className="text-xs text-zinc-350 truncate max-w-[200px] font-mono">{selectedClient.name}</span>
+                            </>
+                        )}
+                        {activeNav === 'clients' && !selectedClient && (
+                            <span className="text-xs text-zinc-600 border border-zinc-900 px-1.5 py-0.5 rounded font-mono">
                                 {clients.length} users
                             </span>
                         )}
@@ -589,8 +651,8 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                 <div className="text-xs text-zinc-500 font-mono">{c.id.slice(0, 16)}…</div>
                                                                 <div className="text-xs text-zinc-600 mt-0.5">{new Date(c.created_at).toLocaleDateString('zh-TW')}</div>
                                                             </div>
-                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded border tracking-widest shrink-0 ${c.status === 'SIGNED' ? 'text-emerald-400 border-emerald-900' : 'text-zinc-500 border-zinc-800'}`}>
-                                                                {c.status === 'SIGNED' ? '已簽署' : '待簽署'}
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded border tracking-widest shrink-0 ${c.status === 'SIGNED' ? 'text-emerald-400 border-emerald-950 bg-emerald-950/20' : 'text-yellow-400 border-yellow-950 bg-yellow-950/20'}`}>
+                                                                {c.status === 'SIGNED' ? '已簽署' : '待付款'}
                                                             </span>
                                                         </div>
                                                     ))}
@@ -607,83 +669,130 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                             {/* ── PROJECTS ─────────────────────────────────────── */}
                             {activeNav === 'projects' && (() => {
                                 if (!selectedProject) {
-                                    /* Project cards list */
+                                    /* Split View: Clients on the left, their projects on the right */
+                                    const clientList = clients.filter(c => c.role !== 'admin');
+                                    const selectedClientObj = clientList.find(c => c.id === projectTabClientId);
+                                    const activeClientProjects = projectTabClientId
+                                        ? projects.filter(p => p.user_id === projectTabClientId)
+                                        : [];
+
                                     return (
-                                        <div className="flex flex-col h-full overflow-y-auto">
-                                            {/* Header + New Project form */}
-                                            <div className="px-5 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
-                                                <div className="text-sm text-zinc-300 tracking-wide">PROJECTS</div>
-                                                <div className="flex items-center gap-2">
-                                                    <select
-                                                        value={newProjectClientId}
-                                                        onChange={e => setNewProjectClientId(e.target.value)}
-                                                        className="bg-zinc-950 text-xs border border-zinc-800 rounded px-2 py-1.5 text-zinc-400 outline-none"
-                                                    >
-                                                        <option value="">Select client</option>
-                                                        {clients.filter(c => c.role !== 'admin').map(c => (
-                                                            <option key={c.id} value={c.id}>{c.name || c.email}</option>
-                                                        ))}
-                                                    </select>
-                                                    <input
-                                                        type="text"
-                                                        value={newProjectName}
-                                                        onChange={e => setNewProjectName(e.target.value)}
-                                                        placeholder="Project name"
-                                                        className="bg-zinc-950 text-xs border border-zinc-800 rounded px-2 py-1.5 text-zinc-300 placeholder-zinc-700 outline-none w-44"
-                                                        onKeyDown={e => e.key === 'Enter' && createProject()}
-                                                    />
-                                                    <button
-                                                        onClick={createProject}
-                                                        disabled={newProjectLoading}
-                                                        className="text-xs bg-[#3b82f6] text-black hover:bg-white px-3 py-1.5 rounded font-bold transition-colors disabled:opacity-50"
-                                                    >
-                                                        {newProjectLoading ? '…' : '+ New Project'}
-                                                    </button>
+                                        <div className="flex h-full w-full overflow-hidden divide-x divide-zinc-900/60">
+                                            {/* Left Pane: Clients List */}
+                                            <div className="w-[240px] shrink-0 flex flex-col bg-[#000000]">
+                                                <div className="px-4 py-[15px] border-b border-zinc-900 shrink-0">
+                                                    <div className="text-xs text-zinc-650 tracking-widest font-mono">// CLIENTS</div>
                                                 </div>
-                                                {newProjectError && (
-                                                    <div className="text-[10px] text-red-400 mt-1.5">⚠ {newProjectError}</div>
-                                                )}
+                                                <div className="flex-1 overflow-y-auto divide-y divide-zinc-900/30">
+                                                    {clientList.length === 0 ? (
+                                                        <div className="px-4 py-12 text-center text-zinc-700 text-xs font-mono">// NO CLIENTS</div>
+                                                    ) : clientList.map(client => {
+                                                        const isSelected = projectTabClientId === client.id;
+                                                        const clientProjectsCount = projects.filter(p => p.user_id === client.id).length;
+                                                        return (
+                                                            <button
+                                                                key={client.id}
+                                                                onClick={() => {
+                                                                    setProjectTabClientId(isSelected ? null : client.id);
+                                                                    setNewProjectClientId(isSelected ? '' : client.id);
+                                                                }}
+                                                                className={`w-full text-left px-4 py-3 transition-colors ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/40'}`}
+                                                            >
+                                                                <div className="text-sm text-zinc-200 font-bold truncate">{client.name}</div>
+                                                                <div className="text-[11px] text-zinc-500 truncate mt-0.5">{client.email}</div>
+                                                                <div className="text-[10px] text-zinc-655 font-mono mt-1.5 flex items-center justify-between">
+                                                                    <span>{clientProjectsCount} 個專案</span>
+                                                                    {isSelected && <span className="text-[#FF5500]">ACTIVE ›</span>}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                            {/* Cards */}
-                                            <div className="grid grid-cols-3 gap-4 p-5">
-                                                {projects.length === 0 ? (
-                                                    <div className="col-span-3 text-center py-12 text-zinc-700 text-sm">// NO PROJECTS YET</div>
-                                                ) : projects.map(p => {
-                                                    const { total, done, pct } = getProjectProgress(p);
-                                                    return (
-                                                        <div key={p.id}
-                                                            onClick={() => setSelectedProject(p)}
-                                                            className="bg-zinc-950 border border-zinc-900 rounded-lg p-4 cursor-pointer hover:border-zinc-700 transition-colors">
-                                                            <div className="flex items-start justify-between mb-3">
-                                                                <div>
-                                                                    <div className="text-sm font-bold text-zinc-200 mb-0.5">{p.name}</div>
-                                                                    <div className="text-xs text-zinc-600">{p.client_name}</div>
-                                                                </div>
-                                                                <span className={`text-xs border rounded px-1.5 py-0.5 shrink-0 ml-2 ${BADGE_COLOR[p.status] ?? 'text-zinc-600 border-zinc-800'}`}>{p.status}</span>
+
+                                            {/* Right Pane: Selected Client's Projects */}
+                                            <div className="flex-1 flex flex-col bg-[#000000] overflow-y-auto">
+                                                {!projectTabClientId ? (
+                                                    <div className="flex flex-col items-center justify-center flex-1 gap-2 text-zinc-700 font-mono">
+                                                        <span className="text-sm tracking-widest">// SELECT A CLIENT</span>
+                                                        <span className="text-xs">請從左側選擇客戶來管理專案</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col h-full">
+                                                        {/* Header with New Project Form */}
+                                                        <div className="px-5 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-[#080809]">
+                                                            <div>
+                                                                <span className="text-[10px] text-zinc-600 font-mono tracking-widest">// PROJECTS OF</span>
+                                                                <h2 className="text-sm font-bold text-white font-mono mt-0.5">{selectedClientObj?.name || '專案列表'}</h2>
                                                             </div>
-                                                            <div className="space-y-1.5">
-                                                                <div className="flex items-center justify-between text-xs">
-                                                                    <span className="text-zinc-600">{total} tasks</span>
-                                                                    <span className="text-zinc-400">{pct}%</span>
-                                                                </div>
-                                                                <div className="bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-                                                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: '#3b82f6' }} />
-                                                                </div>
-                                                                <div className="flex flex-wrap gap-1.5 pt-1">
-                                                                    {KANBAN_COLS.map(s => {
-                                                                        const cnt = p.task_stats?.find(x => x.status === s)?.count || 0;
-                                                                        return cnt > 0 ? (
-                                                                            <span key={s} className="text-[10px] px-1.5 py-0.5 rounded border"
-                                                                                style={{ color: STATUS_COLOR[s], borderColor: `${STATUS_COLOR[s]}40` }}>
-                                                                                {STATUS_LABEL[s]} {cnt}
-                                                                            </span>
-                                                                        ) : null;
-                                                                    })}
-                                                                </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={newProjectName}
+                                                                    onChange={e => setNewProjectName(e.target.value)}
+                                                                    placeholder="輸入專案名稱…"
+                                                                    className="bg-zinc-950 text-xs border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-300 placeholder-zinc-700 outline-none w-44 focus:border-zinc-600 font-mono"
+                                                                    onKeyDown={e => e.key === 'Enter' && createProject()}
+                                                                />
+                                                                <button
+                                                                    onClick={createProject}
+                                                                    disabled={newProjectLoading}
+                                                                    className="text-xs bg-[#FF5500] text-black hover:bg-white px-3 py-1.5 rounded font-bold font-mono transition-colors disabled:opacity-50"
+                                                                >
+                                                                    {newProjectLoading ? '…' : '+ 建立專案'}
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                    );
-                                                })}
+                                                        {newProjectError && (
+                                                            <div className="px-5 py-2 bg-red-950/20 border-b border-red-900/30 text-[10px] text-red-400 font-mono">
+                                                                ⚠ {newProjectError}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Projects Grid */}
+                                                        <div className="grid grid-cols-2 gap-4 p-5 flex-1 overflow-y-auto">
+                                                            {activeClientProjects.length === 0 ? (
+                                                                <div className="col-span-2 text-center py-12 text-zinc-700 text-sm italic font-mono">// 此客戶尚無專案</div>
+                                                            ) : activeClientProjects.map(p => {
+                                                                const { total, done, pct } = getProjectProgress(p);
+                                                                return (
+                                                                    <div key={p.id}
+                                                                        onClick={() => setSelectedProject(p)}
+                                                                        className="bg-zinc-950/30 border border-zinc-900 rounded-xl p-4 cursor-pointer hover:border-zinc-700 transition-colors h-fit">
+                                                                        <div className="flex items-start justify-between mb-3">
+                                                                            <div>
+                                                                                <div className="text-sm font-bold text-zinc-200 mb-0.5 font-mono">{p.name}</div>
+                                                                                <div className="text-[11px] text-zinc-600 font-mono">{p.client_name}</div>
+                                                                            </div>
+                                                                            <span className={`text-[10px] font-mono border rounded px-1.5 py-0.5 shrink-0 ml-2 ${BADGE_COLOR[p.status] ?? 'text-zinc-600 border-zinc-800'}`}>{p.status}</span>
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <div className="flex items-center justify-between text-xs">
+                                                                                <span className="text-zinc-650 font-mono">{total} tasks</span>
+                                                                                <span className="text-zinc-400 font-mono">{pct}%</span>
+                                                                            </div>
+                                                                            <div className="bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+                                                                                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: '#FF5500' }} />
+                                                                            </div>
+                                                                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                                                                {KANBAN_COLS.map(s => {
+                                                                                    const cnt = p.task_stats?.find(x => x.status === s)?.count || 0;
+                                                                                    return cnt > 0 ? (
+                                                                                        <span key={s} className="text-[9px] px-1 py-0.5 rounded border flex items-center gap-1 font-mono"
+                                                                                            style={{ color: STATUS_COLOR[s], borderColor: `${STATUS_COLOR[s]}40` }}>
+                                                                                            <StatusIcon status={s} className="w-2.5 h-2.5" />
+                                                                                            {STATUS_LABEL[s]} {cnt}
+                                                                                        </span>
+                                                                                    ) : null;
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -724,9 +833,9 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                             <div key={colStatus} className="flex-1 flex flex-col min-w-[220px] bg-zinc-950/50 border border-zinc-900 rounded-lg">
                                                                 {/* Column header */}
                                                                 <div className="px-3 py-2.5 border-b border-zinc-900 flex items-center gap-2 shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: STATUS_COLOR[colStatus] }} />
-                                                                    <span className="text-xs font-bold" style={{ color: STATUS_COLOR[colStatus] }}>{STATUS_LABEL[colStatus]}</span>
-                                                                    <span className="text-xs text-zinc-600 ml-auto">{colTasks.length}</span>
+                                                                    <StatusIcon status={colStatus} className="shrink-0" style={{ color: STATUS_COLOR[colStatus] }} />
+                                                                    <span className="text-xs font-bold font-mono" style={{ color: STATUS_COLOR[colStatus] }}>{STATUS_LABEL[colStatus]}</span>
+                                                                    <span className="text-xs text-zinc-650 ml-auto font-mono">{colTasks.length}</span>
                                                                 </div>
                                                                 {/* Task cards */}
                                                                 <div className="flex-1 overflow-y-auto p-2 space-y-2"
