@@ -7,6 +7,7 @@ import { LayoutList } from '../icons/LayoutList';
 import { FileIcon } from '../icons/FileIcon';
 import PenIcon from '../icons/PenIcon';
 import { SettingsIcon } from '../icons/SettingsIcon';
+import BrandAnthropicIcon from '../icons/BrandAnthropicIcon';
 import AskAIDialog from './AskAIDialog';
 import ContractPanel from './ContractPanel';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
@@ -172,6 +173,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const [driveLoading, setDriveLoading]       = useState<string | null>(null);
     const [settingsTab, setSettingsTab]         = useState<SettingsTab>('account');
     const contractIconRef                       = useRef<AnimatedIconHandle>(null);
+    const jagAgentIconRef                       = useRef<AnimatedIconHandle>(null);
     const [settingsForm, setSettingsForm]       = useState({
         displayName:      profile?.name  ?? '',
         notifyEmail:      profile?.email ?? '',
@@ -771,9 +773,11 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowAskAI(true)}
-                            className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white border border-zinc-800 hover:border-[#FF5500]/60 px-2.5 py-1 rounded transition-colors"
+                            onMouseEnter={() => jagAgentIconRef.current?.startAnimation()}
+                            onMouseLeave={() => jagAgentIconRef.current?.stopAnimation()}
+                            className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white border border-zinc-800 hover:border-[#FF5500]/60 px-2.5 py-1 rounded transition-colors group"
                         >
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] animate-pulse" />
+                            <BrandAnthropicIcon ref={jagAgentIconRef} size={14} color="#FF5500" />
                             Jag Agent
                         </button>
                         <span className="text-xs text-zinc-600 border border-zinc-900 px-2.5 py-1 rounded">{profile?.name ?? 'Client'}</span>
