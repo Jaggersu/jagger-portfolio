@@ -6,6 +6,7 @@ import XIcon from '../icons/XIcon';
 import UsersGroupIcon from '../icons/UsersGroupIcon';
 import Stack3Icon from '../icons/Stack3Icon';
 import FileDescriptionIcon from '../icons/FileDescriptionIcon';
+import RocketIcon from '../icons/RocketIcon';
 import GearIcon from '../icons/GearIcon';
 import LayoutDashboardIcon from '../icons/LayoutDashboardIcon';
 import PenIcon from '../icons/PenIcon';
@@ -504,7 +505,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                 {item.key === 'clients'   && <UsersGroupIcon      ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'contracts' && <PenIcon             ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'projects'  && <LayoutDashboardIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
-                                {item.key === 'files'     && <FileDescriptionIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
+                                {item.key === 'files'     && <RocketIcon          ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'settings'  && <GearIcon            ref={el => { iconRefs.current[i] = el; }} size={16} />}
                             </span>
                             {item.label}

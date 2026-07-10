@@ -7,6 +7,7 @@ import { LayoutList } from '../icons/LayoutList';
 import { FileIcon } from '../icons/FileIcon';
 import PenIcon from '../icons/PenIcon';
 import { SettingsIcon } from '../icons/SettingsIcon';
+import RocketIcon from '../icons/RocketIcon';
 import BrandAnthropicIcon from '../icons/BrandAnthropicIcon';
 import AskAIDialog from './AskAIDialog';
 import ContractPanel from './ContractPanel';
@@ -138,7 +139,7 @@ const PRIORITY_CONFIG = {
 
 const NAV: { key: NavItem; icon: React.ReactNode; label: string }[] = [
     { key: 'projects', icon: <LayoutList size={16} />,  label: 'My Projects' },
-    { key: 'files',    icon: <FileIcon size={16} />,    label: 'Files' },
+    { key: 'files',    icon: <RocketIcon size={16} />,    label: 'Files' },
     { key: 'contract', icon: <PenIcon size={16} />,     label: 'Contract' },
     { key: 'settings', icon: <SettingsIcon size={16} />, label: 'Settings' },
 ];
@@ -174,6 +175,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const [settingsTab, setSettingsTab]         = useState<SettingsTab>('account');
     const contractIconRef                       = useRef<AnimatedIconHandle>(null);
     const jagAgentIconRef                       = useRef<AnimatedIconHandle>(null);
+    const filesIconRef                          = useRef<AnimatedIconHandle>(null);
     const [settingsForm, setSettingsForm]       = useState({
         displayName:      profile?.name  ?? '',
         notifyEmail:      profile?.email ?? '',
@@ -713,9 +715,14 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                 <nav className="flex-1 px-2 py-3 space-y-0.5">
                     {NAV.map(item => {
                         const isHovered = hoveredNav === item.key;
-                        const iconWithAnimate = item.key === 'contract'
-                            ? React.cloneElement(item.icon as React.ReactElement<any>, { ref: contractIconRef })
-                            : React.cloneElement(item.icon as React.ReactElement<any>, { animate: isHovered ? 'hover' : 'idle' });
+                        let iconWithAnimate = item.icon;
+                        if (item.key === 'contract') {
+                            iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { ref: contractIconRef });
+                        } else if (item.key === 'files') {
+                            iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { ref: filesIconRef });
+                        } else {
+                            iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { animate: isHovered ? 'hover' : 'idle' });
+                        }
                         return (
                             <button
                                 key={item.key}
@@ -723,10 +730,12 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                 onMouseEnter={() => {
                                     setHoveredNav(item.key);
                                     if (item.key === 'contract') contractIconRef.current?.startAnimation();
+                                    if (item.key === 'files') filesIconRef.current?.startAnimation();
                                 }}
                                 onMouseLeave={() => {
                                     setHoveredNav(null);
                                     if (item.key === 'contract') contractIconRef.current?.stopAnimation();
+                                    if (item.key === 'files') filesIconRef.current?.stopAnimation();
                                 }}
                                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${activeNav === item.key ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}`}
                             >
