@@ -39,14 +39,13 @@ function getDriveClient() {
 
     // Use google.auth.JWT directly – more reliable than GoogleAuth wrapper on Vercel/OpenSSL 3
     // Cast to any to satisfy googleapis type overload (JWT private property conflict)
-    const auth = new google.auth.JWT(
+    const jwtClient = new google.auth.JWT({
         email,
-        undefined,
-        privateKey,
-        ['https://www.googleapis.com/auth/drive']
-    ) as any;
+        key: privateKey,
+        scopes: ['https://www.googleapis.com/auth/drive'],
+    });
 
-    return google.drive({ version: 'v3', auth });
+    return google.drive({ version: 'v3', auth: jwtClient as any });
 }
 
 
