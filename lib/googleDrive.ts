@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { JWT } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase Admin client for backend data updates (bypassing RLS)
@@ -7,30 +8,40 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+function normalizePrivateKey(raw: string): string {
+    // 1. Strip surrounding whitespace and quotes (single or double)
+    let key = raw.trim().replace(/^["']|["']$/g, '').trim();
+    // 2. If there are no real newlines, the string has literal \n – replace them
+    if (!key.includes('\n')) {
+        key = key.replace(/\\n/g, '\n');
+    }
+    // 3. Normalize CRLF → LF
+    key = key.replace(/\r\n/g, '\n').replace(/\r/g, '');
+    // 4. Ensure header/footer have their own lines (paranoia guard)
+    key = key
+        .replace(/-----BEGIN PRIVATE KEY-----\s*/g, '-----BEGIN PRIVATE KEY-----\n')
+        .replace(/\s*-----END PRIVATE KEY-----/g, '\n-----END PRIVATE KEY-----');
+    return key;
+}
+
 function getDriveClient() {
     const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+    const rawKey = process.env.GOOGLE_PRIVATE_KEY;
 
-    if (!email || !privateKey) {
+    if (!email || !rawKey) {
         throw new Error('Google credentials not configured in environment variables');
     }
 
-    // Normalize the private key – handles all common Vercel/dotenv formats:
-    // 1. Strip surrounding quotes (single or double)
-    privateKey = privateKey.trim().replace(/^["']|["']$/g, '');
-    // 2. If stored with literal \n (e.g. in Vercel env vars), convert to real newlines
-    if (!privateKey.includes('\n')) {
-        privateKey = privateKey.replace(/\\n/g, '\n');
-    }
-    // 3. Strip any Windows-style \r
-    privateKey = privateKey.replace(/\r/g, '');
+    const privateKey = normalizePrivateKey(rawKey);
 
-    if (!privateKey.startsWith('-----BEGIN')) {
-        throw new Error('GOOGLE_PRIVATE_KEY is malformed – does not start with -----BEGIN');
+    if (!privateKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
+        throw new Error(`GOOGLE_PRIVATE_KEY is malformed. First 80 chars: ${privateKey.slice(0, 80)}`);
     }
 
-    const auth = new google.auth.GoogleAuth({
-        credentials: { client_email: email, private_key: privateKey },
+    // Use JWT directly – more reliable than GoogleAuth wrapper on Vercel/OpenSSL 3
+    const auth = new JWT({
+        email,
+        key: privateKey,
         scopes: ['https://www.googleapis.com/auth/drive'],
     });
 
