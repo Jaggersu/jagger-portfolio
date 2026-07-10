@@ -8,6 +8,7 @@ import { FileIcon } from '../icons/FileIcon';
 import PenIcon from '../icons/PenIcon';
 import { SettingsIcon } from '../icons/SettingsIcon';
 import RocketIcon from '../icons/RocketIcon';
+import DownloadIcon from '../icons/DownloadIcon';
 import BrandAnthropicIcon from '../icons/BrandAnthropicIcon';
 import AskAIDialog from './AskAIDialog';
 import ContractPanel from './ContractPanel';
@@ -176,6 +177,8 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const contractIconRef                       = useRef<AnimatedIconHandle>(null);
     const jagAgentIconRef                       = useRef<AnimatedIconHandle>(null);
     const filesIconRef                          = useRef<AnimatedIconHandle>(null);
+    const cardUploadIconRef                     = useRef<AnimatedIconHandle>(null);
+    const cardDownloadIconRef                   = useRef<AnimatedIconHandle>(null);
     const [settingsForm, setSettingsForm]       = useState({
         displayName:      profile?.name  ?? '',
         notifyEmail:      profile?.email ?? '',
@@ -1023,10 +1026,14 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             {/* Folder 1: Client Upload */}
-                                            <div className="bg-zinc-950/20 border border-zinc-900 rounded-xl p-6 flex flex-col justify-between hover:border-zinc-800 transition-colors">
+                                            <div
+                                                onMouseEnter={() => cardUploadIconRef.current?.startAnimation()}
+                                                onMouseLeave={() => cardUploadIconRef.current?.stopAnimation()}
+                                                className="bg-zinc-950/20 border border-zinc-900 rounded-xl p-6 flex flex-col justify-between hover:border-zinc-800 transition-colors group/upload"
+                                            >
                                                 <div>
                                                     <div className="flex items-center gap-2.5 mb-3">
-                                                        <span className="text-2xl">📤</span>
+                                                        <RocketIcon ref={cardUploadIconRef} size={20} color="#FF5500" className="pointer-events-none" />
                                                         <h3 className="text-sm font-bold text-zinc-200 font-mono">01_共用上傳區</h3>
                                                     </div>
                                                     <p className="text-xs text-zinc-500 leading-relaxed font-mono min-h-[60px]">
@@ -1052,10 +1059,14 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                             </div>
 
                                             {/* Folder 2: Deliverables */}
-                                            <div className="bg-zinc-950/20 border border-zinc-900 rounded-xl p-6 flex flex-col justify-between hover:border-zinc-800 transition-colors">
+                                            <div
+                                                onMouseEnter={() => cardDownloadIconRef.current?.startAnimation()}
+                                                onMouseLeave={() => cardDownloadIconRef.current?.stopAnimation()}
+                                                className="bg-zinc-950/20 border border-zinc-900 rounded-xl p-6 flex flex-col justify-between hover:border-zinc-800 transition-colors group/view"
+                                            >
                                                 <div>
                                                     <div className="flex items-center gap-2.5 mb-3">
-                                                        <span className="text-2xl">📥</span>
+                                                        <DownloadIcon ref={cardDownloadIconRef} size={20} color="#3b82f6" className="pointer-events-none" />
                                                         <h3 className="text-sm font-bold text-zinc-200 font-mono">02_交付檢視區</h3>
                                                     </div>
                                                     <p className="text-xs text-zinc-500 leading-relaxed font-mono min-h-[60px]">
