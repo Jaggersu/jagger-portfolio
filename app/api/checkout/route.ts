@@ -55,6 +55,14 @@ export async function POST(req: NextRequest) {
                 .update({ plan_type: plan, status: 'ACTIVE' })
                 .eq('id', userId);
 
+            // 初始化 Google Drive 資料夾
+            try {
+                const { initializeProjectDriveFolders } = await import('../../../lib/googleDrive');
+                await initializeProjectDriveFolders(project.id);
+            } catch (driveErr) {
+                console.error('[Google Drive Mock Init Error]', driveErr);
+            }
+
             // 自動初始化籌備期任務
             const INIT_TASKS = [
                 { title: '與 AI 助理 JAVIS 完成核心需求規格收斂',    status: 'QUEUED', priority: 'HIGH', type: 'GENERAL' },

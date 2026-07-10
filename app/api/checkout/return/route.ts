@@ -23,6 +23,14 @@ async function ensurePaymentSuccess(merchantOrderNo: string | null) {
     if (contract.status === 'SIGNED') return; // callback 已處理過
 
     await supabaseAdmin.from('projects').update({ status: 'ACTIVE' }).eq('id', contract.project_id);
+    
+    // 初始化 Google Drive 資料夾
+    try {
+        const { initializeProjectDriveFolders } = await import('../../../../lib/googleDrive');
+        await initializeProjectDriveFolders(contract.project_id);
+    } catch (driveErr) {
+        console.error('[Google Drive Return Init Error]', driveErr);
+    }
     await supabaseAdmin
         .from('contracts')
         .update({ status: 'SIGNED', signed_at: new Date().toISOString() })

@@ -77,6 +77,8 @@ interface ProjectRow {
     name: string;
     status: string;
     created_at: string;
+    drive_upload_url?: string;
+    drive_view_url?: string;
 }
 
 interface Task {
@@ -165,6 +167,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const [loading, setLoading]                 = useState(true);
     const [aiPanel, setAiPanel]                 = useState<AiPanel | null>(null);
     const [showAskAI, setShowAskAI]             = useState(false);
+    const [selectedFileProjectId, setSelectedFileProjectId] = useState<string | null>(null);
     const [fileSearch, setFileSearch]           = useState('');
     const [driveLoading, setDriveLoading]       = useState<string | null>(null);
     const [settingsTab, setSettingsTab]         = useState<SettingsTab>('account');
@@ -206,7 +209,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const fetchProjects = useCallback(async () => {
         const { data, error } = await supabase
             .from('projects')
-            .select('id,name,status,created_at')
+            .select('id,name,status,created_at,drive_upload_url,drive_view_url')
             .order('created_at', { ascending: false });
         if (!error && data) setProjects(data);
     }, []);
@@ -960,53 +963,115 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                     })()}
 
                     {/* ── FILES ─────────────────────────────────────────── */}
-                    {activeNav === 'files' && (
-                        <div className="flex flex-col h-full overflow-y-auto">
-                            <div className="px-6 py-4 border-b border-zinc-900 flex items-center gap-3 shrink-0">
-                                <span className="text-xs text-zinc-600 tracking-widest">// FILES</span>
-                                <div className="flex-1" />
-                                <input
-                                    type="text"
-                                    value={fileSearch}
-                                    onChange={e => setFileSearch(e.target.value)}
-                                    placeholder="Search files…"
-                                    className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-300 font-mono placeholder-zinc-700 focus:outline-none focus:border-zinc-600 w-56"
-                                />
-                            </div>
-                            <div className="divide-y divide-zinc-900/60">
-                                <div className="grid grid-cols-12 gap-4 px-6 py-2 text-xs text-zinc-600">
-                                    <div className="col-span-5">File Name</div>
-                                    <div className="col-span-2">Size</div>
-                                    <div className="col-span-3">Uploaded</div>
-                                    <div className="col-span-2">Actions</div>
-                                </div>
-                                {filteredFiles.length === 0 && (
-                                    <div className="px-6 py-12 text-center text-[13px] text-zinc-700">No files found.</div>
-                                )}
-                                {filteredFiles.map(file => (
-                                    <div key={file.id} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-zinc-900/30 transition-colors">
-                                        <div className="col-span-5">
-                                            <div className="text-sm text-zinc-300 truncate">{file.file_name}</div>
-                                            <div className="text-xs text-zinc-700 mt-0.5 truncate">{file.storage_path}</div>
-                                        </div>
-                                        <div className="col-span-2 text-[13px] text-zinc-500">{fmt(file.size)}</div>
-                                        <div className="col-span-3 text-[13px] text-zinc-500">{file.created_at}</div>
-                                        <div className="col-span-2 flex items-center gap-2">
-                                            <a href={file.file_url} download className="text-xs text-zinc-500 hover:text-zinc-300 border border-zinc-900 px-2 py-1 rounded hover:border-zinc-700 transition-colors">↓</a>
-                                            <button
-                                                onClick={() => handleDriveTransfer(file)}
-                                                disabled={driveLoading === file.id}
-                                                className={`text-xs border px-2 py-1 rounded transition-colors ${driveLoading === file.id ? 'text-zinc-700 border-zinc-900 cursor-not-allowed' : 'text-[#FF5500] border-[#FF5500]/30 hover:bg-[#FF5500]/10 cursor-pointer'}`}
-                                                title="Transfer to Google Drive"
+                    {activeNav === 'files' && (() => {
+                        const activeProjectId = selectedFileProjectId || projects[0]?.id;
+                        const activeProject = projects.find(p => p.id === activeProjectId);
+
+                        return (
+                            <div className="flex flex-col h-full overflow-y-auto">
+                                <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-[#080809]">
+                                    <div>
+                                        <span className="text-[10px] text-zinc-650 font-mono tracking-widest">// CLOUD DRIVE PORTAL</span>
+                                        <h2 className="text-sm font-bold text-white font-mono mt-0.5">檔案中心 (Google Drive)</h2>
+                                    </div>
+                                    {projects.length > 1 && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-zinc-550 font-mono">選擇專案:</span>
+                                            <select
+                                                value={activeProjectId || ''}
+                                                onChange={e => setSelectedFileProjectId(e.target.value)}
+                                                className="bg-zinc-950 text-xs border border-zinc-800 rounded px-2.5 py-1.5 text-zinc-350 outline-none focus:border-zinc-700 font-mono"
                                             >
-                                                {driveLoading === file.id ? '…' : '▲'}
-                                            </button>
+                                                {projects.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {!activeProject ? (
+                                    <div className="flex flex-col items-center justify-center flex-1 gap-2 text-zinc-700 font-mono py-24">
+                                        <span className="text-sm tracking-widest">// NO ACTIVE PROJECTS</span>
+                                        <span className="text-xs">目前尚無進行中的專案，因此無法建立雲端資料夾。</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 p-6 max-w-4xl mx-auto w-full space-y-6">
+                                        {/* Project Info Header */}
+                                        <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-5 flex items-center justify-between">
+                                            <div>
+                                                <span className="text-[10px] text-zinc-600 font-mono tracking-widest">// CURRENT PROJECT</span>
+                                                <div className="text-base font-bold text-zinc-200 mt-0.5 font-mono">{activeProject.name}</div>
+                                            </div>
+                                            <span className="text-[10px] font-mono border border-[#FF5500]/30 text-[#FF5500] bg-[#FF5500]/5 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                                                {activeProject.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Folder 1: Client Upload */}
+                                            <div className="bg-zinc-950/20 border border-zinc-900 rounded-xl p-6 flex flex-col justify-between hover:border-zinc-800 transition-colors">
+                                                <div>
+                                                    <div className="flex items-center gap-2.5 mb-3">
+                                                        <span className="text-2xl">📤</span>
+                                                        <h3 className="text-sm font-bold text-zinc-200 font-mono">01_共用上傳區</h3>
+                                                    </div>
+                                                    <p className="text-xs text-zinc-500 leading-relaxed font-mono min-h-[60px]">
+                                                        請在此上傳您的品牌 Logo、素材、文案或參考資料。此資料夾設定為可編輯，您可以直接拖曳檔案上傳，我們將能同步讀取。
+                                                    </p>
+                                                </div>
+                                                <div className="mt-6">
+                                                    {activeProject.drive_upload_url ? (
+                                                        <a
+                                                            href={activeProject.drive_upload_url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="w-full text-center block text-xs bg-[#FF5500] text-black hover:bg-white px-4 py-2.5 rounded-lg font-bold font-mono transition-colors"
+                                                        >
+                                                            開啟雲端資料夾 ↗
+                                                        </a>
+                                                    ) : (
+                                                        <div className="w-full text-center text-xs border border-zinc-900 text-zinc-700 py-2.5 rounded-lg font-mono bg-zinc-950/40">
+                                                            資料夾建置中，請稍候…
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Folder 2: Deliverables */}
+                                            <div className="bg-zinc-950/20 border border-zinc-900 rounded-xl p-6 flex flex-col justify-between hover:border-zinc-800 transition-colors">
+                                                <div>
+                                                    <div className="flex items-center gap-2.5 mb-3">
+                                                        <span className="text-2xl">📥</span>
+                                                        <h3 className="text-sm font-bold text-zinc-200 font-mono">02_交付檢視區</h3>
+                                                    </div>
+                                                    <p className="text-xs text-zinc-500 leading-relaxed font-mono min-h-[60px]">
+                                                        此為唯讀資料夾。您可以直接檢視與下載 Jagger 交付的設計稿、最終成品與專案檔案。您無法修改或刪除此區的檔案。
+                                                    </p>
+                                                </div>
+                                                <div className="mt-6">
+                                                    {activeProject.drive_view_url ? (
+                                                        <a
+                                                            href={activeProject.drive_view_url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="w-full text-center block text-xs border border-zinc-800 text-zinc-350 hover:text-white hover:border-zinc-650 px-4 py-2.5 rounded-lg font-bold font-mono transition-colors"
+                                                        >
+                                                            開啟雲端資料夾 ↗
+                                                        </a>
+                                                    ) : (
+                                                        <div className="w-full text-center text-xs border border-zinc-900 text-zinc-700 py-2.5 rounded-lg font-mono bg-zinc-950/40">
+                                                            資料夾建置中，請稍候…
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
+                                )}
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* ── CONTRACT ─────────────────────────────────────────── */}
                     {activeNav === 'contract' && (

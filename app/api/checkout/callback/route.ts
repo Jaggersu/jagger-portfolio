@@ -66,6 +66,14 @@ export async function POST(req: Request) {
                 .update({ status: 'ACTIVE' })
                 .eq('id', projectId);
 
+            // 初始化 Google Drive 資料夾
+            try {
+                const { initializeProjectDriveFolders } = await import('../../../../lib/googleDrive');
+                await initializeProjectDriveFolders(projectId);
+            } catch (driveErr) {
+                console.error('[Google Drive Callback Init Error]', driveErr);
+            }
+
             // B. 更新 contract 狀態
             await supabaseAdmin
                 .from('contracts')

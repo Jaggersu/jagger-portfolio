@@ -213,3 +213,9 @@ create policy "admin可讀寫所有檔案" on public.files
   for all using (
     public.current_user_role() = 'admin'
   );
+
+-- ── 9. google drive folder migrations ─────────────────────────
+alter table public.profiles add column if not exists google_drive_folder_id text;
+alter table public.projects add column if not exists google_drive_folder_id text;
+alter table public.projects add column if not exists drive_upload_url text;
+alter table public.projects add column if not exists drive_view_url text;

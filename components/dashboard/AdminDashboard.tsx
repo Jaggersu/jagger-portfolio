@@ -28,6 +28,8 @@ interface ProjectRow {
     created_at: string;
     client_name?: string;
     task_stats?: { status: string; count: number }[];
+    drive_upload_url?: string;
+    drive_view_url?: string;
 }
 
 interface ClientRow {
@@ -265,7 +267,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
     const fetchClientExtras = useCallback(async (clientId: string) => {
         const [{ data: ps }, { data: cs }] = await Promise.all([
-            supabase.from('projects').select('id,name,status,created_at,user_id,tasks(status)').eq('user_id', clientId),
+            supabase.from('projects').select('id,name,status,created_at,user_id,drive_upload_url,drive_view_url,tasks(status)').eq('user_id', clientId),
             supabase.from('contracts').select('id,status,created_at,signed_at,project_id').eq('user_id', clientId),
         ]);
         setClientProjects((ps ?? []).map((p: any) => ({
@@ -375,12 +377,41 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         if (!newProjectName.trim()) { setNewProjectError('請填寫專案名稱'); return; }
         setNewProjectError('');
         setNewProjectLoading(true);
-        const { error } = await supabase
-            .from('projects')
-            .insert({ name: newProjectName.trim(), user_id: newProjectClientId, status: 'ACTIVE' });
-        setNewProjectLoading(false);
-        if (error) { alert(`建立專案失敗：${error.message}`); }
-        else { setNewProjectName(''); setNewProjectClientId(''); fetchProjects(); }
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) throw new Error('無法取得驗證 Token');
+
+            const res = await fetch('/api/admin/create-project', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: newProjectName.trim(),
+                    userId: newProjectClientId
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || '建立失敗');
+            }
+
+            if (data.warning) {
+                alert(`警告：${data.warning}`);
+            }
+
+            setNewProjectName('');
+            setNewProjectClientId('');
+            fetchProjects();
+        } catch (err: any) {
+            alert(`建立專案失敗：${err.message}`);
+        } finally {
+            setNewProjectLoading(false);
+        }
     }, [newProjectName, newProjectClientId, fetchProjects]);
 
     const updateTaskStatus = useCallback(async (taskId: string, newStatus: string) => {
@@ -808,6 +839,18 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                 className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">← Back</button>
                                             <span className="text-sm font-bold text-white">{selectedProject.name}</span>
                                             <span className="text-xs text-[#3b82f6] border border-[#3b82f6]/30 px-1.5 py-0.5 rounded">{selectedProject.client_name}</span>
+                                            {selectedProject.drive_upload_url && (
+                                                <a href={selectedProject.drive_upload_url} target="_blank" rel="noreferrer"
+                                                    className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-950 bg-emerald-950/20 px-2.5 py-0.5 rounded transition-colors font-mono">
+                                                    📤 上傳區 ↗
+                                                </a>
+                                            )}
+                                            {selectedProject.drive_view_url && (
+                                                <a href={selectedProject.drive_view_url} target="_blank" rel="noreferrer"
+                                                    className="text-xs text-sky-400 hover:text-sky-300 border border-sky-950 bg-sky-950/20 px-2.5 py-0.5 rounded transition-colors font-mono">
+                                                    📥 交付區 ↗
+                                                </a>
+                                            )}
                                             {(() => {
                                                 const { total, done, pct } = getProjectProgress(selectedProject);
                                                 return (
