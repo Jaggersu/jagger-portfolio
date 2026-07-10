@@ -1298,11 +1298,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                                 rel="noreferrer"
                                                                                                 onMouseEnter={() => uploadIconRefs.current.get(project.id)?.startAnimation()}
                                                                                                 onMouseLeave={() => uploadIconRefs.current.get(project.id)?.stopAnimation()}
-                                                                                                className="inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-900/60 bg-emerald-950/20 hover:bg-emerald-950/40 px-3 py-1.5 rounded-lg font-bold font-mono transition-colors"
+                                                                                                className="inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-900/60 bg-emerald-950/20 hover:bg-emerald-950/40 px-3 py-2 rounded-lg font-bold font-mono transition-colors"
                                                                                             >
                                                                                                 <RocketIcon
                                                                                                     ref={el => { if (el) uploadIconRefs.current.set(project.id, el); }}
-                                                                                                    size={14} color="currentColor" className="pointer-events-none"
+                                                                                                    size={16} color="currentColor" className="pointer-events-none"
                                                                                                 />
                                                                                                 上傳區 (Editor) ↗
                                                                                             </a>
@@ -1314,11 +1314,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                                 rel="noreferrer"
                                                                                                 onMouseEnter={() => downloadIconRefs.current.get(project.id)?.startAnimation()}
                                                                                                 onMouseLeave={() => downloadIconRefs.current.get(project.id)?.stopAnimation()}
-                                                                                                className="inline-flex items-center gap-2 text-xs text-sky-400 hover:text-sky-300 border border-sky-900/60 bg-sky-950/20 hover:bg-sky-950/40 px-3 py-1.5 rounded-lg font-bold font-mono transition-colors"
+                                                                                                className="inline-flex items-center gap-2 text-xs text-sky-400 hover:text-sky-300 border border-sky-900/60 bg-sky-950/20 hover:bg-sky-950/40 px-3 py-2 rounded-lg font-bold font-mono transition-colors"
                                                                                             >
                                                                                                 <DownloadIcon
                                                                                                     ref={el => { if (el) downloadIconRefs.current.set(project.id, el); }}
-                                                                                                    size={14} color="currentColor" className="pointer-events-none"
+                                                                                                    size={16} color="currentColor" className="pointer-events-none"
                                                                                                 />
                                                                                                 交付區 (Viewer) ↗
                                                                                             </a>
@@ -1330,11 +1330,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                         disabled={isGenerating}
                                                                                         onMouseEnter={() => plugIconRefs.current.get(project.id)?.startAnimation()}
                                                                                         onMouseLeave={() => plugIconRefs.current.get(project.id)?.stopAnimation()}
-                                                                                        className="inline-flex items-center gap-2 text-xs bg-[#FF5500] hover:bg-white text-black px-3.5 py-1.5 rounded-lg font-bold font-mono transition-colors disabled:opacity-50"
+                                                                                        className="inline-flex items-center gap-2 text-xs text-[#FF5500] hover:text-[#FF7733] border border-[#FF5500]/40 bg-[#FF5500]/10 hover:bg-[#FF5500]/20 px-3 py-2 rounded-lg font-bold font-mono transition-colors disabled:opacity-40"
                                                                                     >
                                                                                         <PlugConnectedIcon
                                                                                             ref={el => { if (el) plugIconRefs.current.set(project.id, el); }}
-                                                                                            size={14} color="currentColor" className="pointer-events-none"
+                                                                                            size={16} color="currentColor" className="pointer-events-none"
                                                                                         />
                                                                                         {isGenerating ? '建立中…' : '建立雲端資料夾'}
                                                                                     </button>
