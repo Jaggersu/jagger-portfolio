@@ -231,24 +231,69 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
         const amt = Number(targetContract.metadata?.amount || 0).toLocaleString();
         const timelineText = targetContract.metadata?.timeline || '按月續約';
         
-        const text = `設計服務合約\nJAGGER OS · SERVICE AGREEMENT\n\n` +
-            `Client: ${profile?.name || '—'}\n` +
-            `Email: ${profile?.email || '—'}\n` +
-            `Plan: ${planName}\n` +
-            `Amount: NT$ ${amt}\n` +
-            `Timeline: ${timelineText}\n` +
-            `Signed Date: ${targetContract.signed_at ? new Date(targetContract.signed_at).toLocaleString('zh-TW') : 'Pending'}\n\n` +
-            CONTRACT_CLAUSES.map(c => `${c.num}. ${c.title}\n${c.body.replace('[[AMOUNT]]', `NT$ ${amt}`).replace('[[TIMELINE]]', timelineText)}`).join('\n\n');
+        // Create temporary styled element for PDF rendering
+        const container = document.createElement('div');
+        container.style.fontFamily = 'sans-serif';
+        container.style.padding = '40px';
+        container.style.color = '#111';
+        container.style.lineHeight = '1.6';
+        container.style.background = '#ffffff';
         
-        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `contract-${planName}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        container.innerHTML = `
+            <h1 style="font-size: 22px; margin-bottom: 5px; color: #000; border-bottom: 2px solid #000; padding-bottom: 10px;">設計服務合約</h1>
+            <p style="color: #666; margin-top: 5px; font-size: 11px; tracking-widest: 1px;">JAGGER OS · SERVICE AGREEMENT</p>
+            
+            <div style="margin-top: 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 15px;">
+                <div><strong>Client:</strong> ${profile?.name || '—'}</div>
+                <div><strong>Email:</strong> ${profile?.email || '—'}</div>
+                <div><strong>Plan:</strong> ${planName}</div>
+                <div><strong>Amount:</strong> NT$ ${amt}</div>
+                <div><strong>Timeline:</strong> ${timelineText}</div>
+                <div><strong>Signed Date:</strong> ${targetContract.signed_at ? new Date(targetContract.signed_at).toLocaleString('zh-TW') : 'Pending'}</div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                ${CONTRACT_CLAUSES.map(c => `
+                    <div style="margin-bottom: 18px; font-size: 12px; page-break-inside: avoid;">
+                        <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #000;">${c.num}. ${c.title}</div>
+                        <div style="color: #333;">${c.body.replace('[[AMOUNT]]', `NT$ ${amt}`).replace('[[TIMELINE]]', timelineText)}</div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div style="margin-top: 30px; border-top: 2px solid #000; padding-top: 15px; font-size: 12px; page-break-inside: avoid;">
+                <strong>電子簽名:</strong><br/>
+                ${targetContract.metadata?.signature ? `<img style="max-height: 70px; margin-top: 8px; border: 1px solid #eee; background: #000; filter: invert(1);" src="${targetContract.metadata.signature}" />` : '<em>尚未簽署</em>'}
+            </div>
+        `;
+        
+        document.body.appendChild(container);
+        
+        const opt = {
+            margin:       12,
+            filename:     `contract-${planName}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2.5, useCORS: true, logging: false },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        const runHtml2Pdf = () => {
+            const w = window as any;
+            if (w.html2pdf) {
+                w.html2pdf().from(container).set(opt).save().then(() => {
+                    document.body.removeChild(container);
+                });
+            }
+        };
+        
+        if (!(window as any).html2pdf) {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = runHtml2Pdf;
+            document.head.appendChild(script);
+        } else {
+            runHtml2Pdf();
+        }
     };
 
     // Handle plan selection update price
@@ -640,7 +685,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                         onClick={() => handleDownloadContract(activeContract)}
                                         className="py-2.5 border border-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-mono font-bold hover:border-zinc-700 transition-colors"
                                     >
-                                        📥 下載文字檔
+                                        📥 下載 PDF 檔
                                     </button>
                                 </div>
                             </div>
