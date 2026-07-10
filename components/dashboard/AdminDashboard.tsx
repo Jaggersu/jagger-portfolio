@@ -149,6 +149,8 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
     const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
     const [projectTabClientId, setProjectTabClientId] = useState<string | null>(null);
+    const [filesTabClientId, setFilesTabClientId]     = useState<string | null>(null);
+    const [generatingDriveProjectId, setGeneratingDriveProjectId] = useState<string | null>(null);
 
     // Client detail extras
     const [clientProjects, setClientProjects]   = useState<ProjectRow[]>([]);
@@ -414,6 +416,36 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
             setNewProjectLoading(false);
         }
     }, [newProjectName, newProjectClientId, fetchProjects]);
+
+    const handleGenerateDriveFolders = useCallback(async (projectId: string) => {
+        setGeneratingDriveProjectId(projectId);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) throw new Error('無法取得驗證 Token');
+
+            const res = await fetch('/api/admin/generate-drive-folders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ projectId })
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || '建立失敗');
+            }
+
+            alert('Google Drive 資料夾成功建立！');
+            fetchProjects();
+        } catch (err: any) {
+            alert(`建立資料夾失敗：${err.message}`);
+        } finally {
+            setGeneratingDriveProjectId(null);
+        }
+    }, [fetchProjects]);
 
     const updateTaskStatus = useCallback(async (taskId: string, newStatus: string) => {
         const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
@@ -1172,12 +1204,131 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                             })()}
 
                             {/* ── FILES ────────────────────────────────────────── */}
-                            {activeNav === 'files' && (
-                                <div className="flex flex-col items-center justify-center h-full gap-3 text-zinc-600">
-                                    <span className="text-sm tracking-widest">// FILE UPLOAD COMING SOON</span>
-                                    <span className="text-xs">Supabase Storage 整合中</span>
-                                </div>
-                            )}
+                            {activeNav === 'files' && (() => {
+                                const selectedClientObj = clients.find(c => c.id === filesTabClientId);
+                                const clientProjs = projects.filter(p => p.user_id === filesTabClientId);
+
+                                return (
+                                    <div className="flex h-full overflow-hidden">
+                                        {/* Left Side: Client list */}
+                                        <div className="w-64 border-r border-zinc-900 flex flex-col bg-[#000000] shrink-0">
+                                            <div className="px-5 py-3 border-b border-zinc-900 flex items-center justify-between bg-[#080809]">
+                                                <span className="text-[10px] text-zinc-650 font-mono tracking-widest">// CLIENTS</span>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto p-2.5 space-y-1">
+                                                {clients.map(client => (
+                                                    <button
+                                                        key={client.id}
+                                                        onClick={() => setFilesTabClientId(client.id)}
+                                                        className={`w-full text-left px-3.5 py-2.5 rounded-lg text-xs font-mono transition-colors flex flex-col gap-0.5 ${
+                                                            filesTabClientId === client.id
+                                                                ? 'bg-zinc-900 text-white'
+                                                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/40'
+                                                        }`}
+                                                    >
+                                                        <span className="font-bold">{client.name || '未設定名稱'}</span>
+                                                        <span className="text-[10px] text-zinc-600 truncate">{client.email}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Right Side: Shared Folders list */}
+                                        <div className="flex-1 flex flex-col bg-[#000000] overflow-hidden">
+                                            <div className="px-5 py-3 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-[#080809]">
+                                                <div>
+                                                    <span className="text-[10px] text-zinc-650 font-mono tracking-widest">// CLOUD STORAGE MANAGEMENT</span>
+                                                    <h2 className="text-sm font-bold text-white font-mono mt-0.5">雲端硬碟管理</h2>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-1 overflow-y-auto p-6">
+                                                {!selectedClientObj ? (
+                                                    <div className="flex flex-col items-center justify-center h-full gap-2 text-zinc-700 font-mono py-24">
+                                                        <span className="text-xs tracking-widest">// SELECT CLIENT</span>
+                                                        <span className="text-[11px]">請在左側選擇客戶以管理其專案雲端資料夾。</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-6 max-w-3xl">
+                                                        {/* Client Info Banner */}
+                                                        <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-5 flex items-center justify-between">
+                                                            <div>
+                                                                <span className="text-[10px] text-zinc-600 font-mono tracking-widest">// CLIENT INFO</span>
+                                                                <div className="text-sm font-bold text-zinc-300 mt-0.5 font-mono">
+                                                                    {selectedClientObj.name} ({selectedClientObj.email})
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[10px] font-mono border border-blue-900 text-blue-400 bg-blue-950/20 px-2.5 py-0.5 rounded-full uppercase">
+                                                                {clientProjs.length} Projects
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Project List */}
+                                                        <div className="space-y-4">
+                                                            <div className="text-[10px] text-zinc-600 font-mono tracking-widest px-1">// ASSOCIATED FOLDERS</div>
+                                                            
+                                                            {clientProjs.length === 0 ? (
+                                                                <div className="text-xs text-zinc-700 font-mono p-4 border border-dashed border-zinc-900 rounded-lg text-center bg-zinc-950/20">
+                                                                    該客戶目前沒有任何專案。
+                                                                </div>
+                                                            ) : (
+                                                                clientProjs.map(project => {
+                                                                    const isGenerating = generatingDriveProjectId === project.id;
+                                                                    const hasUrls = project.drive_upload_url || project.drive_view_url;
+
+                                                                    return (
+                                                                        <div key={project.id} className="bg-zinc-950/20 border border-zinc-900 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-zinc-800 transition-colors">
+                                                                            <div>
+                                                                                <div className="text-xs font-bold text-zinc-300 font-mono">{project.name}</div>
+                                                                                <div className="text-[10px] text-zinc-650 font-mono mt-0.5">專案狀態: {project.status}</div>
+                                                                            </div>
+
+                                                                            <div className="flex flex-wrap items-center gap-2.5">
+                                                                                {hasUrls ? (
+                                                                                    <>
+                                                                                        {project.drive_upload_url && (
+                                                                                            <a
+                                                                                                href={project.drive_upload_url}
+                                                                                                target="_blank"
+                                                                                                rel="noreferrer"
+                                                                                                className="text-xs text-emerald-400 hover:text-emerald-350 border border-emerald-950 bg-emerald-950/20 px-3 py-1.5 rounded font-bold font-mono transition-colors"
+                                                                                            >
+                                                                                                📤 上傳區 (Editor) ↗
+                                                                                            </a>
+                                                                                        )}
+                                                                                        {project.drive_view_url && (
+                                                                                            <a
+                                                                                                href={project.drive_view_url}
+                                                                                                target="_blank"
+                                                                                                rel="noreferrer"
+                                                                                                className="text-xs text-sky-400 hover:text-sky-350 border border-sky-950 bg-sky-950/20 px-3 py-1.5 rounded font-bold font-mono transition-colors"
+                                                                                            >
+                                                                                                📥 交付區 (Viewer) ↗
+                                                                                            </a>
+                                                                                        )}
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <button
+                                                                                        onClick={() => handleGenerateDriveFolders(project.id)}
+                                                                                        disabled={isGenerating}
+                                                                                        className="text-xs bg-[#FF5500] text-black hover:bg-white px-3.5 py-1.5 rounded font-bold font-mono transition-colors disabled:opacity-50"
+                                                                                    >
+                                                                                        {isGenerating ? '建立中…' : '🔄 建立雲端資料夾'}
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {/* ── SETTINGS ─────────────────────────────────────── */}
                             {activeNav === 'settings' && (
