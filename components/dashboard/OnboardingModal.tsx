@@ -31,10 +31,10 @@ export default function OnboardingModal({ plan, onClose }: OnboardingModalProps)
     }, [isDashboard, onClose, closeDashboard]);
 
     useEffect(() => {
-        if (isDashboard) return;
+        // Always lock body scroll when the modal is open (prevents background page scrollbar)
         document.body.style.overflow = 'hidden';
         return () => { document.body.style.overflow = ''; };
-    }, [isDashboard]);
+    }, []);
 
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
@@ -55,11 +55,13 @@ export default function OnboardingModal({ plan, onClose }: OnboardingModalProps)
     }, [form, plan, register]);
 
     if (isDashboard) {
+        // Check if returning from payment with ?panel=contract
+        const initialNav = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('panel') === 'contract' ? 'contract' : undefined;
         return (
             <div className="fixed inset-0 z-[100] bg-[#000000]">
                 {profile?.role === 'admin'
                     ? <AdminDashboard onClose={handleClose} />
-                    : <DashboardPanel onClose={handleClose} />}
+                    : <DashboardPanel onClose={handleClose} initialNav={initialNav as any} />}
             </div>
         );
     }

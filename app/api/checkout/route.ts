@@ -117,8 +117,8 @@ export async function POST(req: NextRequest) {
             Email: email,
             LoginType: '0',
             NotifyURL: `${siteUrl}/api/checkout/callback`,
-            ReturnURL: `${siteUrl}/api/checkout/return?payment=success`,
-            ClientBackURL: `${siteUrl}/api/checkout/return?payment=cancel`,
+            ReturnURL: `${siteUrl}/api/checkout/return?payment=success&panel=contract`,
+            ClientBackURL: `${siteUrl}/api/checkout/return?payment=cancel&panel=contract`,
         };
         const tradeData = new URLSearchParams(plainParams).toString();
 

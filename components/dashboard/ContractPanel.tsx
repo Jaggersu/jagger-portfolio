@@ -280,8 +280,12 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
         `);
         printWindow.document.close();
         printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+        // Defer print dialog so the browser can flush layout (avoids INP issue)
+        setTimeout(() => {
+            printWindow.print();
+            // close() after print dialog dismissal; most browsers ignore close on print
+            printWindow.close();
+        }, 50);
     };
 
     // Download contract function - uses native print engine to guarantee A4 PDF vectors rendering
@@ -408,7 +412,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
     // RENDER: Embedded cabinet list view
     if (embedded) {
         return (
-            <div className="flex-1 flex overflow-hidden h-full">
+            <div className="flex-1 flex overflow-hidden h-full" style={{ maxHeight: '100%' }}>
                 {/* Left: Cabinet Contract Cards */}
                 <div className="flex-1 flex flex-col min-w-0 bg-[#000000] border-r border-zinc-900">
                     <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">

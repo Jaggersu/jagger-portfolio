@@ -13,6 +13,7 @@ import SatelliteDishIcon from '../icons/SatelliteDishIcon';
 
 interface DashboardPanelProps {
     onClose: () => void;
+    initialNav?: NavItem;
 }
 
 function StatusIcon({ status, className }: { status: string; className?: string }) {
@@ -151,9 +152,9 @@ interface AiPanel {
     emailSent: boolean;
 }
 
-export default function DashboardPanel({ onClose }: DashboardPanelProps) {
+export default function DashboardPanel({ onClose, initialNav }: DashboardPanelProps) {
     const { profile, selectedPlan, reset } = useUserFlow();
-    const [activeNav, setActiveNav]             = useState<NavItem>('projects');
+    const [activeNav, setActiveNav]             = useState<NavItem>(initialNav ?? 'projects');
     const [hoveredNav, setHoveredNav]           = useState<NavItem | null>(null);
     const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
     const [selectedTask, setSelectedTask]       = useState<Task | null>(null);
