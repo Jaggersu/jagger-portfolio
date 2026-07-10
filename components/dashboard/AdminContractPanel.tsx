@@ -312,8 +312,8 @@ export default function AdminContractPanel() {
                             >
                                 <div className="text-xs text-zinc-350 truncate font-bold mb-1">{c.project_name || '無專案名稱'}</div>
                                 <div className="flex items-center gap-1.5">
-                                    <span className={`text-[9px] px-1 py-0.5 rounded border ${isSigned ? 'text-emerald-400 border-emerald-950 bg-emerald-950/20' : 'text-zinc-550 border-zinc-850'}`}>
-                                        {isSigned ? '已簽' : '待簽'}
+                                    <span className={`text-[9px] px-1 py-0.5 rounded border ${isSigned ? 'text-emerald-400 border-emerald-950 bg-emerald-950/20' : 'text-yellow-400 border-yellow-950 bg-yellow-950/20'}`}>
+                                        {isSigned ? '已簽署' : '待付款'}
                                     </span>
                                     <span className="text-[10px] text-zinc-500">{c.plan_type}</span>
                                     <span className="text-[10px] text-zinc-700 ml-auto font-mono">{c.created_at.slice(0, 10)}</span>
