@@ -153,7 +153,7 @@ interface AiPanel {
 }
 
 export default function DashboardPanel({ onClose, initialNav }: DashboardPanelProps) {
-    const { profile, selectedPlan, reset } = useUserFlow();
+    const { profile, selectedPlan, reset, pendingPanel, clearPendingPanel } = useUserFlow();
     const [activeNav, setActiveNav]             = useState<NavItem>(initialNav ?? 'projects');
     const [hoveredNav, setHoveredNav]           = useState<NavItem | null>(null);
     const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
@@ -173,6 +173,13 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
         lineId:           '',
         telegramWebhook:  '',
     });
+
+    useEffect(() => {
+        if (pendingPanel) {
+            setActiveNav(pendingPanel as NavItem);
+            clearPendingPanel();
+        }
+    }, [pendingPanel, clearPendingPanel]);
 
     // ── Task detail: unified timeline feed ────────────────────────
     const [timeline, setTimeline]               = useState<any[]>([]);

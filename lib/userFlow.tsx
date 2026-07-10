@@ -35,6 +35,8 @@ interface UserFlowContextValue {
     dashboardOpen: boolean;
     openDashboard: () => void;
     closeDashboard: () => void;
+    pendingPanel: string | null;
+    clearPendingPanel: () => void;
     register: (profile: UserProfile, plan: string) => Promise<{ error: string | null }>;
     sign: (signatureDataUrl: string) => void;
     activate: () => void;
@@ -50,6 +52,8 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
     const [contractParams, setContractParams] = useState<ContractParams>({ amount: '', timeline: '' });
     const [dashboardOpen, setDashboardOpen] = useState(false);
+    // pendingPanel: set when returning from external payment so DB opens on the right tab
+    const [pendingPanel, setPendingPanel] = useState<string | null>(null);
 
     useEffect(() => {
         const syncSession = async (session: any) => {
@@ -82,6 +86,10 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
 
         // ?auth=success 或 ?payment= 時主動再 getSession 並開啟 Dashboard
         if (typeof window !== 'undefined' && (window.location.search.includes('auth=success') || window.location.search.includes('payment='))) {
+            // Capture panel param BEFORE clearing the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const panel = urlParams.get('panel');
+            if (panel) setPendingPanel(panel);
             supabase.auth.getSession().then(({ data: { session } }) => {
                 syncSession(session);
                 if (session?.user) setDashboardOpen(true);
@@ -108,6 +116,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
 
     const openDashboard = useCallback(() => setDashboardOpen(true), []);
     const closeDashboard = useCallback(() => setDashboardOpen(false), []);
+    const clearPendingPanel = useCallback(() => setPendingPanel(null), []);
 
     const register = useCallback(async (p: UserProfile, plan: string): Promise<{ error: string | null }> => {
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -155,7 +164,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <UserFlowContext.Provider value={{ flowState, profile, selectedPlan, contractParams, setContractParams, dashboardOpen, openDashboard, closeDashboard, register, sign, activate, reset, sendMagicLink }}>
+        <UserFlowContext.Provider value={{ flowState, profile, selectedPlan, contractParams, setContractParams, dashboardOpen, openDashboard, closeDashboard, pendingPanel, clearPendingPanel, register, sign, activate, reset, sendMagicLink }}>
             {children}
         </UserFlowContext.Provider>
     );

@@ -289,9 +289,6 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
     };
 
     // Download contract function - uses native print engine to guarantee A4 PDF vectors rendering
-    const handleDownloadContract = (targetContract: any) => {
-        handlePrintContract(targetContract);
-    };
 
     // Handle plan selection update price and timeline defaults
     useEffect(() => {
@@ -711,18 +708,12 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                 </div>
 
                                 {/* Print & Download action strip */}
-                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                <div className="grid grid-cols-1 gap-3 pt-2">
                                     <button
                                         onClick={() => handlePrintContract(activeContract)}
                                         className="py-2.5 border border-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-mono font-bold hover:border-zinc-700 transition-colors"
                                     >
                                         🖨 列印合約
-                                    </button>
-                                    <button
-                                        onClick={() => handleDownloadContract(activeContract)}
-                                        className="py-2.5 border border-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-mono font-bold hover:border-zinc-700 transition-colors"
-                                    >
-                                        📥 下載 PDF 檔
                                     </button>
                                 </div>
                             </div>
