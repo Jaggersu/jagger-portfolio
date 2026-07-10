@@ -84,6 +84,8 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
     const [txid, setTxid] = useState('');
     const [txidSubmitting, setTxidSubmitting] = useState(false);
     const [checkoutError, setCheckoutError] = useState<string | null>(null);
+    const [draftReadBottom, setDraftReadBottom] = useState(false);
+    const [signReadBottom, setSignReadBottom] = useState(false);
     
     const lastPos = useRef<{ x: number; y: number } | null>(null);
     const formSubmitRef = useRef(false);
@@ -265,7 +267,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                     <div>
                         <strong>乙方 (積加設計工作室) 簽署 / Service Provider:</strong><br/>
                         <div style="margin-top: 6px; font-size: 11px; color: #555;">
-                            代表人 (Representative): 蘇家杰 (Jagger Su)<br/>
+                            代表人 (Representative): Jagger Su<br/>
                             簽署日期 (Date): ${targetContract.signed_at ? new Date(targetContract.signed_at).toLocaleString('zh-TW') : 'Pending'}
                         </div>
                         <div style="margin-top: 8px;">
@@ -289,6 +291,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
 
     // Handle plan selection update price and timeline defaults
     useEffect(() => {
+        setDraftReadBottom(false);
         if (isAdding) {
             if (newPlan === 'ON-DEMAND') {
                 setNewAmount('');
@@ -301,6 +304,10 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
         }
     }, [newPlan, isAdding]);
 
+    useEffect(() => {
+        setSignReadBottom(false);
+    }, [selectedContractId]);
+
     const handleSign = useCallback(async () => {
         const canvas = canvasRef.current;
         if (!canvas || !hasSig || !agreed) return;
@@ -308,6 +315,20 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
         sign(signatureDataUrl);
 
         const currentPlan = isAdding ? newPlan : initialPlan;
+        const timelineVal = isAdding ? newTimeline : contractParams.timeline;
+        if (!timelineVal || timelineVal.trim() === "") {
+            setCheckoutError('請先填寫合約時程/交期再繼續');
+            setPaying(false);
+            return;
+        }
+
+        const readBottom = isAdding ? draftReadBottom : signReadBottom;
+        if (!readBottom) {
+            setCheckoutError('請先向下滾動完整閱讀合約條款再繼續');
+            setPaying(false);
+            return;
+        }
+
         const rawAmount = (isAdding ? newAmount : (PLAN_PRICES[initialPlan] ? String(PLAN_PRICES[initialPlan]) : contractParams.amount)).replace(/[^0-9]/g, '');
         const amount = parseInt(rawAmount, 10);
         if (!amount || amount <= 0) {
@@ -382,7 +403,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
             formSubmitRef.current = false;
             setPaying(false);
         }
-    }, [hasSig, agreed, sign, activate, contractParams, initialPlan, profile, isAdding, newPlan, newAmount, newTimeline, embedded, fetchContracts]);
+    }, [hasSig, agreed, sign, activate, contractParams, initialPlan, profile, isAdding, newPlan, newAmount, newTimeline, embedded, fetchContracts, draftReadBottom, signReadBottom]);
 
     // RENDER: Embedded cabinet list view
     if (embedded) {
@@ -516,8 +537,17 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                     </div>
 
                                     {/* Preview Clauses strip */}
-                                    <div className="border border-zinc-900 rounded-xl p-3 bg-zinc-950/20 max-h-56 overflow-y-auto space-y-3" style={{ scrollbarWidth: 'thin' }}>
-                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono">// CONTRACT PREVIEW CLAUSES</div>
+                                    <div 
+                                        onScroll={e => {
+                                            const target = e.currentTarget;
+                                            if (target.scrollHeight - target.scrollTop <= target.clientHeight + 15) {
+                                                setDraftReadBottom(true);
+                                            }
+                                        }}
+                                        className="border border-zinc-900 rounded-xl p-3 bg-zinc-950/20 max-h-56 overflow-y-auto space-y-3" 
+                                        style={{ scrollbarWidth: 'thin' }}
+                                    >
+                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono">// CONTRACT PREVIEW CLAUSES (請向下滾動完整閱讀解鎖)</div>
                                         {CONTRACT_CLAUSES.map(c => (
                                             <div key={c.num} className="text-[11px] leading-relaxed">
                                                 <span className="text-[#FF5500] font-bold mr-1.5">{c.num}.</span>
@@ -533,6 +563,12 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                             <button onClick={clearCanvas} className="text-[9px] text-zinc-600 hover:text-zinc-400 border border-zinc-900 px-2 py-0.5 rounded">CLEAR</button>
                                         </div>
                                         <div className="border border-zinc-800 rounded-xl overflow-hidden relative bg-[#000000]" style={{ height: '110px' }}>
+                                            {(!draftReadBottom || !newAmount.trim() || !newTimeline.trim()) && (
+                                                <div className="absolute inset-0 bg-black/90 backdrop-blur-xs flex flex-col items-center justify-center text-[10px] text-zinc-500 font-mono text-center px-4 space-y-1 z-10 select-none">
+                                                    <span>🔒 請填寫金額、交期並向下滾動完整閱讀合約</span>
+                                                    <span className="text-[8px] text-zinc-750 font-bold">（完成後即可解鎖電子簽名區）</span>
+                                                </div>
+                                            )}
                                             {!hasSig && (
                                                 <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-zinc-700 pointer-events-none select-none">
                                                     在此以滑鼠或觸控板簽名
@@ -809,7 +845,15 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                         ))}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-8 py-6 space-y-7">
+                    <div 
+                        onScroll={e => {
+                            const target = e.currentTarget;
+                            if (target.scrollHeight - target.scrollTop <= target.clientHeight + 15) {
+                                setSignReadBottom(true);
+                            }
+                        }}
+                        className="flex-1 overflow-y-auto px-8 py-6 space-y-7"
+                    >
                         {CONTRACT_CLAUSES.map(clause => {
                             const amountText = contractParams.amount ? `NT$ ${Number(contractParams.amount).toLocaleString()}` : '（待確認）';
                             const timelineText = contractParams.timeline || '（待確認）';
@@ -848,6 +892,12 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                 <button onClick={clearCanvas} className="text-[10px] text-zinc-650 hover:text-zinc-400 border border-zinc-900 px-2.5 py-1 rounded">CLEAR</button>
                             </div>
                             <div className="border border-zinc-800 rounded-xl overflow-hidden relative bg-[#0A0A0B]" style={{ minHeight: '150px' }}>
+                                {(!signReadBottom || !contractParams.amount || String(contractParams.amount).trim() === "" || !contractParams.timeline || String(contractParams.timeline).trim() === "") && (
+                                    <div className="absolute inset-0 bg-black/90 backdrop-blur-xs flex flex-col items-center justify-center text-[11px] text-zinc-500 font-mono text-center px-4 space-y-1.5 z-10 select-none">
+                                        <span>🔒 請確認金額、交期並閱讀左側合約至最下方</span>
+                                        <span className="text-[9px] text-zinc-750 font-bold">（完成後即可解鎖電子簽名區）</span>
+                                    </div>
+                                )}
                                 {!hasSig && (
                                     <span className="absolute inset-0 flex items-center justify-center text-[12px] font-mono text-zinc-700 pointer-events-none select-none">
                                         在此以滑鼠或觸控板簽名
