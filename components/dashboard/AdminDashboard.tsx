@@ -12,6 +12,7 @@ import { ContractIcon } from '../icons/ContractIcon';
 import AdminContractPanel from './AdminContractPanel';
 import type { AnimatedIconHandle } from '../icons/types';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
+import { useUserFlow } from '../../lib/userFlow';
 
 interface AdminDashboardProps {
     onClose: () => void;
@@ -95,6 +96,9 @@ const BADGE_COLOR: Record<string, string> = {
 const KANBAN_COLS = ['QUEUED', 'IN_PROGRESS', 'REVIEW', 'DELIVERED'] as const;
 
 export default function AdminDashboard({ onClose }: AdminDashboardProps) {
+    const { reset } = useUserFlow();
+    const handleSignOut = () => { reset(); onClose(); };
+
     const [activeNav, setActiveNav]           = useState<AdminNav>('clients');
     const [clients, setClients]               = useState<ClientRow[]>([]);
     const [projects, setProjects]             = useState<ProjectRow[]>([]);
@@ -437,8 +441,18 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                         </button>
                     ))}
                 </nav>
-                <div className="px-3 py-3 border-t border-zinc-900">
-                    <div className="text-xs text-red-500/60 tracking-widest">ADMIN ACCESS</div>
+                <div className="px-3 py-3 border-t border-zinc-900 space-y-3">
+                    <div className="bg-zinc-900/80 rounded-lg px-3 py-2">
+                        <div className="text-[13px] text-zinc-600 mb-0.5">ADMIN ACCESS</div>
+                        <div className="text-[13px] text-[#3b82f6] font-bold">Jagger Team</div>
+                        <div className="flex items-center gap-1 mt-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            <span className="text-[13px] text-blue-500">Active</span>
+                        </div>
+                    </div>
+                    <button onClick={handleSignOut} className="w-full text-xs text-zinc-600 hover:text-zinc-400 transition-colors py-1.5 border border-zinc-900 rounded hover:border-zinc-700">
+                        Sign out
+                    </button>
                 </div>
             </aside>
 
