@@ -15,7 +15,19 @@ function getDriveClient() {
         throw new Error('Google credentials not configured in environment variables');
     }
 
-    privateKey = privateKey.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+    // Normalize the private key – handles all common Vercel/dotenv formats:
+    // 1. Strip surrounding quotes (single or double)
+    privateKey = privateKey.trim().replace(/^["']|["']$/g, '');
+    // 2. If stored with literal \n (e.g. in Vercel env vars), convert to real newlines
+    if (!privateKey.includes('\n')) {
+        privateKey = privateKey.replace(/\\n/g, '\n');
+    }
+    // 3. Strip any Windows-style \r
+    privateKey = privateKey.replace(/\r/g, '');
+
+    if (!privateKey.startsWith('-----BEGIN')) {
+        throw new Error('GOOGLE_PRIVATE_KEY is malformed – does not start with -----BEGIN');
+    }
 
     const auth = new google.auth.GoogleAuth({
         credentials: { client_email: email, private_key: privateKey },
@@ -24,6 +36,7 @@ function getDriveClient() {
 
     return google.drive({ version: 'v3', auth });
 }
+
 
 /**
  * Gets or creates a client-specific mother folder inside the root Google Drive folder.
