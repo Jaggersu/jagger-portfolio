@@ -1,5 +1,4 @@
 import { google } from 'googleapis';
-import { JWT } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase Admin client for backend data updates (bypassing RLS)
@@ -38,12 +37,14 @@ function getDriveClient() {
         throw new Error(`GOOGLE_PRIVATE_KEY is malformed. First 80 chars: ${privateKey.slice(0, 80)}`);
     }
 
-    // Use JWT directly – more reliable than GoogleAuth wrapper on Vercel/OpenSSL 3
-    const auth = new JWT({
+    // Use google.auth.JWT directly – more reliable than GoogleAuth wrapper on Vercel/OpenSSL 3
+    // Cast to any to satisfy googleapis type overload (JWT private property conflict)
+    const auth = new google.auth.JWT(
         email,
-        key: privateKey,
-        scopes: ['https://www.googleapis.com/auth/drive'],
-    });
+        undefined,
+        privateKey,
+        ['https://www.googleapis.com/auth/drive']
+    ) as any;
 
     return google.drive({ version: 'v3', auth });
 }
@@ -80,7 +81,7 @@ export async function getOrCreateClientFolder(profileId: string, clientName: str
         spaces: 'drive',
     });
 
-    let folderId = listRes.data.files?.[0]?.id;
+    let folderId = (listRes.data as any).files?.[0]?.id as string | undefined;
 
     // 3. Create folder if it doesn't exist
     if (!folderId) {
