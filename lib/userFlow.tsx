@@ -80,8 +80,8 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
 
         supabase.auth.getSession().then(({ data: { session } }) => syncSession(session));
 
-        // ?auth=success 時主動再 getSession（PKCE callback 後 cookie 已設好）
-        if (typeof window !== 'undefined' && window.location.search.includes('auth=success')) {
+        // ?auth=success 或 ?payment= 時主動再 getSession 並開啟 Dashboard
+        if (typeof window !== 'undefined' && (window.location.search.includes('auth=success') || window.location.search.includes('payment='))) {
             supabase.auth.getSession().then(({ data: { session } }) => {
                 syncSession(session);
                 if (session?.user) setDashboardOpen(true);

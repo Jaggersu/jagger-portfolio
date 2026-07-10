@@ -183,16 +183,16 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
             <head>
                 <title>Service Agreement - ${planName}</title>
                 <style>
-                    body { font-family: sans-serif; padding: 40px; color: #111; line-height: 1.6; }
-                    .header-container { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 25px; }
-                    .logo-title { font-size: 24px; margin: 0; color: #000; }
-                    .logo-sub { color: #666; margin: 4px 0 0 0; font-size: 11px; letter-spacing: 1px; font-family: monospace; }
-                    .meta { margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-                    .meta-item { margin-bottom: 8px; }
-                    .clause { margin-bottom: 25px; }
-                    .clause-title { font-weight: bold; font-size: 15px; margin-bottom: 5px; color: #000; }
-                    .sig-section { margin-top: 40px; border-top: 2px solid #000; padding-top: 20px; }
-                    .sig-img { max-width: 280px; border: 1px solid #eee; margin-top: 10px; background: #000; filter: invert(1); }
+                    body { font-family: sans-serif; padding: 20px 30px; color: #111; line-height: 1.4; font-size: 12.5px; }
+                    .header-container { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px; }
+                    .logo-title { font-size: 21px; margin: 0; color: #000; }
+                    .logo-sub { color: #666; margin: 3px 0 0 0; font-size: 9.5px; letter-spacing: 0.5px; font-family: monospace; }
+                    .meta { margin-bottom: 18px; border-bottom: 1px solid #ccc; padding-bottom: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11.5px; }
+                    .meta-item { margin-bottom: 4px; }
+                    .clause { margin-bottom: 12px; }
+                    .clause-title { font-weight: bold; font-size: 13px; margin-bottom: 3px; color: #000; }
+                    .sig-section { margin-top: 20px; border-top: 2px solid #000; padding-top: 12px; font-size: 12px; }
+                    .sig-img { max-height: 50px; border: 1px solid #eee; margin-top: 6px; background: #000; filter: invert(1); }
                 </style>
             </head>
             <body>
@@ -259,17 +259,23 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
         
         // Create temporary styled element for PDF rendering
         const container = document.createElement('div');
+        // Fix for html2canvas scrolling & offset top space bug
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.width = '700px'; // fixed standard A4 width
         container.style.fontFamily = 'sans-serif';
-        container.style.padding = '40px';
+        container.style.padding = '30px 40px';
         container.style.color = '#111';
-        container.style.lineHeight = '1.6';
+        container.style.lineHeight = '1.4';
         container.style.background = '#ffffff';
+        container.style.fontSize = '12px';
         
         container.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px;">
                 <div>
-                    <h1 style="font-size: 22px; margin: 0; color: #000;">設計服務合約</h1>
-                    <p style="color: #666; margin: 5px 0 0 0; font-size: 11px; letter-spacing: 1px; font-family: monospace;">JAGGER OS · SERVICE AGREEMENT</p>
+                    <h1 style="font-size: 20px; margin: 0; color: #000;">設計服務合約</h1>
+                    <p style="color: #666; margin: 3px 0 0 0; font-size: 9.5px; letter-spacing: 0.5px; font-family: monospace;">JAGGER OS · SERVICE AGREEMENT</p>
                 </div>
                 <svg width="85" height="52" viewBox="0 0 316 194" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M94.2432 134.593C94.6279 135.106 94.8203 135.619 94.8203 136.132C94.8203 137.799 93.9867 138.633 92.3194 138.633C90.6521 138.633 89.8184 137.799 89.8184 136.132C89.8184 135.491 90.0108 134.978 90.3956 134.593V130.553C88.7283 132.99 86.6121 134.978 84.0471 136.517C81.482 137.928 78.2757 138.633 74.4281 138.633C69.4263 138.633 65.4504 137.543 62.5006 135.362C59.6791 133.182 57.627 130.425 56.3445 127.09C55.1902 123.627 54.6131 120.1 54.6131 116.509V100.927C54.6131 97.2073 55.1902 93.6803 56.3445 90.3458C57.4988 87.0112 59.8073 84.2538 63.2701 82.0735C66.8612 79.8932 72.1196 78.803 79.0452 78.803H90.3956V60.7194C90.3956 57.7696 89.8826 54.948 88.8565 52.2547C87.9588 49.4332 86.3556 47.1246 84.0471 45.3291C81.7385 43.4053 78.5322 42.4434 74.4281 42.4434C68.6568 42.4434 64.5527 44.1748 62.1159 47.6376C59.6791 51.1004 58.3965 54.8839 58.2683 58.988C58.653 59.501 58.8454 60.014 58.8454 60.527C58.8454 62.0661 58.0118 62.8356 56.3445 62.8356C54.6772 62.8356 53.8436 62.0661 53.8436 60.527C53.8436 59.7575 54.0359 59.1804 54.4207 58.7956C54.6772 55.3328 55.4467 52.0623 56.7293 48.9843C58.14 45.9062 60.2562 43.4053 63.0778 41.4815C65.8993 39.5577 69.6828 38.5958 74.4281 38.5958C79.43 38.5958 83.3417 39.686 86.1632 41.8663C89.1131 44.0466 91.1651 46.804 92.3194 50.1386C93.6019 53.4731 94.2432 57.0001 94.2432 60.7194V134.593ZM58.4607 116.509C58.4607 119.459 58.9095 122.345 59.8073 125.166C60.7051 127.988 62.3082 130.296 64.6168 132.092C67.0536 133.888 70.324 134.785 74.4281 134.785C78.5322 134.785 81.6744 133.952 83.8547 132.284C86.1632 130.617 87.7664 128.501 88.6642 125.936C89.6902 123.371 90.2673 120.678 90.3956 117.856V82.6506H79.0452C73.0173 82.6506 68.5285 83.5484 65.5787 85.3439C62.6289 87.1394 60.7051 89.448 59.8073 92.2696C58.9095 95.0911 58.4607 97.9768 58.4607 100.927V116.509Z" fill="#111111" />
@@ -281,19 +287,19 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                     <path d="M15.1265 4.42307C14.7281 4.80768 14.1305 5 13.3336 5C11.6072 5 10.744 4.16666 10.744 2.5C10.744 0.833337 11.6072 -1.50929e-07 13.3336 0C13.8649 4.64399e-08 14.4625 0.192313 15.1265 0.576926L36.5607 0.57693C36.9591 0.192317 37.4904 4.01919e-06 38.1544 4.07724e-06C39.8808 4.22817e-06 40.744 0.833341 40.744 2.5C40.744 4.16667 39.8808 5 38.1544 5C37.4904 5 36.9591 4.80769 36.5607 4.42307L15.1265 4.42307Z" fill="#111111" />
                     <path d="M293.734 131.512L293.704 131.999C293.704 132.507 293.897 132.943 294.283 133.309C294.668 133.674 295.024 133.857 295.349 133.857C297.786 133.857 299.938 133.491 301.806 132.76C303.695 132.029 304.639 131.298 304.639 130.567C304.639 130.222 304.294 129.928 303.603 129.684C302.933 129.42 301.786 129.105 300.161 128.74C298.557 128.354 297.39 128.059 296.658 127.856C295.927 127.633 295.349 127.43 294.922 127.247C294.496 127.064 294.059 126.81 293.612 126.486C292.658 125.815 292.181 124.82 292.181 123.5C292.181 122.16 292.668 120.84 293.643 119.541C294.638 118.221 295.877 117.094 297.359 116.16C298.841 115.225 300.436 114.403 302.141 113.692C305.512 112.291 308.345 111.59 310.64 111.59C312.894 111.59 314.285 112.078 314.813 113.053C314.975 113.398 315.057 113.784 315.057 114.21V114.423C315.057 115.5 314.823 116.342 314.356 116.951C313.909 117.561 313.188 118.109 312.193 118.596C311.219 119.084 310.437 119.327 309.848 119.327C309.279 119.327 308.914 119.287 308.751 119.206C308.609 119.124 308.487 119.023 308.386 118.901C308.284 118.759 308.152 118.657 307.99 118.596C307.848 118.535 307.776 118.383 307.776 118.139C307.776 117.896 307.878 117.652 308.081 117.408C308.284 117.144 308.426 116.87 308.508 116.586C307.167 116.647 305.766 116.962 304.304 117.53C302.842 118.079 301.583 118.698 300.527 119.388C299.491 120.079 298.628 120.739 297.938 121.368C297.247 121.998 296.902 122.465 296.902 122.769C296.902 123.054 297.369 123.287 298.303 123.47C302.507 124.303 305.269 125.023 306.589 125.633C307.908 126.242 308.822 126.932 309.33 127.704C309.838 128.476 310.091 129.176 310.091 129.806C310.091 131.105 309.574 132.334 308.538 133.491C307.502 134.649 306.223 135.593 304.7 136.324C301.431 137.928 298.577 138.731 296.141 138.731C293.724 138.731 292.049 138.355 291.115 137.604C290.201 136.873 289.744 135.999 289.744 134.984C289.744 133.969 289.998 133.035 290.506 132.182C291.034 131.308 291.704 130.872 292.516 130.872C293.328 130.872 293.734 131.085 293.734 131.512Z" fill="#111111" />
                     <path d="M295.684 107.387C294.628 107.387 293.846 107.093 293.338 106.504C292.831 105.894 292.577 105.123 292.577 104.189C292.577 103.234 292.922 102.3 293.612 101.386C294.303 100.452 295.318 99.4876 296.658 98.4926C298.019 97.4975 299.156 97 300.07 97C300.537 97 300.862 97.1117 301.045 97.3351C301.228 97.5381 301.4 97.6701 301.563 97.731C301.745 97.792 301.837 97.9747 301.837 98.2793C301.837 98.5839 301.756 98.8073 301.593 98.9495C301.431 99.0713 301.014 99.6094 300.344 100.564C299.694 101.498 299.309 102.117 299.187 102.422C299.512 102.747 299.674 103.255 299.674 103.945C299.674 104.615 299.278 105.356 298.486 106.169C297.694 106.981 296.76 107.387 295.684 107.387Z" fill="#111111" />
-                    <path d="M248.374 83.0547H212.592V116.913C212.592 119.863 213.041 122.749 213.938 125.57C214.964 128.392 216.632 130.701 218.94 132.496C221.377 134.292 224.584 135.189 228.559 135.189C234.587 135.189 238.691 133.522 240.871 130.188C243.18 126.725 244.398 122.877 244.526 118.645C244.142 118.26 243.949 117.747 243.949 117.105C243.949 115.439 244.783 114.605 246.45 114.604C248.117 114.604 248.951 115.438 248.951 117.105C248.951 117.747 248.759 118.26 248.374 118.645C248.117 122.107 247.348 125.378 246.065 128.456C244.783 131.534 242.731 134.099 239.909 136.151C237.216 138.075 233.433 139.037 228.559 139.037C223.558 139.037 219.582 137.947 216.632 135.767C213.81 133.586 211.758 130.829 210.475 127.494C209.321 124.031 208.744 120.504 208.744 116.913V76H212.592V79.207H244.526V76H248.374V83.0547ZM212.592 72H208.744V68H212.592V72ZM248.374 72H244.526V68H248.374V72ZM228.559 39C233.561 39.0001 237.472 40.0904 240.294 42.2705C243.244 44.4508 245.296 47.2084 246.45 50.543C247.733 53.8775 248.374 57.4047 248.374 61.124V64H244.526V61.124C244.526 58.1743 244.077 55.3524 243.18 52.6592C242.282 49.8376 240.679 47.5289 238.37 45.7334C236.062 43.8098 232.791 42.8477 228.559 42.8477C224.584 42.8477 221.377 43.8096 218.94 45.7334C216.632 47.5289 214.964 49.8376 213.938 52.6592C213.041 55.3524 212.592 58.1743 212.592 61.124V64H208.744V61.124C208.744 57.4048 209.321 53.8775 210.475 50.543C211.758 47.2084 213.81 44.4508 216.632 42.2705C219.582 40.0902 223.558 39 228.559 39Z" fill="#111111" />
+                    <path d="M248.374 83.0547H212.592V116.913C212.592 119.863 213.041 122.749 213.938 125.57C214.964 128.392 216.632 130.701 218.94 132.496C221.377 134.292 224.584 135.189 228.559 135.189C234.587 135.189 238.691 133.522 240.871 130.188C243.18 126.725 244.526 118.645C244.142 118.26 243.949 117.747 243.949 117.105C243.949 115.439 244.783 114.605 246.45 114.604C248.117 114.604 248.951 115.438 248.951 117.105C248.951 117.747 248.759 118.26 248.374 118.645C248.117 122.107 247.348 125.378 246.065 128.456C244.783 131.534 242.731 134.099 239.909 136.151C237.216 138.075 233.433 139.037 228.559 139.037C223.558 139.037 219.582 137.947 216.632 135.767C213.81 133.586 211.758 130.829 210.475 127.494C209.321 124.031 208.744 120.504 208.744 116.913V76H212.592V79.207H244.526V76H248.374V83.0547ZM212.592 72H208.744V68H212.592V72ZM248.374 72H244.526V68H248.374V72ZM228.559 39C233.561 39.0001 237.472 40.0904 240.294 42.2705C243.244 44.4508 245.296 47.2084 246.45 50.543C247.733 53.8775 248.374 57.4047 248.374 61.124V64H244.526V61.124C244.526 58.1743 244.077 55.3524 243.18 52.6592C242.282 49.8376 240.679 47.5289 238.37 45.7334C236.062 43.8098 232.791 42.8477 228.559 42.8477C224.584 42.8477 221.377 43.8096 218.94 45.7334C216.632 47.5289 214.964 49.8376 213.938 52.6592C213.041 55.3524 212.592 58.1743 212.592 61.124V64H208.744V61.124C208.744 57.4048 209.321 53.8775 210.475 50.543C211.758 47.2084 213.81 44.4508 216.632 42.2705C219.582 40.0902 223.558 39 228.559 39Z" fill="#111111" />
                     <path d="M286.656 164C286.656 165.387 286.208 166.485 285.312 167.296C284.438 168.085 283.083 168.48 281.249 168.48C279.414 168.48 278.038 168.085 277.121 167.296C276.225 166.485 275.777 165.387 275.777 164V151.2C275.777 149.813 276.214 148.725 277.089 147.936C277.985 147.125 279.35 146.72 281.185 146.72C283.019 146.72 284.385 147.125 285.281 147.936C286.198 148.725 286.656 149.813 286.656 151.2V164ZM284.417 151.2C284.417 150.389 284.15 149.76 283.617 149.312C283.083 148.864 282.273 148.64 281.185 148.64C280.118 148.64 279.318 148.864 278.785 149.312C278.273 149.76 278.017 150.389 278.017 151.2V164C278.017 164.789 278.283 165.419 278.816 165.888C279.35 166.336 280.161 166.56 281.249 166.56C282.315 166.56 283.105 166.336 283.617 165.888C284.15 165.44 284.417 164.811 284.417 164V151.2Z" fill="#111111" />
                     <path d="M270.83 168H265.39V166.08H266.99V149.12H265.39V147.2H270.83V149.12H269.23V166.08H270.83V168Z" fill="#111111" />
                     <path d="M254.413 147.2H256.653V166.08H262.509V168H254.413V147.2Z" fill="#111111" />
                     <path d="M248.5 164C248.5 165.387 248.052 166.485 247.156 167.296C246.282 168.085 244.927 168.48 243.092 168.48C241.258 168.48 239.882 168.085 238.964 167.296C238.068 166.485 237.62 165.387 237.62 164V151.2C237.62 149.813 238.058 148.725 238.932 147.936C239.828 147.125 241.194 146.72 243.028 146.72C244.863 146.72 246.228 147.125 247.124 147.936C248.042 148.725 248.5 149.813 248.5 151.2V164ZM246.26 151.2C246.26 150.389 245.994 149.76 245.46 149.312C244.927 148.864 244.116 148.64 243.028 148.64C241.962 148.64 241.162 148.864 240.628 149.312C240.116 149.76 239.86 150.389 239.86 151.2V164C239.86 164.789 240.127 165.419 240.66 165.888C241.194 166.336 242.004 166.56 243.092 166.56C244.159 166.56 244.948 166.336 245.46 165.888C245.994 165.44 246.26 164.811 246.26 164V151.2Z" fill="#111111" />
                     <path d="M224.819 168V147.2H233.619V149.12H227.059V156.48H232.339V158.4H227.059V168H224.819Z" fill="#111111" />
-                    <path d="M209.288 168V147.2H214.12C215.826 147.2 217.096 147.605 217.928 148.416C218.781 149.205 219.208 150.293 219.208 151.68V156.16C219.208 157.205 218.973 158.091 218.504 158.816C218.034 159.52 217.33 160.021 216.392 160.32L220.328 168H217.864L214.12 160.64H211.528V168H209.288ZM216.968 151.68C216.968 150.891 216.722 150.272 216.232 149.824C215.762 149.355 215.058 149.12 214.12 149.12H211.528V158.72H214.12C215.08 158.72 215.794 158.496 216.264 158.048C216.733 157.579 216.968 156.949 216.968 156.16V151.68Z" fill="#111111" />
+                    <path d="M209.288 168V147.2H214.12C215.826 147.2 217.096 147.605 217.928 148.416C218.781 149.205 219.208 151.68V156.16C219.208 157.205 218.973 158.091 218.504 158.816C218.034 159.52 217.33 160.021 216.392 160.32L220.328 168H217.864L214.12 160.64H211.528V168H209.288ZM216.968 151.68C216.968 150.891 216.722 150.272 216.232 149.824C215.762 149.355 215.058 149.12 214.12 149.12H211.528V158.72H214.12C215.08 158.72 215.794 158.496 216.264 158.048C216.733 157.579 216.968 156.949 216.968 156.16V151.68Z" fill="#111111" />
                     <path d="M203.375 164C203.375 165.387 202.927 166.485 202.031 167.296C201.157 168.085 199.802 168.48 197.967 168.48C196.133 168.48 194.757 168.085 193.839 167.296C192.943 166.485 192.495 165.387 192.495 164V151.2C192.495 149.813 192.933 148.725 193.807 147.936C194.703 147.125 196.069 146.72 197.903 146.72C199.738 146.72 201.103 147.125 201.999 147.936C202.917 148.725 203.375 149.813 203.375 151.2V164ZM201.135 151.2C201.135 150.389 200.869 149.76 200.335 149.312C199.802 148.864 198.991 148.64 197.903 148.64C196.837 148.64 196.037 148.864 195.503 149.312C194.991 149.76 194.735 150.389 194.735 151.2V164C194.735 164.789 195.002 165.419 195.535 165.888C196.069 166.336 196.879 166.56 197.967 166.56C199.034 166.56 199.823 166.336 200.335 165.888C200.869 165.44 201.135 164.811 201.135 164V151.2Z" fill="#111111" />
                     <path d="M177.944 168V147.2H182.776C184.483 147.2 185.752 147.605 186.584 148.416C187.437 149.205 187.864 150.293 187.864 151.68V157.12C187.864 158.507 187.448 159.605 186.616 160.416C185.784 161.205 184.504 161.6 182.776 161.6H180.184V168H177.944ZM185.624 151.68C185.624 150.891 185.379 150.272 184.888 149.824C184.419 149.355 183.715 149.12 182.776 149.12H180.184V159.68H182.776C183.736 159.68 184.451 159.456 184.92 159.008C185.389 158.539 185.624 157.909 185.624 157.12V151.68Z" fill="#111111" />
                 </svg>
             </div>
             
-            <div style="margin-top: 20px; margin-bottom: 25px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 15px;">
+            <div style="margin-top: 15px; margin-bottom: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11.5px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
                 <div><strong>Client:</strong> ${profile?.name || '—'}</div>
                 <div><strong>Email:</strong> ${profile?.email || '—'}</div>
                 <div><strong>Plan:</strong> ${planName}</div>
@@ -302,18 +308,18 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                 <div><strong>Signed Date:</strong> ${targetContract.signed_at ? new Date(targetContract.signed_at).toLocaleString('zh-TW') : 'Pending'}</div>
             </div>
             
-            <div style="margin-top: 15px;">
+            <div style="margin-top: 10px;">
                 ${CONTRACT_CLAUSES.map(c => `
-                    <div style="margin-bottom: 18px; font-size: 12px; page-break-inside: avoid;">
-                        <div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #000;">${c.num}. ${c.title}</div>
+                    <div style="margin-bottom: 12px; font-size: 11.5px; page-break-inside: avoid;">
+                        <div style="font-weight: bold; font-size: 12.5px; margin-bottom: 3px; color: #000;">${c.num}. ${c.title}</div>
                         <div style="color: #333;">${c.body.replace('[[AMOUNT]]', `NT$ ${amt}`).replace('[[TIMELINE]]', timelineText)}</div>
                     </div>
                 `).join('')}
             </div>
             
-            <div style="margin-top: 30px; border-top: 2px solid #000; padding-top: 15px; font-size: 12px; page-break-inside: avoid;">
+            <div style="margin-top: 20px; border-top: 2px solid #000; padding-top: 10px; font-size: 11.5px; page-break-inside: avoid;">
                 <strong>電子簽名:</strong><br/>
-                ${targetContract.metadata?.signature ? `<img style="max-height: 70px; margin-top: 8px; border: 1px solid #eee; background: #000; filter: invert(1);" src="${targetContract.metadata.signature}" />` : '<em>尚未簽署</em>'}
+                ${targetContract.metadata?.signature ? `<img style="max-height: 50px; margin-top: 6px; border: 1px solid #eee; background: #000; filter: invert(1);" src="${targetContract.metadata.signature}" />` : '<em>尚未簽署</em>'}
             </div>
         `;
         
@@ -529,16 +535,16 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                     {/* Parameters selection */}
                                     <div className="border border-zinc-900 rounded-xl p-3.5 space-y-3 bg-zinc-950/20">
                                         <div className="text-[10px] text-zinc-600 tracking-widest font-mono">SELECT PLAN</div>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {['LITE', 'PRO', 'SCALE'].map(p => (
+                                        <div className="grid grid-cols-4 gap-1.5">
+                                            {['LITE', 'PRO', 'SCALE', 'ON-DEMAND'].map(p => (
                                                 <button
                                                     key={p}
                                                     type="button"
                                                     onClick={() => setNewPlan(p)}
-                                                    className={`py-2 rounded-lg text-xs font-mono font-bold border transition-colors ${
+                                                    className={`py-2 rounded-lg text-[9px] font-mono font-bold border transition-colors ${
                                                         newPlan === p
                                                             ? 'border-[#FF5500]/60 bg-[#FF5500]/5 text-[#FF5500]'
-                                                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                                                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-350'
                                                     }`}
                                                 >
                                                     {p}
@@ -751,6 +757,8 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                         newAmount={newAmount}
                         paying={paying}
                         checkoutError={checkoutError}
+                        paymentTab={paymentTab}
+                        setPaymentTab={setPaymentTab}
                         cryptoChain={cryptoChain}
                         setCryptoChain={setCryptoChain}
                         copiedChain={copiedChain}
@@ -1010,6 +1018,8 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                     newAmount={contractParams.amount || String(fixedAmount)}
                     paying={paying}
                     checkoutError={checkoutError}
+                    paymentTab={paymentTab}
+                    setPaymentTab={setPaymentTab}
                     cryptoChain={cryptoChain}
                     setCryptoChain={setCryptoChain}
                     copiedChain={copiedChain}
@@ -1059,6 +1069,8 @@ interface PaymentModalProps {
     newAmount: string;
     paying: boolean;
     checkoutError: string | null;
+    paymentTab: 'fiat' | 'crypto';
+    setPaymentTab: (tab: 'fiat' | 'crypto') => void;
     cryptoChain: string;
     setCryptoChain: (chain: string) => void;
     copiedChain: string | null;
@@ -1078,6 +1090,8 @@ function PaymentFormModal({
     newAmount,
     paying,
     checkoutError,
+    paymentTab,
+    setPaymentTab,
     cryptoChain,
     setCryptoChain,
     copiedChain,
@@ -1111,60 +1125,143 @@ function PaymentFormModal({
                     {([
                         { key: 'fiat' as const,   label: '信用卡 / 匯款',  sub: 'NewebPay 線上金流', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
                         { key: 'crypto' as const, label: 'USDT / USDC', sub: '區塊鏈轉帳', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 9l4-3 4 3M8 15l4 3 4-3"/></svg> },
-                    ]).map(tab => (
-                        <button key={tab.key} onClick={() => {}}
-                            className={`py-4 text-center transition-colors flex flex-col items-center gap-1 hover:bg-zinc-900/40`}>
-                            <div className="flex items-center gap-1.5 text-zinc-500">
-                                {tab.icon}
-                                <div className="text-[13px] font-bold font-mono text-zinc-500">{tab.label}</div>
+                    ]).map(tab => {
+                        const isActive = paymentTab === tab.key;
+                        return (
+                            <button
+                                key={tab.key}
+                                onClick={() => setPaymentTab(tab.key)}
+                                className={`py-4 text-center transition-all flex flex-col items-center gap-1 hover:bg-zinc-900/40 border-b-2 ${
+                                    isActive ? 'border-[#FF5500] bg-zinc-900/20' : 'border-transparent text-zinc-600'
+                                }`}
+                            >
+                                <div className="flex items-center gap-1.5">
+                                    <div className={isActive ? 'text-[#FF5500]' : 'text-zinc-550'}>{tab.icon}</div>
+                                    <div className={`text-[13px] font-bold font-mono ${isActive ? 'text-white' : 'text-zinc-550'}`}>{tab.label}</div>
+                                </div>
+                                <div className="text-[10px] text-zinc-600 tracking-widest font-mono mt-0.5">{tab.sub}</div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {paymentTab === 'fiat' ? (
+                    <div className="p-6 space-y-5 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                             </div>
-                            <div className="text-[10px] text-zinc-650 tracking-widest">{tab.sub}</div>
+                            <div>
+                                <div className="text-[13px] font-bold text-white font-mono">藍新金流 NewebPay</div>
+                                <div className="text-[11px] text-zinc-500 font-mono">信用卡、ATM 轉帳、超商代碼</div>
+                            </div>
+                        </div>
+
+                        <p className="text-[12px] text-zinc-500 font-mono leading-relaxed">
+                            點擊下方按鈕後將跳轉至藍新金流，可依偏好選擇信用卡、ATM 匯款或超商付款等方式。
+                        </p>
+
+                        <div className="grid grid-cols-3 gap-2">
+                            {[
+                                { label: '信用卡', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
+                                { label: 'ATM 匯款', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M6 14h.01M10 10h8M10 14h8"/></svg> },
+                                { label: '超商代碼', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg> },
+                            ].map(m => (
+                                <div key={m.label} className="bg-zinc-900/30 border border-zinc-850 rounded-lg p-3 flex flex-col items-center gap-1.5">
+                                    <div className="text-[#FF5500]">{m.icon}</div>
+                                    <span className="text-[11px] text-zinc-400 font-mono">{m.label}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {checkoutError && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">
+                                <p className="text-[12px] text-red-400 font-mono">⚠ {checkoutError}</p>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={handleSign}
+                            disabled={paying}
+                            className="w-full py-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {paying ? '⟳ 跳轉中…' : '確認簽名並前往付款 →'}
                         </button>
-                    ))}
-                </div>
-
-                <div className="p-6 space-y-5 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-                        </div>
-                        <div>
-                            <div className="text-[13px] font-bold text-white font-mono">藍新金流 NewebPay</div>
-                            <div className="text-[11px] text-zinc-500 font-mono">信用卡、ATM 轉帳、超商代碼</div>
-                        </div>
                     </div>
-
-                    <p className="text-[12px] text-zinc-500 font-mono leading-relaxed">
-                        點擊下方按鈕後將跳轉至藍新金流，可依偏好選擇信用卡、ATM 匯款或超商付款等方式。
-                    </p>
-
-                    <div className="grid grid-cols-3 gap-2">
-                        {[
-                            { label: '信用卡', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
-                            { label: 'ATM 匯款', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M6 14h.01M10 10h8M10 14h8"/></svg> },
-                            { label: '超商代碼', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg> },
-                        ].map(m => (
-                            <div key={m.label} className="bg-zinc-900/30 border border-zinc-850 rounded-lg p-3 flex flex-col items-center gap-1.5">
-                                <div className="text-[#FF5500]">{m.icon}</div>
-                                <span className="text-[11px] text-zinc-400 font-mono">{m.label}</span>
+                ) : (
+                    <div className="p-6 space-y-5 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#FF5500] text-lg">
+                                🪙
                             </div>
-                        ))}
-                    </div>
-
-                    {checkoutError && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">
-                            <p className="text-[12px] text-red-400 font-mono">⚠ {checkoutError}</p>
+                            <div>
+                                <div className="text-[13px] font-bold text-white font-mono">USDT / USDC 區塊鏈轉帳</div>
+                                <div className="text-[11px] text-zinc-500 font-mono">請選擇鏈路並複製地址進行轉帳</div>
+                            </div>
                         </div>
-                    )}
 
-                    <button
-                        onClick={handleSign}
-                        disabled={paying}
-                        className="w-full py-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-lg transition-colors disabled:opacity-50"
-                    >
-                        {paying ? '⟳ 跳轉中…' : '確認簽名並前往付款 →'}
-                    </button>
-                </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            {WALLETS.map(w => (
+                                <button
+                                    key={w.chain}
+                                    type="button"
+                                    onClick={() => setCryptoChain(w.chain)}
+                                    className={`p-2.5 rounded-lg border text-left transition-all ${
+                                        cryptoChain === w.chain
+                                            ? 'border-[#FF5500]/60 bg-[#FF5500]/5 text-white'
+                                            : 'border-zinc-850 bg-zinc-950/20 text-zinc-500 hover:text-zinc-300'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-1.5 font-bold text-xs font-mono">
+                                        {w.icon}
+                                        {w.chain}
+                                    </div>
+                                    <div className="text-[9px] text-zinc-650 mt-0.5">{w.network}</div>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="border border-zinc-900 bg-zinc-950/40 rounded-xl p-3.5 space-y-2">
+                            <div className="flex items-center justify-between text-[10px] text-zinc-600 font-mono">
+                                <span>TRANSFER ADDRESS ({activeWallet.chain})</span>
+                                <button
+                                    type="button"
+                                    onClick={() => handleCopy(activeWallet.chain, activeWallet.address)}
+                                    className="text-[#FF5500] hover:text-white"
+                                >
+                                    {copiedChain === activeWallet.chain ? '✓ COPIED' : 'COPY'}
+                                </button>
+                            </div>
+                            <div className="bg-black/60 border border-zinc-850 p-2.5 rounded-lg text-xs text-zinc-300 break-all select-all font-mono leading-relaxed">
+                                {activeWallet.address}
+                            </div>
+                            <div className="text-[10px] text-zinc-500 leading-normal font-mono pt-1">
+                                ⚠ {activeWallet.warn}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] text-zinc-600 block">請輸入您的交易雜湊值 (TXID)</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="貼上轉帳 TXID..."
+                                    value={txid}
+                                    onChange={e => setTxid(e.target.value)}
+                                    className="flex-1 bg-zinc-950 border border-zinc-850 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-[#FF5500]/60 placeholder-zinc-700"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleTxidSubmit}
+                                    disabled={!txid.trim() || txidSubmitting}
+                                    className="px-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-xs rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                    {txidSubmitting ? '送出中…' : '確認送出'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
