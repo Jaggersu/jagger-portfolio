@@ -7,6 +7,8 @@ import UsersGroupIcon from '../icons/UsersGroupIcon';
 import Stack3Icon from '../icons/Stack3Icon';
 import FileDescriptionIcon from '../icons/FileDescriptionIcon';
 import RocketIcon from '../icons/RocketIcon';
+import DownloadIcon from '../icons/DownloadIcon';
+import PlugConnectedIcon from '../icons/PlugConnectedIcon';
 import GearIcon from '../icons/GearIcon';
 import LayoutDashboardIcon from '../icons/LayoutDashboardIcon';
 import PenIcon from '../icons/PenIcon';
@@ -151,6 +153,9 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [projectTabClientId, setProjectTabClientId] = useState<string | null>(null);
     const [filesTabClientId, setFilesTabClientId]     = useState<string | null>(null);
     const [generatingDriveProjectId, setGeneratingDriveProjectId] = useState<string | null>(null);
+    const uploadIconRefs   = useRef<Map<string, AnimatedIconHandle>>(new Map());
+    const downloadIconRefs = useRef<Map<string, AnimatedIconHandle>>(new Map());
+    const plugIconRefs     = useRef<Map<string, AnimatedIconHandle>>(new Map());
 
     // Client detail extras
     const [clientProjects, setClientProjects]   = useState<ProjectRow[]>([]);
@@ -1280,10 +1285,10 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                         <div key={project.id} className="bg-zinc-950/20 border border-zinc-900 rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-zinc-800 transition-colors">
                                                                             <div>
                                                                                 <div className="text-xs font-bold text-zinc-300 font-mono">{project.name}</div>
-                                                                                <div className="text-[10px] text-zinc-650 font-mono mt-0.5">專案狀態: {project.status}</div>
+                                                                                <div className="text-[10px] text-zinc-600 font-mono mt-0.5">專案狀態: {project.status}</div>
                                                                             </div>
 
-                                                                            <div className="flex flex-wrap items-center gap-2.5">
+                                                                            <div className="flex flex-wrap items-center gap-2">
                                                                                 {hasUrls ? (
                                                                                     <>
                                                                                         {project.drive_upload_url && (
@@ -1291,9 +1296,15 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                                 href={project.drive_upload_url}
                                                                                                 target="_blank"
                                                                                                 rel="noreferrer"
-                                                                                                className="text-xs text-emerald-400 hover:text-emerald-350 border border-emerald-950 bg-emerald-950/20 px-3 py-1.5 rounded font-bold font-mono transition-colors"
+                                                                                                onMouseEnter={() => uploadIconRefs.current.get(project.id)?.startAnimation()}
+                                                                                                onMouseLeave={() => uploadIconRefs.current.get(project.id)?.stopAnimation()}
+                                                                                                className="inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-900/60 bg-emerald-950/20 hover:bg-emerald-950/40 px-3 py-1.5 rounded-lg font-bold font-mono transition-colors"
                                                                                             >
-                                                                                                📤 上傳區 (Editor) ↗
+                                                                                                <RocketIcon
+                                                                                                    ref={el => { if (el) uploadIconRefs.current.set(project.id, el); }}
+                                                                                                    size={14} color="currentColor" className="pointer-events-none"
+                                                                                                />
+                                                                                                上傳區 (Editor) ↗
                                                                                             </a>
                                                                                         )}
                                                                                         {project.drive_view_url && (
@@ -1301,9 +1312,15 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                                 href={project.drive_view_url}
                                                                                                 target="_blank"
                                                                                                 rel="noreferrer"
-                                                                                                className="text-xs text-sky-400 hover:text-sky-350 border border-sky-950 bg-sky-950/20 px-3 py-1.5 rounded font-bold font-mono transition-colors"
+                                                                                                onMouseEnter={() => downloadIconRefs.current.get(project.id)?.startAnimation()}
+                                                                                                onMouseLeave={() => downloadIconRefs.current.get(project.id)?.stopAnimation()}
+                                                                                                className="inline-flex items-center gap-2 text-xs text-sky-400 hover:text-sky-300 border border-sky-900/60 bg-sky-950/20 hover:bg-sky-950/40 px-3 py-1.5 rounded-lg font-bold font-mono transition-colors"
                                                                                             >
-                                                                                                📥 交付區 (Viewer) ↗
+                                                                                                <DownloadIcon
+                                                                                                    ref={el => { if (el) downloadIconRefs.current.set(project.id, el); }}
+                                                                                                    size={14} color="currentColor" className="pointer-events-none"
+                                                                                                />
+                                                                                                交付區 (Viewer) ↗
                                                                                             </a>
                                                                                         )}
                                                                                     </>
@@ -1311,9 +1328,15 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                     <button
                                                                                         onClick={() => handleGenerateDriveFolders(project.id)}
                                                                                         disabled={isGenerating}
-                                                                                        className="text-xs bg-[#FF5500] text-black hover:bg-white px-3.5 py-1.5 rounded font-bold font-mono transition-colors disabled:opacity-50"
+                                                                                        onMouseEnter={() => plugIconRefs.current.get(project.id)?.startAnimation()}
+                                                                                        onMouseLeave={() => plugIconRefs.current.get(project.id)?.stopAnimation()}
+                                                                                        className="inline-flex items-center gap-2 text-xs bg-[#FF5500] hover:bg-white text-black px-3.5 py-1.5 rounded-lg font-bold font-mono transition-colors disabled:opacity-50"
                                                                                     >
-                                                                                        {isGenerating ? '建立中…' : '🔄 建立雲端資料夾'}
+                                                                                        <PlugConnectedIcon
+                                                                                            ref={el => { if (el) plugIconRefs.current.set(project.id, el); }}
+                                                                                            size={14} color="currentColor" className="pointer-events-none"
+                                                                                        />
+                                                                                        {isGenerating ? '建立中…' : '建立雲端資料夾'}
                                                                                     </button>
                                                                                 )}
                                                                             </div>
