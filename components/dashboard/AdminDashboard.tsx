@@ -78,12 +78,12 @@ interface ContractSummary {
 }
 
 const NAV_ITEMS: { key: AdminNav; label: string }[] = [
-    { key: 'clients',   label: 'Clients'   },
-    { key: 'contracts', label: 'Contracts' },
-    { key: 'projects',  label: 'Projects'  },
-    { key: 'files',     label: 'Files'     },
-    { key: 'inbox',     label: 'Inbox'     },
-    { key: 'settings',  label: 'Settings'  },
+    { key: 'clients',   label: '客戶管理'   },
+    { key: 'contracts', label: '合約管理'   },
+    { key: 'projects',  label: '專案管理'   },
+    { key: 'files',     label: '雲端設定'   },
+    { key: 'inbox',     label: '需求收件夾' },
+    { key: 'settings',  label: '系統設定'   },
 ];
 
 const STATUS_LABEL: Record<string, string> = {
@@ -192,7 +192,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         const { data, error } = await supabase
             .from('project_requests')
             .select('*, projects(name), profiles(name, email)')
-            .eq('status', 'TRIAGE')
+            .eq('status', '審核中')
             .order('created_at', { ascending: false });
         if (!error && data) {
             setRequests(data);
@@ -414,24 +414,43 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const handleConvertRequest = async (request: any) => {
         if (!confirm(`確定要將此需求「${request.title}」轉化為專案任務嗎？`)) return;
         try {
+            // Format task title (use AI polished title if available)
+            const finalTitle = request.ai_title || request.title;
+
+            // Format task description combining raw input and AI suggestions
+            let finalDesc = request.description || '';
+            if (request.ai_structured_content) {
+                const features = request.ai_structured_content.features || [];
+                const deliverables = request.ai_structured_content.deliverables || [];
+                if (features.length > 0 || deliverables.length > 0) {
+                    finalDesc += `\n\n### ⚡ AI 規格梳理建議`;
+                    if (features.length > 0) {
+                        finalDesc += `\n**功能點 (Features):**\n` + features.map((f: string) => `- ${f}`).join('\n');
+                    }
+                    if (deliverables.length > 0) {
+                        finalDesc += `\n\n**交付物 (Deliverables):**\n` + deliverables.map((d: string) => `- ${d}`).join('\n');
+                    }
+                }
+            }
+
             // 1. Insert into tasks
             const { error: insertErr } = await supabase
                 .from('tasks')
                 .insert({
                     project_id: request.project_id,
                     user_id: request.client_id,
-                    title: request.title,
-                    description: request.description,
+                    title: finalTitle,
+                    description: finalDesc,
                     status: 'QUEUED',
                     type: 'GENERAL',
                     priority: 'MED'
                 });
             if (insertErr) throw insertErr;
 
-            // 2. Update request status to 'CONVERTED'
+            // 2. Update request status to '已轉任務'
             const { error: updateErr } = await supabase
                 .from('project_requests')
-                .update({ status: 'CONVERTED' })
+                .update({ status: '已轉任務' })
                 .eq('id', request.id);
             if (updateErr) throw updateErr;
 
@@ -451,7 +470,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         try {
             const { error } = await supabase
                 .from('project_requests')
-                .update({ status: 'DECLINED' })
+                .update({ status: '已婉拒' })
                 .eq('id', request.id);
             if (error) throw error;
 
@@ -1513,6 +1532,43 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                         </div>
                                                     </div>
 
+                                                    {/* AI Structure Suggestions */}
+                                                    {selectedRequest.ai_title && (
+                                                        <div className="space-y-1.5 font-mono">
+                                                            <span className="text-[10px] text-[#FF5500] tracking-wider">// AI 需求梳理成果</span>
+                                                            <div className="border border-zinc-900 bg-zinc-950/40 rounded-xl p-4 space-y-3 text-xs">
+                                                                <div>
+                                                                    <span className="text-zinc-550 font-bold block mb-0.5">優化主題 (ai_title):</span>
+                                                                    <span className="text-zinc-200">{selectedRequest.ai_title}</span>
+                                                                </div>
+                                                                {selectedRequest.ai_structured_content && (
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-zinc-900/60">
+                                                                        {selectedRequest.ai_structured_content.features && selectedRequest.ai_structured_content.features.length > 0 && (
+                                                                            <div>
+                                                                                <span className="text-zinc-550 font-bold block mb-1">功能規格點 (Features):</span>
+                                                                                <ul className="list-disc pl-4 space-y-0.5 text-zinc-350 text-[11px]">
+                                                                                    {selectedRequest.ai_structured_content.features.map((f: string, i: number) => (
+                                                                                        <li key={i}>{f}</li>
+                                                                                    ))}
+                                                                                </ul>
+                                                                            </div>
+                                                                        )}
+                                                                        {selectedRequest.ai_structured_content.deliverables && selectedRequest.ai_structured_content.deliverables.length > 0 && (
+                                                                            <div>
+                                                                                <span className="text-zinc-550 font-bold block mb-1">交付物清單 (Deliverables):</span>
+                                                                                <ul className="list-disc pl-4 space-y-0.5 text-zinc-350 text-[11px]">
+                                                                                    {selectedRequest.ai_structured_content.deliverables.map((d: string, i: number) => (
+                                                                                        <li key={i}>{d}</li>
+                                                                                    ))}
+                                                                                </ul>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     {/* Attachments from Google Drive */}
                                                     <div className="space-y-1.5">
                                                         <span className="text-[10px] text-zinc-650 tracking-wider">// ATTACHMENTS (GOOGLE DRIVE)</span>
@@ -1542,15 +1598,15 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                 <div className="border-t border-zinc-900 pt-5 flex items-center gap-4">
                                                     <button
                                                         onClick={() => handleConvertRequest(selectedRequest)}
-                                                        className="flex-1 bg-[#FF5500] hover:bg-[#FF7733] text-white py-3 rounded-xl text-xs font-bold transition-colors"
+                                                        className="flex-1 bg-[#FF5500] hover:bg-[#FF7733] text-black py-3 rounded-xl text-xs font-bold transition-colors"
                                                     >
-                                                        一鍵轉化為任務 (Convert to Task)
+                                                        一鍵生成任務
                                                     </button>
                                                     <button
                                                         onClick={() => handleDeclineRequest(selectedRequest)}
                                                         className="bg-zinc-950 hover:bg-zinc-900 border border-zinc-900 text-zinc-400 hover:text-zinc-200 px-6 py-3 rounded-xl text-xs font-bold transition-colors"
                                                     >
-                                                        婉拒 (Decline)
+                                                        婉拒需求
                                                     </button>
                                                 </div>
                                             </div>

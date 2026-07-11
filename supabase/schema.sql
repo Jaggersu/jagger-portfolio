@@ -252,14 +252,16 @@ alter table public.projects add column if not exists google_drive_folder_url tex
 
 -- ── 10. project_requests ──────────────────────────────────────
 create table if not exists public.project_requests (
-  id              uuid primary key default gen_random_uuid(),
-  project_id      uuid references public.projects(id) on delete cascade not null,
-  client_id       uuid references public.profiles(id) on delete cascade not null,
-  title           text not null,
-  description     text,
-  drive_file_urls jsonb default '[]'::jsonb,
-  status          text default 'TRIAGE' check (status in ('TRIAGE','CONVERTED','DECLINED')),
-  created_at      timestamptz default now() not null
+  id                    uuid primary key default gen_random_uuid(),
+  project_id            uuid references public.projects(id) on delete cascade not null,
+  client_id             uuid references public.profiles(id) on delete cascade not null,
+  title                 text not null,
+  description           text,
+  ai_title              text,
+  ai_structured_content jsonb default '{}'::jsonb,
+  drive_file_urls       jsonb default '[]'::jsonb,
+  status                text default '審核中' check (status in ('審核中','已轉任務','已婉拒')),
+  created_at            timestamptz default now() not null
 );
 
 alter table public.project_requests enable row level security;
@@ -279,9 +281,9 @@ create policy "允許客戶建立需求" on public.project_requests
 drop policy if exists "允許更新需求" on public.project_requests;
 create policy "允許更新需求" on public.project_requests
   for update using (
-    (auth.uid() = client_id and status = 'TRIAGE') or public.current_user_role() = 'admin'
+    (auth.uid() = client_id and status = '審核中') or public.current_user_role() = 'admin'
   ) with check (
-    (auth.uid() = client_id and status = 'TRIAGE') or public.current_user_role() = 'admin'
+    (auth.uid() = client_id and status = '審核中') or public.current_user_role() = 'admin'
   );
 
 drop policy if exists "允許管理員刪除需求" on public.project_requests;

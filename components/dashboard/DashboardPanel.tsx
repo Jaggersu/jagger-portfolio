@@ -14,6 +14,7 @@ import AskAIDialog from './AskAIDialog';
 import ContractPanel from './ContractPanel';
 import XIcon from '../icons/XIcon';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
+import MailFilledIcon from '../icons/MailFilledIcon';
 import type { AnimatedIconHandle } from '../icons/types';
 
 interface DashboardPanelProps {
@@ -73,7 +74,7 @@ function PriorityIcon({ priority, className }: { priority: string; className?: s
 }
 
 type TaskStatus = 'QUEUED' | 'IN_PROGRESS' | 'REVIEW' | 'DELIVERED';
-type NavItem = 'projects' | 'files' | 'contract' | 'settings';
+type NavItem = 'projects' | 'inbox' | 'files' | 'contract' | 'settings';
 type SettingsTab = 'account' | 'billing' | 'integrations';
 
 interface ProjectRow {
@@ -141,10 +142,11 @@ const PRIORITY_CONFIG = {
 };
 
 const NAV: { key: NavItem; icon: React.ReactNode; label: string }[] = [
-    { key: 'projects', icon: <LayoutList size={16} />,  label: 'My Projects' },
-    { key: 'files',    icon: <RocketIcon size={16} />,    label: 'Files' },
-    { key: 'contract', icon: <PenIcon size={16} />,     label: 'Contract' },
-    { key: 'settings', icon: <SettingsIcon size={16} />, label: 'Settings' },
+    { key: 'projects', icon: <LayoutList size={16} />,  label: '我的專案' },
+    { key: 'inbox',    icon: <MailFilledIcon size={16} />, label: '需求收件夾' },
+    { key: 'files',    icon: <RocketIcon size={16} />,    label: '檔案中心' },
+    { key: 'contract', icon: <PenIcon size={16} />,     label: '我的合約' },
+    { key: 'settings', icon: <SettingsIcon size={16} />, label: '帳戶設定' },
 ];
 
 function fmt(bytes: number) {
@@ -195,6 +197,29 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const [requestFiles, setRequestFiles]         = useState<{ name: string; url: string }[]>([]);
     const [uploadingFile, setUploadingFile]       = useState(false);
     const [submitLoading, setSubmitLoading]       = useState(false);
+
+    const [clientRequests, setClientRequests] = useState<any[]>([]);
+    const [clientRequestsLoading, setClientRequestsLoading] = useState(false);
+
+    const fetchClientRequests = useCallback(async () => {
+        setClientRequestsLoading(true);
+        const { data, error } = await supabase
+            .from('project_requests')
+            .select('*, projects(name)')
+            .order('created_at', { ascending: false });
+        if (!error && data) {
+            setClientRequests(data);
+        } else if (error) {
+            console.error('Failed to fetch client requests:', error);
+        }
+        setClientRequestsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        if (activeNav === 'inbox') {
+            fetchClientRequests();
+        }
+    }, [activeNav, fetchClientRequests]);
 
     useEffect(() => {
         if (projects.length > 0 && !requestProjectId) {
@@ -253,24 +278,35 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
         if (!requestProjectId) return;
         setSubmitLoading(true);
         try {
-            const { error } = await supabase
-                .from('project_requests')
-                .insert({
-                    project_id: requestProjectId,
-                    client_id: profile?.id,
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) throw new Error('無法取得驗證 Token');
+
+            const res = await fetch('/api/project-requests', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    projectId: requestProjectId,
                     title: requestTitle,
                     description: requestDesc,
-                    drive_file_urls: requestFiles,
-                    status: 'TRIAGE',
-                });
+                    drive_file_urls: requestFiles
+                })
+            });
 
-            if (error) throw error;
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.error || '提交失敗');
+            }
 
-            alert('需求已成功提交至收件夾，我們會盡快審核！');
+            alert('需求已成功提交至收件夾，並已完成 AI 規格梳理！');
             setShowRequestModal(false);
             setRequestTitle('');
             setRequestDesc('');
             setRequestFiles([]);
+            fetchClientRequests();
         } catch (err: any) {
             console.error(err);
             alert(`提交失敗：${err.message}`);
@@ -661,7 +697,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                     <div className="border border-zinc-900 rounded-lg p-4 flex-1 flex flex-col min-h-[300px] bg-zinc-950/40">
                         <div className="text-[10px] text-zinc-600 tracking-widest mb-3 font-mono flex items-center gap-2">
                             <SatelliteDishIcon size={20} className="text-[#FF5500]" />
-                            <span>// DISCUSSION & FEED</span>
+                            <span>// 任務對話</span>
                         </div>
                         
                         {/* Feed Messages */}
@@ -709,7 +745,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                             <textarea
                                 value={aiCommentDraft || commentDraft}
                                 onChange={e => { setCommentDraft(e.target.value); setAiCommentDraft(''); }}
-                                placeholder="留下留言與 Jagger Team 對話..."
+                                placeholder="針對此任務提出修改意見..."
                                 rows={2}
                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60 resize-none font-sans"
                             />
@@ -921,7 +957,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                                 }}
                                                 className="text-[11px] bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/30 hover:border-[#FF5500]/50 px-3 py-1.5 rounded-lg font-mono font-bold transition-all shrink-0"
                                             >
-                                                + Submit Request
+                                                提出需求
                                             </button>
                                         )}
                                     </div>
@@ -995,35 +1031,35 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                 <div className="flex flex-col flex-1 min-w-0 overflow-hidden border-r border-zinc-900">
                                     {/* Project header */}
                                     <div className="px-6 py-3 border-b border-zinc-900 shrink-0">
-                                        <button
-                                            onClick={() => { setSelectedProject(null); setSelectedTask(null); }}
-                                            className="text-[11px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 mb-2.5 transition-colors"
-                                        >
-                                            ← My Projects
-                                        </button>
+                                        <div className="flex items-center justify-between mb-2.5">
+                                            <button
+                                                onClick={() => { setSelectedProject(null); setSelectedTask(null); }}
+                                                className="text-[11px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors"
+                                            >
+                                                ← 我的專案
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setRequestProjectId(selectedProject.id);
+                                                    setRequestFiles([]);
+                                                    setShowRequestModal(true);
+                                                }}
+                                                className="text-[10px] bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/30 hover:border-[#FF5500]/50 px-2.5 py-1 rounded-lg font-mono transition-all font-bold"
+                                            >
+                                                + 提出需求
+                                            </button>
+                                        </div>
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <div className="text-sm font-bold text-white">{selectedProject.name}</div>
                                                 <div className="text-xs text-zinc-600 mt-0.5">{projectDone} / {projectTasks.length} done</div>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <button
-                                                    onClick={() => {
-                                                        setRequestProjectId(selectedProject.id);
-                                                        setRequestFiles([]);
-                                                        setShowRequestModal(true);
-                                                    }}
-                                                    className="text-[11px] bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/30 hover:border-[#FF5500]/50 px-3 py-1.5 rounded-lg font-mono font-bold transition-all shrink-0"
-                                                >
-                                                    + Submit Request
-                                                </button>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-20 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-                                                        <div className="h-full rounded-full transition-all duration-500"
-                                                            style={{ width: `${projectProg}%`, background: projectProg === 100 ? '#34d399' : '#FF5500' }} />
-                                                    </div>
-                                                    <span className={`text-xs font-bold ${projectProg === 100 ? 'text-emerald-400' : 'text-[#FF5500]'}`}>{projectProg}%</span>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-20 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+                                                    <div className="h-full rounded-full transition-all duration-500"
+                                                        style={{ width: `${projectProg}%`, background: projectProg === 100 ? '#34d399' : '#FF5500' }} />
                                                 </div>
+                                                <span className={`text-xs font-bold ${projectProg === 100 ? 'text-emerald-400' : 'text-[#FF5500]'}`}>{projectProg}%</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1094,6 +1130,131 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                             </div>
                         );
                     })()}
+
+                    {/* ── CLIENT INBOX ────────────────────────────────────── */}
+                    {activeNav === 'inbox' && (
+                        <div className="flex flex-col h-full w-full overflow-hidden bg-[#000000]">
+                            {/* Header */}
+                            <div className="px-6 py-4 border-b border-zinc-900 shrink-0 flex items-center justify-between bg-[#080809]">
+                                <div>
+                                    <span className="text-[10px] text-zinc-650 tracking-widest font-mono">// REQUESTS INBOX</span>
+                                    <h2 className="text-sm font-bold text-white font-mono mt-0.5">需求收件夾</h2>
+                                </div>
+                                {projects.length > 0 && (
+                                    <button
+                                        onClick={() => {
+                                            setRequestProjectId(projects[0].id);
+                                            setRequestFiles([]);
+                                            setShowRequestModal(true);
+                                        }}
+                                        className="text-[11px] bg-[#FF5500] hover:bg-[#FF7733] text-black px-4 py-2 rounded-lg font-mono font-bold transition-all shrink-0"
+                                    >
+                                        + 提出需求
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-6 max-w-4xl w-full mx-auto space-y-4" style={{ scrollbarWidth: 'thin' }}>
+                                {clientRequestsLoading ? (
+                                    <div className="text-center py-8 text-xs text-zinc-500 font-mono">載入中…</div>
+                                ) : clientRequests.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-20 gap-2 border border-dashed border-zinc-900/60 rounded-xl bg-zinc-950/20">
+                                        <div className="text-zinc-500 text-xs font-mono">目前沒有提交任何需求</div>
+                                        <button
+                                            onClick={() => {
+                                                setRequestProjectId(projects[0]?.id || '');
+                                                setRequestFiles([]);
+                                                setShowRequestModal(true);
+                                            }}
+                                            className="text-xs text-[#FF5500] hover:underline font-mono mt-2"
+                                            disabled={projects.length === 0}
+                                        >
+                                            立即點擊「提出需求」提交您的第一個項目
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {clientRequests.map(req => (
+                                            <div key={req.id} className="bg-zinc-950 border border-zinc-900 rounded-xl p-5 font-mono space-y-3 relative">
+                                                <div className="flex items-start justify-between">
+                                                    <div>
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className="text-sm font-bold text-white leading-snug">{req.title}</span>
+                                                            <span className={`text-[9px] border px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                                                                req.status === '審核中'
+                                                                    ? 'border-[#FF5500]/30 text-[#FF5500] bg-[#FF5500]/5'
+                                                                    : req.status === '已轉任務'
+                                                                    ? 'border-emerald-900/60 text-emerald-400 bg-emerald-950/20'
+                                                                    : 'border-zinc-800 text-zinc-500'
+                                                            }`}>
+                                                                {req.status}
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-[10px] text-zinc-650 mt-1">
+                                                            專案：{req.projects?.name || '未知專案'} · 提交時間：{new Date(req.created_at).toLocaleString('zh-TW')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-xs text-zinc-400 whitespace-pre-wrap leading-relaxed">
+                                                    {req.description}
+                                                </div>
+
+                                                {/* AI structured review result */}
+                                                {req.ai_title && (
+                                                    <div className="border border-zinc-900/50 rounded-lg p-3.5 bg-zinc-950/40 space-y-2 text-xs">
+                                                        <div className="text-[10px] text-[#FF5500] tracking-wider">// AI 需求梳理與規格建議</div>
+                                                        <div className="font-bold text-zinc-200">優化主題：{req.ai_title}</div>
+                                                        {req.ai_structured_content && (
+                                                            <div className="text-zinc-400 space-y-2 mt-1.5 text-[11px] leading-relaxed">
+                                                                {req.ai_structured_content.features && req.ai_structured_content.features.length > 0 && (
+                                                                    <div>
+                                                                        <div className="text-[10px] text-zinc-500 font-bold mb-0.5">● 功能規格點 (Features)</div>
+                                                                        <ul className="list-disc pl-4 space-y-0.5">
+                                                                            {req.ai_structured_content.features.map((f: string, i: number) => (
+                                                                                <li key={i}>{f}</li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                                {req.ai_structured_content.deliverables && req.ai_structured_content.deliverables.length > 0 && (
+                                                                    <div className="mt-2">
+                                                                        <div className="text-[10px] text-zinc-500 font-bold mb-0.5">● 交付物清單 (Deliverables)</div>
+                                                                        <ul className="list-disc pl-4 space-y-0.5">
+                                                                            {req.ai_structured_content.deliverables.map((d: string, i: number) => (
+                                                                                <li key={i}>{d}</li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Attachments links */}
+                                                {req.drive_file_urls && req.drive_file_urls.length > 0 && (
+                                                    <div className="flex items-center gap-3 flex-wrap pt-2.5 border-t border-zinc-900/50">
+                                                        {req.drive_file_urls.map((file: any, idx: number) => (
+                                                            <a
+                                                                key={idx}
+                                                                href={file.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="text-[10px] text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1"
+                                                            >
+                                                                📄 {file.name} ↗
+                                                            </a>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* ── FILES ─────────────────────────────────────────── */}
                     {activeNav === 'files' && (() => {
@@ -1384,21 +1545,27 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                         </div>
 
                         <form onSubmit={handleRequestSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]" style={{ scrollbarWidth: 'thin' }}>
-                            {/* Project Selection */}
-                            <div className="space-y-1.5 font-mono">
-                                <label className="text-[10px] text-zinc-500 tracking-wider uppercase">選擇專案 / PROJECT</label>
-                                <select
-                                    required
-                                    value={requestProjectId}
-                                    onChange={e => setRequestProjectId(e.target.value)}
-                                    className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-xs text-zinc-300 focus:outline-none focus:border-zinc-700 cursor-pointer"
-                                >
-                                    <option value="" disabled>-- 請選擇專案 --</option>
-                                    {projects.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                             {/* Project Selection */}
+                             <div className="space-y-1.5 font-mono">
+                                 <label className="text-[10px] text-zinc-500 tracking-wider uppercase">所屬專案 / PROJECT</label>
+                                 {selectedProject ? (
+                                     <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3.5 py-3 text-xs text-zinc-400">
+                                         {selectedProject.name} <span className="text-[10px] text-zinc-600 ml-1.5">(已鎖定專案)</span>
+                                     </div>
+                                 ) : (
+                                     <select
+                                         required
+                                         value={requestProjectId}
+                                         onChange={e => setRequestProjectId(e.target.value)}
+                                         className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-xs text-zinc-300 focus:outline-none focus:border-zinc-700 cursor-pointer"
+                                     >
+                                         <option value="" disabled>-- 請選擇專案 --</option>
+                                         {projects.map(p => (
+                                             <option key={p.id} value={p.id}>{p.name}</option>
+                                         ))}
+                                     </select>
+                                 )}
+                             </div>
 
                             {/* Title */}
                             <div className="space-y-1.5 font-mono">
@@ -1486,9 +1653,9 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                 <button
                                     type="submit"
                                     disabled={submitLoading || uploadingFile}
-                                    className="w-full bg-[#FF5500] hover:bg-[#FF7733] disabled:bg-zinc-800 text-white py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2"
+                                    className="w-full bg-[#FF5500] hover:bg-[#FF7733] disabled:bg-zinc-800 text-white py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2"
                                 >
-                                    {submitLoading ? '提交中…' : '確認並提交需求 / Submit Request'}
+                                    {submitLoading ? 'AI 正在為您梳理需求規格...' : '確認並提交需求'}
                                 </button>
                             </div>
                         </form>
