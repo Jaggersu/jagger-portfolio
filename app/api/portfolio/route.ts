@@ -5,7 +5,7 @@ export async function GET() {
     try {
         const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
         let privateKey = process.env.GOOGLE_PRIVATE_KEY;
-        const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+        const rootFolderId = process.env.GOOGLE_DRIVE_PORTFOLIO_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID;
 
         if (!email || !privateKey || !rootFolderId) {
             return NextResponse.json({ error: '環境變數配置不完整' }, { status: 500 });
