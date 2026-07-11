@@ -148,11 +148,19 @@ Analyze the following raw client request:
                 }
 
                 // 6. Upload all files into the new subfolder
+                const fs = require('fs');
+                const logPath = 'c:/Users/sujag/Documents/jagger-portfolio/upload-debug.log';
+                fs.appendFileSync(logPath, `[DEBUG] Start upload. Files count received: ${files.length}, Folder ID: ${requestFolderId}\n`);
+
                 for (const file of files) {
                     try {
+                        fs.appendFileSync(logPath, `[DEBUG] Processing file: ${file.name}, size: ${file.size}, type: ${file.type}\n`);
+                        
                         const arrayBuffer = await file.arrayBuffer();
                         const buffer = Buffer.from(arrayBuffer);
                         const readableStream = require('stream').Readable.from(buffer);
+
+                        fs.appendFileSync(logPath, `[DEBUG] Stream created for file: ${file.name}, buffer length: ${buffer.length}\n`);
 
                         const uploaded = await drive.files.create({
                             requestBody: {
@@ -167,20 +175,29 @@ Analyze the following raw client request:
                             supportsAllDrives: true,
                         });
 
+                        fs.appendFileSync(logPath, `[DEBUG] Upload call completed. WebLink: ${uploaded.data.webViewLink}\n`);
+
                         if (uploaded.data.webViewLink) {
                             drive_file_urls.push({
                                 name: file.name,
                                 url: uploaded.data.webViewLink,
                             });
                         }
-                    } catch (uploadErr) {
+                    } catch (uploadErr: any) {
+                        fs.appendFileSync(logPath, `[DEBUG] Failed to upload file ${file.name}: ${uploadErr.stack || uploadErr.message || uploadErr}\n`);
                         console.error(`[drive-upload] Failed to upload file ${file.name}:`, uploadErr);
                     }
                 }
-            } catch (authErr) {
+            } catch (authErr: any) {
+                const fs = require('fs');
+                const logPath = 'c:/Users/sujag/Documents/jagger-portfolio/upload-debug.log';
+                fs.appendFileSync(logPath, `[DEBUG] Auth error: ${authErr.stack || authErr.message || authErr}\n`);
                 console.error('[drive-upload] Failed to initialize Google Drive client or upload files:', authErr);
             }
         } else {
+            const fs = require('fs');
+            const logPath = 'c:/Users/sujag/Documents/jagger-portfolio/upload-debug.log';
+            fs.appendFileSync(logPath, `[DEBUG] Project folder missing or DB error: ${projErr?.message || 'Folder ID is null'}\n`);
             console.warn('[drive-upload] Project folder id not found in database, skipping file upload to Drive');
         }
 
