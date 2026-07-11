@@ -1065,7 +1065,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                                                     href={activeProject.drive_upload_url}
                                                                     target="_blank"
                                                                     rel="noreferrer"
-                                                                    className="w-full text-center block text-xs bg-[#FF5500] text-black hover:bg-white px-4 py-2.5 rounded-lg font-bold font-mono transition-colors"
+                                                                    className="w-full text-center block text-xs text-[#FF5500] hover:text-[#FF7733] border border-[#FF5500]/40 bg-[#FF5500]/10 hover:bg-[#FF5500]/20 px-4 py-2.5 rounded-lg font-bold font-mono transition-colors"
                                                                 >
                                                                     開啟雲端資料夾 ↗
                                                                 </a>
@@ -1098,7 +1098,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                                                     href={activeProject.drive_view_url}
                                                                     target="_blank"
                                                                     rel="noreferrer"
-                                                                    className="w-full text-center block text-xs border border-zinc-800 text-zinc-350 hover:text-white hover:border-zinc-650 px-4 py-2.5 rounded-lg font-bold font-mono transition-colors"
+                                                                    className="w-full text-center block text-xs text-sky-400 hover:text-sky-300 border border-sky-900/60 bg-sky-950/20 hover:bg-sky-950/40 px-4 py-2.5 rounded-lg font-bold font-mono transition-colors"
                                                                 >
                                                                     開啟雲端資料夾 ↗
                                                                 </a>
