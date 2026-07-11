@@ -1334,7 +1334,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                     >
                                                                                         <PlugConnectedIcon
                                                                                             ref={el => { if (el) plugIconRefs.current.set(project.id, el); }}
-                                                                                            size={16} color="currentColor" className="pointer-events-none"
+                                                                                            size={19} color="currentColor" className="pointer-events-none"
                                                                                         />
                                                                                         {isGenerating ? '建立中…' : '建立雲端資料夾'}
                                                                                     </button>
