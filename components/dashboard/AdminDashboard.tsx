@@ -1055,7 +1055,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                     setExpandedTaskId(isSelected ? null : t.id);
                                                                                     if (!isSelected) setActivityDraft('');
                                                                                 }}
-                                                                                className={`bg-zinc-900/60 border rounded-lg p-2.5 cursor-pointer transition-all ${
+                                                                                className={`bg-zinc-900/60 border rounded-lg p-2.5 cursor-pointer transition-all group ${
                                                                                     isSelected ? 'border-[#3b82f6]/60 bg-zinc-900' : 'border-zinc-900 hover:border-zinc-800'
                                                                                 }`}
                                                                             >
@@ -1070,7 +1070,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                         <div className="text-[10px] text-zinc-600 mt-0.5">{t.client_name} · {t.type}</div>
                                                                                     </div>
                                                                                     <div className="flex items-center gap-1 shrink-0">
-                                                                                        <div className="text-zinc-500 border border-zinc-800 p-1 rounded hover:bg-zinc-850 hover:text-zinc-300 transition-colors flex items-center justify-center" title={`優先級: ${t.priority}`}>
+                                                                                        <div className={`p-1 rounded border transition-colors flex items-center justify-center ${
+                                                                                            t.priority === 'HIGH' ? 'text-zinc-650 border-zinc-900 group-hover:text-red-400 group-hover:border-red-950/60' :
+                                                                                            t.priority === 'MED'  ? 'text-zinc-650 border-zinc-900 group-hover:text-yellow-450 group-hover:border-yellow-950/60' :
+                                                                                            'text-zinc-650 border-zinc-900 group-hover:text-zinc-350 group-hover:border-zinc-800'
+                                                                                        }`} title={`優先級: ${t.priority}`}>
                                                                                             <PriorityIcon priority={t.priority} />
                                                                                         </div>
                                                                                         <button

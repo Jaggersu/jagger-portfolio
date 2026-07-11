@@ -1098,8 +1098,12 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                             return (
                                                 <div key={task.id}
                                                     onClick={() => setSelectedTask(isSelected ? null : task)}
-                                                    className={`grid grid-cols-12 gap-4 px-6 py-3.5 cursor-pointer transition-colors ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/40'}`}>
-                                                    <div className={`col-span-1 flex items-center justify-start ${p.color}`}>
+                                                    className={`grid grid-cols-12 gap-4 px-6 py-3.5 cursor-pointer transition-colors group ${isSelected ? 'bg-zinc-900' : 'hover:bg-zinc-900/40'}`}>
+                                                    <div className={`col-span-1 flex items-center justify-start transition-colors ${
+                                                        task.priority === 'HIGH' ? 'text-zinc-650 group-hover:text-red-400' :
+                                                        task.priority === 'MED'  ? 'text-zinc-650 group-hover:text-yellow-400' :
+                                                        'text-zinc-650 group-hover:text-zinc-300'
+                                                    }`}>
                                                         <PriorityIcon priority={task.priority} />
                                                     </div>
                                                     <div className="col-span-5 flex flex-col justify-center min-w-0">
