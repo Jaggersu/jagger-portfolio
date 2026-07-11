@@ -100,6 +100,11 @@
    - 目前 Kanban 已支援四欄顯示、status 切換、activity update
    - 後續可加入拖曳任務切換狀態
 
+4. **Admin 需求收件匣未讀燈號（已完成）**
+   - `project_requests` 新增 `is_read` 欄位
+   - 側邊欄收件夾顯示未讀數量徽章
+   - 列表項目顯示未讀紅點，點開自動標已讀
+
 #### 中優先
 4. **Contracts 強化**
    - 簽約時將 contract 內容（文字 + 簽名快照）寫入 `content` 欄位
