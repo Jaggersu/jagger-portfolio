@@ -194,7 +194,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const [requestTitle, setRequestTitle]         = useState('');
     const [requestDesc, setRequestDesc]           = useState('');
     const [requestProjectId, setRequestProjectId] = useState('');
-    const [requestFiles, setRequestFiles]         = useState<{ name: string; url: string }[]>([]);
+    const [requestFiles, setRequestFiles]         = useState<File[]>([]);
     const [uploadingFile, setUploadingFile]       = useState(false);
     const [submitLoading, setSubmitLoading]       = useState(false);
 
@@ -232,31 +232,11 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
             alert('請先選擇所屬專案！');
             return;
         }
-        setUploadingFile(true);
-        try {
-            for (let i = 0; i < filesToUpload.length; i++) {
-                const f = filesToUpload[i];
-                const formData = new FormData();
-                formData.append('file', f);
-                formData.append('projectId', requestProjectId);
-
-                const res = await fetch('/api/drive-upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-                if (!res.ok) {
-                    const errJson = await res.json();
-                    throw new Error(errJson.error || '上傳失敗');
-                }
-                const data = await res.json();
-                setRequestFiles(prev => [...prev, { name: data.name, url: data.url }]);
-            }
-        } catch (err: any) {
-            console.error(err);
-            alert(`檔案上傳失敗：${err.message}`);
-        } finally {
-            setUploadingFile(false);
+        const newFiles: File[] = [];
+        for (let i = 0; i < filesToUpload.length; i++) {
+            newFiles.push(filesToUpload[i]);
         }
+        setRequestFiles(prev => [...prev, ...newFiles]);
     };
 
     const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -282,18 +262,20 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
             const token = session?.access_token;
             if (!token) throw new Error('無法取得驗證 Token');
 
+            const formData = new FormData();
+            formData.append('projectId', requestProjectId);
+            formData.append('title', requestTitle);
+            formData.append('description', requestDesc);
+            requestFiles.forEach(f => {
+                formData.append('files', f);
+            });
+
             const res = await fetch('/api/project-requests', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    projectId: requestProjectId,
-                    title: requestTitle,
-                    description: requestDesc,
-                    drive_file_urls: requestFiles
-                })
+                body: formData
             });
 
             const data = await res.json();
@@ -301,7 +283,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                 throw new Error(data.error || '提交失敗');
             }
 
-            alert('需求已成功提交至收件夾，並已完成 AI 規格梳理！');
+            alert('需求已成功提交至我的需求，並已完成 AI 規格梳理與檔案上傳！');
             setShowRequestModal(false);
             setRequestTitle('');
             setRequestDesc('');
@@ -1627,22 +1609,17 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                             {/* Uploaded Files List */}
                             {requestFiles.length > 0 && (
                                 <div className="space-y-1.5 font-mono">
-                                    <span className="text-[9px] text-zinc-600 tracking-wider">// UPLOADED ATTACHMENTS</span>
+                                    <span className="text-[9px] text-zinc-650 tracking-wider">// ATTACHMENTS TO UPLOAD</span>
                                     <div className="border border-zinc-900 rounded-xl bg-zinc-950/40 p-3 divide-y divide-zinc-900/60 max-h-28 overflow-y-auto">
                                         {requestFiles.map((file, idx) => (
                                             <div key={idx} className="flex items-center justify-between py-1.5 first:pt-0 last:pb-0 text-xs">
-                                                <a
-                                                    href={file.url}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="text-zinc-400 hover:text-zinc-200 truncate max-w-[85%] hover:underline"
-                                                >
+                                                <span className="text-zinc-400 truncate max-w-[85%]">
                                                     📄 {file.name}
-                                                </a>
+                                                </span>
                                                 <button
                                                     type="button"
                                                     onClick={() => setRequestFiles(prev => prev.filter((_, i) => i !== idx))}
-                                                    className="text-zinc-600 hover:text-red-400 text-[10px] transition-colors"
+                                                    className="text-zinc-650 hover:text-red-400 text-[10px] transition-colors"
                                                 >
                                                     移除
                                                 </button>

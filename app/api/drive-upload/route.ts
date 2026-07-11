@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
             const listRes = await drive.files.list({
                 q: `'${parentFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and name contains '01_' and trashed = false`,
                 fields: 'files(id, name)',
+                supportsAllDrives: true,
+                includeItemsFromAllDrives: true,
             });
             if (listRes.data.files && listRes.data.files.length > 0) {
                 targetFolderId = listRes.data.files[0].id!;
@@ -75,6 +77,7 @@ export async function POST(req: NextRequest) {
                 body: readableStream,
             },
             fields: 'id, webViewLink',
+            supportsAllDrives: true,
         });
 
         return NextResponse.json({
