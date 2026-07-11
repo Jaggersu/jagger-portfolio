@@ -140,6 +140,19 @@ function StatusIcon({ status, className, style }: { status: string; className?: 
     );
 }
 
+function PriorityIcon({ priority, className }: { priority: string; className?: string }) {
+    const isLow = priority === 'LOW';
+    const isMed = priority === 'MED';
+    const isHigh = priority === 'HIGH';
+    return (
+        <svg className={`w-3 h-3 ${className}`} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="10" width="2.5" height="4" rx="0.5" fill={isLow || isMed || isHigh ? 'currentColor' : '#27272a'} />
+            <rect x="6.75" y="7" width="2.5" height="7" rx="0.5" fill={isMed || isHigh ? 'currentColor' : '#27272a'} />
+            <rect x="11.5" y="4" width="2.5" height="10" rx="0.5" fill={isHigh ? 'currentColor' : '#27272a'} />
+        </svg>
+    );
+}
+
 export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const { reset } = useUserFlow();
     const handleSignOut = () => { reset(); onClose(); };
@@ -1057,7 +1070,9 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                                         <div className="text-[10px] text-zinc-600 mt-0.5">{t.client_name} · {t.type}</div>
                                                                                     </div>
                                                                                     <div className="flex items-center gap-1 shrink-0">
-                                                                                        <span className="text-[10px] text-zinc-500 border border-zinc-800 px-1 py-0.5 rounded">{t.priority}</span>
+                                                                                        <div className="text-zinc-500 border border-zinc-800 p-1 rounded hover:bg-zinc-850 hover:text-zinc-300 transition-colors flex items-center justify-center" title={`優先級: ${t.priority}`}>
+                                                                                            <PriorityIcon priority={t.priority} />
+                                                                                        </div>
                                                                                         <button
                                                                                             onClick={e => { e.stopPropagation(); deleteTask(t.id); }}
                                                                                             className="text-[10px] text-zinc-700 hover:text-red-400 transition-colors px-0.5"
