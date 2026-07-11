@@ -12,6 +12,7 @@ import DownloadIcon from '../icons/DownloadIcon';
 import BrandAnthropicIcon from '../icons/BrandAnthropicIcon';
 import AskAIDialog from './AskAIDialog';
 import ContractPanel from './ContractPanel';
+import XIcon from '../icons/XIcon';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
 import type { AnimatedIconHandle } from '../icons/types';
 
@@ -82,6 +83,7 @@ interface ProjectRow {
     created_at: string;
     drive_upload_url?: string;
     drive_view_url?: string;
+    google_drive_folder_url?: string;
 }
 
 interface Task {
@@ -186,6 +188,97 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
         telegramWebhook:  '',
     });
 
+    const [showRequestModal, setShowRequestModal] = useState(false);
+    const [requestTitle, setRequestTitle]         = useState('');
+    const [requestDesc, setRequestDesc]           = useState('');
+    const [requestProjectId, setRequestProjectId] = useState('');
+    const [requestFiles, setRequestFiles]         = useState<{ name: string; url: string }[]>([]);
+    const [uploadingFile, setUploadingFile]       = useState(false);
+    const [submitLoading, setSubmitLoading]       = useState(false);
+
+    useEffect(() => {
+        if (projects.length > 0 && !requestProjectId) {
+            setRequestProjectId(projects[0].id);
+        }
+    }, [projects, requestProjectId]);
+
+    const handleFileUpload = async (filesToUpload: FileList) => {
+        if (!requestProjectId) {
+            alert('請先選擇所屬專案！');
+            return;
+        }
+        setUploadingFile(true);
+        try {
+            for (let i = 0; i < filesToUpload.length; i++) {
+                const f = filesToUpload[i];
+                const formData = new FormData();
+                formData.append('file', f);
+                formData.append('projectId', requestProjectId);
+
+                const res = await fetch('/api/drive-upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+                if (!res.ok) {
+                    const errJson = await res.json();
+                    throw new Error(errJson.error || '上傳失敗');
+                }
+                const data = await res.json();
+                setRequestFiles(prev => [...prev, { name: data.name, url: data.url }]);
+            }
+        } catch (err: any) {
+            console.error(err);
+            alert(`檔案上傳失敗：${err.message}`);
+        } finally {
+            setUploadingFile(false);
+        }
+    };
+
+    const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        if (uploadingFile || !requestProjectId) return;
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFileUpload(e.dataTransfer.files);
+        }
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            handleFileUpload(e.target.files);
+        }
+    };
+
+    const handleRequestSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!requestProjectId) return;
+        setSubmitLoading(true);
+        try {
+            const { error } = await supabase
+                .from('project_requests')
+                .insert({
+                    project_id: requestProjectId,
+                    client_id: profile?.id,
+                    title: requestTitle,
+                    description: requestDesc,
+                    drive_file_urls: requestFiles,
+                    status: 'TRIAGE',
+                });
+
+            if (error) throw error;
+
+            alert('需求已成功提交至收件夾，我們會盡快審核！');
+            setShowRequestModal(false);
+            setRequestTitle('');
+            setRequestDesc('');
+            setRequestFiles([]);
+        } catch (err: any) {
+            console.error(err);
+            alert(`提交失敗：${err.message}`);
+        } finally {
+            setSubmitLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (pendingPanel) {
             setActiveNav(pendingPanel as NavItem);
@@ -216,7 +309,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const fetchProjects = useCallback(async () => {
         const { data, error } = await supabase
             .from('projects')
-            .select('id,name,status,created_at,drive_upload_url,drive_view_url')
+            .select('id,name,status,created_at,drive_upload_url,drive_view_url,google_drive_folder_url')
             .order('created_at', { ascending: false });
         if (!error && data) setProjects(data);
     }, []);
@@ -817,8 +910,20 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                             /* ── Project Cards ── */
                             return (
                                 <div className="flex flex-col h-full">
-                                    <div className="px-6 py-4 border-b border-zinc-900 shrink-0">
+                                    <div className="px-6 py-4 border-b border-zinc-900 shrink-0 flex items-center justify-between">
                                         <span className="text-xs text-zinc-600 tracking-widest">// MY PROJECTS</span>
+                                        {projects.length > 0 && (
+                                            <button
+                                                onClick={() => {
+                                                    setRequestProjectId(projects[0].id);
+                                                    setRequestFiles([]);
+                                                    setShowRequestModal(true);
+                                                }}
+                                                className="text-[11px] bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/30 hover:border-[#FF5500]/50 px-3 py-1.5 rounded-lg font-mono font-bold transition-all shrink-0"
+                                            >
+                                                + Submit Request
+                                            </button>
+                                        )}
                                     </div>
                                     {loading ? (
                                         <div className="flex items-center justify-center flex-1 text-zinc-600 text-sm">載入中…</div>
@@ -901,12 +1006,24 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                                 <div className="text-sm font-bold text-white">{selectedProject.name}</div>
                                                 <div className="text-xs text-zinc-600 mt-0.5">{projectDone} / {projectTasks.length} done</div>
                                             </div>
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="w-24 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
-                                                    <div className="h-full rounded-full transition-all duration-500"
-                                                        style={{ width: `${projectProg}%`, background: projectProg === 100 ? '#34d399' : '#FF5500' }} />
+                                            <div className="flex items-center gap-4">
+                                                <button
+                                                    onClick={() => {
+                                                        setRequestProjectId(selectedProject.id);
+                                                        setRequestFiles([]);
+                                                        setShowRequestModal(true);
+                                                    }}
+                                                    className="text-[11px] bg-[#FF5500]/10 hover:bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/30 hover:border-[#FF5500]/50 px-3 py-1.5 rounded-lg font-mono font-bold transition-all shrink-0"
+                                                >
+                                                    + Submit Request
+                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-20 bg-zinc-900 rounded-full h-1.5 overflow-hidden">
+                                                        <div className="h-full rounded-full transition-all duration-500"
+                                                            style={{ width: `${projectProg}%`, background: projectProg === 100 ? '#34d399' : '#FF5500' }} />
+                                                    </div>
+                                                    <span className={`text-xs font-bold ${projectProg === 100 ? 'text-emerald-400' : 'text-[#FF5500]'}`}>{projectProg}%</span>
                                                 </div>
-                                                <span className={`text-xs font-bold ${projectProg === 100 ? 'text-emerald-400' : 'text-[#FF5500]'}`}>{projectProg}%</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1032,7 +1149,15 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                                 <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-5 flex items-center justify-between">
                                                     <div>
                                                         <span className="text-[10px] text-zinc-600 font-mono tracking-widest">// CURRENT PROJECT</span>
-                                                        <div className="text-base font-bold text-zinc-200 mt-0.5 font-mono">{activeProject.name}</div>
+                                                        <div className="flex items-center gap-3 mt-0.5">
+                                                            <div className="text-base font-bold text-zinc-200 font-mono">{activeProject.name}</div>
+                                                            {(activeProject.google_drive_folder_url || activeProject.drive_upload_url || activeProject.drive_view_url) && (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-mono bg-emerald-950/20 border border-emerald-900/40 px-2 py-0.5 rounded-full uppercase tracking-wider animate-fade-in">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                                                    ● CONNECTED（已連線）
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     <span className={`text-[10px] font-mono border px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                                                         activeProject.status === 'ACTIVE'
@@ -1234,6 +1359,141 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                     onClose={() => setShowAskAI(false)}
                     context={profile ? `客戶：${profile.name}，方案：${selectedPlan}，目前任務數：${tasks.length}` : undefined}
                 />
+            )}
+
+            {/* Submit Request Modal */}
+            {showRequestModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-zinc-950 border border-zinc-900 rounded-2xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl">
+                        <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between bg-[#080809]">
+                            <div>
+                                <span className="text-[10px] text-zinc-500 font-mono tracking-widest">// SUBMIT NEW REQUEST</span>
+                                <h3 className="text-sm font-bold text-white font-mono mt-0.5">提交新需求 (Inbox)</h3>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowRequestModal(false);
+                                    setRequestTitle('');
+                                    setRequestDesc('');
+                                    setRequestFiles([]);
+                                }}
+                                className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
+                            >
+                                <XIcon size={16} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleRequestSubmit} className="p-6 space-y-4 overflow-y-auto max-h-[75vh]" style={{ scrollbarWidth: 'thin' }}>
+                            {/* Project Selection */}
+                            <div className="space-y-1.5 font-mono">
+                                <label className="text-[10px] text-zinc-500 tracking-wider uppercase">選擇專案 / PROJECT</label>
+                                <select
+                                    required
+                                    value={requestProjectId}
+                                    onChange={e => setRequestProjectId(e.target.value)}
+                                    className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-xs text-zinc-300 focus:outline-none focus:border-zinc-700 cursor-pointer"
+                                >
+                                    <option value="" disabled>-- 請選擇專案 --</option>
+                                    {projects.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Title */}
+                            <div className="space-y-1.5 font-mono">
+                                <label className="text-[10px] text-zinc-500 tracking-wider uppercase">需求標題 / TITLE</label>
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="請輸入簡短、明確的需求標題"
+                                    value={requestTitle}
+                                    onChange={e => setRequestTitle(e.target.value)}
+                                    className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-xs text-zinc-250 placeholder-zinc-700 focus:outline-none focus:border-zinc-700"
+                                />
+                            </div>
+
+                            {/* Description */}
+                            <div className="space-y-1.5 font-mono">
+                                <label className="text-[10px] text-zinc-500 tracking-wider uppercase">詳細描述 / DESCRIPTION</label>
+                                <textarea
+                                    required
+                                    rows={4}
+                                    placeholder="請詳細說明您的具體需求、交付物規格或修改意見…"
+                                    value={requestDesc}
+                                    onChange={e => setRequestDesc(e.target.value)}
+                                    className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-xs text-zinc-250 placeholder-zinc-700 focus:outline-none focus:border-zinc-700 resize-none leading-relaxed"
+                                />
+                            </div>
+
+                            {/* Drag and Drop File Upload Area */}
+                            <div className="space-y-1.5 font-mono">
+                                <label className="text-[10px] text-zinc-500 tracking-wider uppercase">附件上傳 (直傳 GOOGLE DRIVE) / ATTACHMENTS</label>
+                                
+                                <div
+                                    onDragOver={e => e.preventDefault()}
+                                    onDrop={handleFileDrop}
+                                    className="border border-dashed border-zinc-900 hover:border-zinc-750 rounded-xl p-5 bg-zinc-950/20 text-center cursor-pointer transition-colors relative"
+                                >
+                                    <input
+                                        type="file"
+                                        multiple
+                                        onChange={handleFileSelect}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        disabled={uploadingFile || !requestProjectId}
+                                    />
+                                    <div className="space-y-1">
+                                        <div className="text-xs text-zinc-400">
+                                            {uploadingFile ? '檔案上傳至 Google Drive 中…' : '拖曳檔案至此，或點擊選取檔案'}
+                                        </div>
+                                        <div className="text-[10px] text-zinc-650">
+                                            {!requestProjectId ? '（請先選擇專案）' : '附件將自動存入 01_共用上傳區'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Uploaded Files List */}
+                            {requestFiles.length > 0 && (
+                                <div className="space-y-1.5 font-mono">
+                                    <span className="text-[9px] text-zinc-600 tracking-wider">// UPLOADED ATTACHMENTS</span>
+                                    <div className="border border-zinc-900 rounded-xl bg-zinc-950/40 p-3 divide-y divide-zinc-900/60 max-h-28 overflow-y-auto">
+                                        {requestFiles.map((file, idx) => (
+                                            <div key={idx} className="flex items-center justify-between py-1.5 first:pt-0 last:pb-0 text-xs">
+                                                <a
+                                                    href={file.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-zinc-400 hover:text-zinc-200 truncate max-w-[85%] hover:underline"
+                                                >
+                                                    📄 {file.name}
+                                                </a>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRequestFiles(prev => prev.filter((_, i) => i !== idx))}
+                                                    className="text-zinc-600 hover:text-red-400 text-[10px] transition-colors"
+                                                >
+                                                    移除
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Submit button */}
+                            <div className="pt-2 font-mono">
+                                <button
+                                    type="submit"
+                                    disabled={submitLoading || uploadingFile}
+                                    className="w-full bg-[#FF5500] hover:bg-[#FF7733] disabled:bg-zinc-800 text-white py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {submitLoading ? '提交中…' : '確認並提交需求 / Submit Request'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
 
         </div>

@@ -21,6 +21,11 @@ export async function POST(req: NextRequest) {
     try {
         const { projectId, amount, title, email, userId, plan, timeline, content, signature } = await req.json();
 
+        // 收集環境指紋
+        const userAgent = req.headers.get('user-agent') || 'Unknown';
+        const xForwardedFor = req.headers.get('x-forwarded-for');
+        const ip = xForwardedFor ? xForwardedFor.split(',')[0].trim() : (req.headers.get('x-real-ip') || '127.0.0.1');
+
         // ── Mock 模式：不跳藍新，直接寫入 DB ──
         if (process.env.PAYMENT_MOCK === 'true') {
             const supabase = createClient(
@@ -44,7 +49,16 @@ export async function POST(req: NextRequest) {
                     user_id: userId,
                     status: 'SIGNED',
                     content: content || null,
-                    metadata: { plan, amount, timeline: timeline || null, signature: signature || null, mock: true },
+                    raw_contract_body: content || null,
+                    signature_snapshot: signature || null,
+                    metadata: {
+                        plan,
+                        amount,
+                        timeline: timeline || null,
+                        ip,
+                        userAgent,
+                        mock: true
+                    },
                     signed_at: new Date().toISOString(),
                 });
             if (contractErr) throw contractErr;
@@ -108,7 +122,15 @@ export async function POST(req: NextRequest) {
             project_id: project.id,
             user_id: userId,
             status: 'PENDING',
-            metadata: { plan, amount, merchantOrderNo: MerchantOrderNo, signature: signature || null },
+            raw_contract_body: content || null,
+            signature_snapshot: signature || null,
+            metadata: {
+                plan,
+                amount,
+                merchantOrderNo: MerchantOrderNo,
+                ip,
+                userAgent
+            },
         });
 
         // 移除特殊符號，避免藍新簽章比對失敗

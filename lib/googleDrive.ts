@@ -127,9 +127,10 @@ export async function createProjectFolders(
             mimeType: 'application/vnd.google-apps.folder',
             parents: [clientFolderId],
         },
-        fields: 'id',
+        fields: 'id, webViewLink',
     });
     const projectFolderId = projFolderRes.data.id;
+    const projectFolderUrl = projFolderRes.data.webViewLink ?? '';
     if (!projectFolderId) throw new Error('Failed to create main project folder');
 
     // 2. Create subfolder: 01_共用上傳區 (Client Upload)
@@ -219,6 +220,7 @@ export async function createProjectFolders(
         .from('projects')
         .update({
             google_drive_folder_id: projectFolderId,
+            google_drive_folder_url: projectFolderUrl,
             drive_upload_url: uploadUrl,
             drive_view_url: viewUrl,
         })

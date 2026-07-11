@@ -73,24 +73,53 @@ create policy "admin可讀寫所有專案" on public.projects
 
 -- ── 3. contracts ────────────────────────────────────────────
 create table if not exists public.contracts (
-  id         uuid primary key default gen_random_uuid(),
-  project_id uuid references public.projects(id) on delete cascade not null,
-  user_id    uuid references public.profiles(id) on delete cascade not null,
-  status     text default 'PENDING' check (status in ('PENDING','SIGNED','TERMINATED')),
-  metadata   jsonb default '{}'::jsonb,
-  content    text,
-  signed_at  timestamptz,
-  created_at timestamptz default timezone('utc', now()) not null
+  id                 uuid primary key default gen_random_uuid(),
+  project_id         uuid references public.projects(id) on delete cascade not null,
+  user_id            uuid references public.profiles(id) on delete cascade not null,
+  status             text default 'PENDING' check (status in ('PENDING','SIGNED','TERMINATED')),
+  metadata           jsonb default '{}'::jsonb,
+  content            text,
+  raw_contract_body  text,
+  signature_snapshot text,
+  signed_at          timestamptz,
+  created_at         timestamptz default timezone('utc', now()) not null
 );
 
 alter table public.contracts enable row level security;
 drop policy if exists "用戶可檢視自身合約" on public.contracts;
-create policy "用戶可檢視自身合約" on public.contracts
-  for select using (auth.uid() = user_id);
 drop policy if exists "admin可讀寫所有合約" on public.contracts;
-create policy "admin可讀寫所有合約" on public.contracts
-  for all using (
+
+-- 1. SELECT 政策
+create policy "允許讀取合約" on public.contracts
+  for select using (
+    auth.uid() = user_id or public.current_user_role() = 'admin'
+  );
+
+-- 2. INSERT 政策
+create policy "允許建立合約" on public.contracts
+  for insert with check (
     public.current_user_role() = 'admin'
+  );
+
+-- 3. UPDATE 政策（僅限狀態為 PENDING 時）
+create policy "允許用戶簽署合約" on public.contracts
+  for update using (
+    auth.uid() = user_id and status = 'PENDING'
+  ) with check (
+    auth.uid() = user_id and status in ('PENDING', 'SIGNED')
+  );
+
+create policy "允許管理員修改未簽署合約" on public.contracts
+  for update using (
+    public.current_user_role() = 'admin' and status = 'PENDING'
+  ) with check (
+    public.current_user_role() = 'admin' and status in ('PENDING', 'SIGNED')
+  );
+
+-- 4. DELETE 政策（僅限狀態為 PENDING 且為管理員）
+create policy "允許管理員刪除未簽署合約" on public.contracts
+  for delete using (
+    public.current_user_role() = 'admin' and status = 'PENDING'
   );
 
 -- ── 4. tasks ────────────────────────────────────────────────
@@ -219,3 +248,45 @@ alter table public.profiles add column if not exists google_drive_folder_id text
 alter table public.projects add column if not exists google_drive_folder_id text;
 alter table public.projects add column if not exists drive_upload_url text;
 alter table public.projects add column if not exists drive_view_url text;
+alter table public.projects add column if not exists google_drive_folder_url text;
+
+-- ── 10. project_requests ──────────────────────────────────────
+create table if not exists public.project_requests (
+  id              uuid primary key default gen_random_uuid(),
+  project_id      uuid references public.projects(id) on delete cascade not null,
+  client_id       uuid references public.profiles(id) on delete cascade not null,
+  title           text not null,
+  description     text,
+  drive_file_urls jsonb default '[]'::jsonb,
+  status          text default 'TRIAGE' check (status in ('TRIAGE','CONVERTED','DECLINED')),
+  created_at      timestamptz default now() not null
+);
+
+alter table public.project_requests enable row level security;
+
+drop policy if exists "允許讀取需求" on public.project_requests;
+create policy "允許讀取需求" on public.project_requests
+  for select using (
+    auth.uid() = client_id or public.current_user_role() = 'admin'
+  );
+
+drop policy if exists "允許客戶建立需求" on public.project_requests;
+create policy "允許客戶建立需求" on public.project_requests
+  for insert with check (
+    auth.uid() = client_id
+  );
+
+drop policy if exists "允許更新需求" on public.project_requests;
+create policy "允許更新需求" on public.project_requests
+  for update using (
+    (auth.uid() = client_id and status = 'TRIAGE') or public.current_user_role() = 'admin'
+  ) with check (
+    (auth.uid() = client_id and status = 'TRIAGE') or public.current_user_role() = 'admin'
+  );
+
+drop policy if exists "允許管理員刪除需求" on public.project_requests;
+create policy "允許管理員刪除需求" on public.project_requests
+  for delete using (
+    public.current_user_role() = 'admin'
+  );
+

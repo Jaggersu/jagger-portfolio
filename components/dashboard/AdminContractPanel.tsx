@@ -11,6 +11,8 @@ interface ContractRow {
     metadata: any;
     signed_at: string | null;
     created_at: string;
+    raw_contract_body?: string | null;
+    signature_snapshot?: string | null;
     client_name?: string;
     client_email?: string;
     plan_type?: string;
@@ -154,6 +156,8 @@ export default function AdminContractPanel() {
         const planName = targetContract.metadata?.plan || targetContract.plan_type || '—';
         const amt = Number(targetContract.metadata?.amount || 0).toLocaleString();
         const timelineText = targetContract.metadata?.timeline || '按月續約';
+        const isSigned = targetContract.status === 'SIGNED';
+        const sigSrc = targetContract.signature_snapshot || targetContract.metadata?.signature;
         
         printWindow.document.write(`
             <html>
@@ -207,12 +211,16 @@ export default function AdminContractPanel() {
                     <div class="meta-item"><strong>Signed Date:</strong> ${targetContract.signed_at ? new Date(targetContract.signed_at).toLocaleString('zh-TW') : 'Pending'}</div>
                 </div>
                 <div>
-                    ${CONTRACT_CLAUSES.map(c => `
-                        <div class="clause">
-                            <div class="clause-title">${c.num}. ${c.title}</div>
-                            <div>${c.body.replace('[[AMOUNT]]', `<span style="color: #FF5500; font-weight: bold;">NT$ ${amt}</span>`).replace('[[TIMELINE]]', `<span style="color: #FF5500; font-weight: bold;">${timelineText}</span>`)}</div>
-                        </div>
-                    `).join('')}
+                    ${isSigned ? `
+                        <div style="white-space: pre-wrap; font-family: monospace; font-size: 11.5px; border: 1px solid #ddd; padding: 15px; background: #fafafa; border-radius: 6px; line-height: 1.5; color: #333; margin-bottom: 20px;">${targetContract.raw_contract_body || targetContract.content || ''}</div>
+                    ` : `
+                        ${CONTRACT_CLAUSES.map(c => `
+                            <div class="clause">
+                                <div class="clause-title">${c.num}. ${c.title}</div>
+                                <div>${c.body.replace('[[AMOUNT]]', `<span style="color: #FF5500; font-weight: bold;">NT$ ${amt}</span>`).replace('[[TIMELINE]]', `<span style="color: #FF5500; font-weight: bold;">${timelineText}</span>`)}</div>
+                            </div>
+                        `).join('')}
+                    `}
                 </div>
                 <div class="sig-section">
                     <div>
@@ -222,7 +230,7 @@ export default function AdminContractPanel() {
                             簽署日期 (Date): ${targetContract.signed_at ? new Date(targetContract.signed_at).toLocaleString('zh-TW') : 'Pending'}
                         </div>
                         <div style="margin-top: 8px;">
-                            ${targetContract.metadata?.signature ? `<img class="sig-img" src="${targetContract.metadata.signature}" />` : '<em>尚未簽署</em>'}
+                            ${sigSrc ? `<img class="sig-img" src="${sigSrc}" />` : '<em>尚未簽署</em>'}
                         </div>
                     </div>
                     <div>
@@ -236,6 +244,13 @@ export default function AdminContractPanel() {
                         </div>
                     </div>
                 </div>
+                ${isSigned && targetContract.metadata ? `
+                <div style="margin-top: 25px; border-top: 1px dashed #ccc; padding-top: 15px; font-family: monospace; font-size: 9.5px; color: #666; line-height: 1.4;">
+                    <strong>數位存證指紋 / Forensic Fingerprint:</strong><br/>
+                    IP Address: ${targetContract.metadata.ip || '—'}<br/>
+                    User Agent: ${targetContract.metadata.userAgent || '—'}
+                </div>
+                ` : ''}
             </body>
             </html>
         `);
@@ -370,26 +385,32 @@ export default function AdminContractPanel() {
                         </div>
 
                         {/* Clauses Text Container */}
-                        <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/40 space-y-4 max-h-72 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                            {CONTRACT_CLAUSES.map(clause => {
-                                const finalAmt = Number(selected.metadata?.amount || 0).toLocaleString();
-                                const timelineText = selected.metadata?.timeline || '按月續約';
-                                return (
-                                    <div key={clause.num} className="text-xs leading-relaxed">
-                                        <div className="font-bold text-zinc-200 mb-1 font-mono">{clause.num}. {clause.title}</div>
-                                        {renderClauseBody(clause.body, `NT$ ${finalAmt}`, timelineText, "text-zinc-400 block")}
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        {selected.status === 'SIGNED' ? (
+                            <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/40 max-h-72 overflow-y-auto font-mono text-zinc-400 text-xs whitespace-pre-wrap leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
+                                {selected.raw_contract_body || selected.content || '（無合約本文封存）'}
+                            </div>
+                        ) : (
+                            <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/40 space-y-4 max-h-72 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                                {CONTRACT_CLAUSES.map(clause => {
+                                    const finalAmt = Number(selected.metadata?.amount || 0).toLocaleString();
+                                    const timelineText = selected.metadata?.timeline || '按月續約';
+                                    return (
+                                        <div key={clause.num} className="text-xs leading-relaxed">
+                                            <div className="font-bold text-zinc-200 mb-1 font-mono">{clause.num}. {clause.title}</div>
+                                            {renderClauseBody(clause.body, `NT$ ${finalAmt}`, timelineText, "text-zinc-400 block")}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
 
                         {/* Signature image */}
-                        {selected.metadata?.signature && (
+                        {(selected.signature_snapshot || selected.metadata?.signature) && (
                             <div className="space-y-1.5">
                                 <span className="text-[10px] text-zinc-650 tracking-widest font-mono">ELECTRONIC SIGNATURE</span>
                                 <div className="border border-zinc-900 rounded-xl p-3 bg-zinc-950/40 flex items-center justify-center">
                                     <img
-                                        src={selected.metadata.signature}
+                                        src={selected.signature_snapshot || selected.metadata.signature}
                                         alt="Signature"
                                         className="max-h-20 bg-black filter invert scale-95 transition-transform"
                                     />
@@ -401,6 +422,15 @@ export default function AdminContractPanel() {
                         <div className="text-[11px] text-zinc-600 font-mono">
                             Signed At: {selected.signed_at ? new Date(selected.signed_at).toLocaleString('zh-TW') : 'Pending payment validation'}
                         </div>
+
+                        {/* Forensic Fingerprint */}
+                        {selected.status === 'SIGNED' && selected.metadata && (
+                            <div className="border border-zinc-900/50 rounded-xl p-3.5 bg-zinc-950/20 space-y-1.5 text-[11px] font-mono text-zinc-500">
+                                <div className="text-[10px] text-zinc-650 tracking-wider mb-0.5">// SIGNATURE FORENSIC FINGERPRINT</div>
+                                {selected.metadata.ip && <div>IP Address: {selected.metadata.ip}</div>}
+                                {selected.metadata.userAgent && <div className="break-all leading-normal">User Agent: {selected.metadata.userAgent}</div>}
+                            </div>
+                        )}
 
                         {/* Print action strip */}
                         <div className="grid grid-cols-1 gap-3 pt-2">

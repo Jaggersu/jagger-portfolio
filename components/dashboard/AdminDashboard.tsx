@@ -21,7 +21,7 @@ interface AdminDashboardProps {
     onClose: () => void;
 }
 
-type AdminNav = 'clients' | 'contracts' | 'projects' | 'files' | 'settings';
+type AdminNav = 'clients' | 'contracts' | 'projects' | 'files' | 'inbox' | 'settings';
 
 interface ProjectRow {
     id: string;
@@ -81,6 +81,7 @@ const NAV_ITEMS: { key: AdminNav; label: string }[] = [
     { key: 'contracts', label: 'Contracts' },
     { key: 'projects',  label: 'Projects'  },
     { key: 'files',     label: 'Files'     },
+    { key: 'inbox',     label: 'Inbox'     },
     { key: 'settings',  label: 'Settings'  },
 ];
 
@@ -181,6 +182,25 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [newTaskPriority, setNewTaskPriority] = useState('MED');
     const [newTaskEta, setNewTaskEta]         = useState('');
     const [newTaskLoading, setNewTaskLoading] = useState(false);
+    const [requests, setRequests] = useState<any[]>([]);
+    const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+    const [requestsLoading, setRequestsLoading] = useState(false);
+
+    const fetchRequests = useCallback(async () => {
+        setRequestsLoading(true);
+        const { data, error } = await supabase
+            .from('project_requests')
+            .select('*, projects(name), profiles(name, email)')
+            .eq('status', 'TRIAGE')
+            .order('created_at', { ascending: false });
+        if (!error && data) {
+            setRequests(data);
+        } else if (error) {
+            console.error('Failed to fetch requests:', error);
+        }
+        setRequestsLoading(false);
+    }, []);
+
     const [newProjectError, setNewProjectError] = useState('');
 
     // Unread dots: task IDs that have client (is_admin=false) comments
@@ -337,8 +357,14 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
 
     useEffect(() => {
         setLoading(true);
-        Promise.all([fetchClients(), fetchProjects(), fetchTasks(), fetchClientCommentTaskIds()]).finally(() => setLoading(false));
-    }, [fetchClients, fetchProjects, fetchTasks, fetchClientCommentTaskIds]);
+        Promise.all([
+            fetchClients(),
+            fetchProjects(),
+            fetchTasks(),
+            fetchClientCommentTaskIds(),
+            fetchRequests()
+        ]).finally(() => setLoading(false));
+    }, [fetchClients, fetchProjects, fetchTasks, fetchClientCommentTaskIds, fetchRequests]);
 
     useEffect(() => {
         if (selectedClient) fetchClientExtras(selectedClient.id);
@@ -371,15 +397,72 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                 if (commentsTaskId) fetchTaskTimeline(commentsTaskId);
             })
             .subscribe();
+        const reqCh = supabase.channel('admin-requests')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'project_requests' }, () => fetchRequests())
+            .subscribe();
         return () => {
             supabase.removeChannel(taskCh);
             supabase.removeChannel(projCh);
             supabase.removeChannel(commentCh);
             supabase.removeChannel(actCh);
+            supabase.removeChannel(reqCh);
         };
-    }, [fetchTasks, fetchProjects, commentsTaskId, fetchTaskTimeline]);
+    }, [fetchTasks, fetchProjects, commentsTaskId, fetchTaskTimeline, fetchRequests]);
 
     // ── Actions ──────────────────────────────────────────────────
+    const handleConvertRequest = async (request: any) => {
+        if (!confirm(`確定要將此需求「${request.title}」轉化為專案任務嗎？`)) return;
+        try {
+            // 1. Insert into tasks
+            const { error: insertErr } = await supabase
+                .from('tasks')
+                .insert({
+                    project_id: request.project_id,
+                    user_id: request.client_id,
+                    title: request.title,
+                    description: request.description,
+                    status: 'QUEUED',
+                    type: 'GENERAL',
+                    priority: 'MED'
+                });
+            if (insertErr) throw insertErr;
+
+            // 2. Update request status to 'CONVERTED'
+            const { error: updateErr } = await supabase
+                .from('project_requests')
+                .update({ status: 'CONVERTED' })
+                .eq('id', request.id);
+            if (updateErr) throw updateErr;
+
+            alert('已成功轉化為任務並加入 Todo 佇列！');
+            setSelectedRequest(null);
+            fetchRequests();
+            fetchTasks();
+            fetchProjects();
+        } catch (err: any) {
+            console.error(err);
+            alert(`操作失敗：${err.message}`);
+        }
+    };
+
+    const handleDeclineRequest = async (request: any) => {
+        if (!confirm(`確定要婉拒此需求「${request.title}」嗎？`)) return;
+        try {
+            const { error } = await supabase
+                .from('project_requests')
+                .update({ status: 'DECLINED' })
+                .eq('id', request.id);
+            if (error) throw error;
+
+            alert('已婉拒該需求。');
+            setSelectedRequest(null);
+            fetchRequests();
+        } catch (err: any) {
+            console.error(err);
+            alert(`操作失敗：${err.message}`);
+        }
+    };
+
     const createProject = useCallback(async () => {
         if (!newProjectClientId) { setNewProjectError('請先選擇 client'); return; }
         if (!newProjectName.trim()) { setNewProjectError('請填寫專案名稱'); return; }
@@ -1352,6 +1435,132 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                     </div>
                                 );
                             })()}
+
+                            {/* ── INBOX ────────────────────────────────────────────── */}
+                            {activeNav === 'inbox' && (
+                                <div className="flex h-full w-full overflow-hidden">
+                                    {/* Left: Request list */}
+                                    <div className="w-96 border-r border-zinc-900 flex flex-col shrink-0 bg-[#000000]">
+                                        <div className="px-6 py-4 border-b border-zinc-900 shrink-0">
+                                            <span className="text-[10px] text-zinc-500 font-mono tracking-widest">// TRIAGE INBOX</span>
+                                            <h2 className="text-sm font-bold text-white font-mono mt-0.5">客戶需求收件夾</h2>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto divide-y divide-zinc-900/60 p-2 space-y-1">
+                                            {requestsLoading ? (
+                                                <div className="text-center py-8 text-xs text-zinc-500 font-mono">載入中…</div>
+                                            ) : requests.length === 0 ? (
+                                                <div className="text-center py-12 text-xs text-zinc-650 font-mono">收件夾目前空無一物</div>
+                                            ) : (
+                                                requests.map(req => {
+                                                    const isSelected = selectedRequest?.id === req.id;
+                                                    return (
+                                                        <button
+                                                            key={req.id}
+                                                            onClick={() => setSelectedRequest(req)}
+                                                            className={`w-full text-left p-3.5 rounded-xl transition-all font-mono flex flex-col gap-1.5 border border-transparent ${
+                                                                isSelected ? 'bg-zinc-905 border-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-950/40 hover:text-zinc-300'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between w-full">
+                                                                <span className="text-[10px] text-zinc-500 max-w-[60%] truncate">
+                                                                    {req.profiles?.name || '未知客戶'} ({req.projects?.name || '未知專案'})
+                                                                </span>
+                                                                <span className="text-[9px] text-zinc-600">
+                                                                    {new Date(req.created_at).toLocaleDateString('zh-TW')}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-xs font-bold truncate w-full">{req.title}</div>
+                                                            <div className="text-[10px] text-zinc-600 line-clamp-2 leading-relaxed">
+                                                                    {req.description}
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Selected Request Detail */}
+                                    <div className="flex-1 flex flex-col overflow-hidden bg-[#000000] p-6">
+                                        {selectedRequest ? (
+                                            <div className="max-w-2xl w-full h-full flex flex-col justify-between font-mono">
+                                                <div className="space-y-5 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                                                    {/* Header */}
+                                                    <div className="border-b border-zinc-900 pb-4">
+                                                        <div className="flex items-center gap-2 mb-1.5">
+                                                            <span className="text-[10px] bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/30 px-2 py-0.5 rounded uppercase tracking-wider">
+                                                                {selectedRequest.status}
+                                                            </span>
+                                                            <span className="text-xs text-zinc-500">
+                                                                專案：{selectedRequest.projects?.name || '—'}
+                                                            </span>
+                                                        </div>
+                                                        <h1 className="text-lg font-black text-white leading-snug">{selectedRequest.title}</h1>
+                                                        <div className="text-xs text-zinc-500 mt-2 flex items-center gap-3">
+                                                            <span>客戶：{selectedRequest.profiles?.name} ({selectedRequest.profiles?.email})</span>
+                                                            <span>•</span>
+                                                            <span>提交時間：{new Date(selectedRequest.created_at).toLocaleString('zh-TW')}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Description Body */}
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-[10px] text-zinc-600 tracking-wider">// DETAILED DESCRIPTION</span>
+                                                        <div className="bg-zinc-950/40 border border-zinc-900 rounded-xl p-4 text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                                                            {selectedRequest.description || '（無提供詳細描述）'}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Attachments from Google Drive */}
+                                                    <div className="space-y-1.5">
+                                                        <span className="text-[10px] text-zinc-650 tracking-wider">// ATTACHMENTS (GOOGLE DRIVE)</span>
+                                                        {selectedRequest.drive_file_urls && selectedRequest.drive_file_urls.length > 0 ? (
+                                                            <div className="border border-zinc-900 rounded-xl bg-zinc-950/20 p-3.5 space-y-2">
+                                                                {selectedRequest.drive_file_urls.map((file: any, idx: number) => (
+                                                                    <a
+                                                                        key={idx}
+                                                                        href={file.url}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="flex items-center gap-2 text-xs text-sky-400 hover:text-sky-300 hover:underline"
+                                                                    >
+                                                                        <span>📄</span>
+                                                                        <span className="truncate">{file.name}</span>
+                                                                        <span className="text-[10px] text-zinc-600 font-normal">↗</span>
+                                                                    </a>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-xs text-zinc-600 italic">無附加檔案</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Action buttons */}
+                                                <div className="border-t border-zinc-900 pt-5 flex items-center gap-4">
+                                                    <button
+                                                        onClick={() => handleConvertRequest(selectedRequest)}
+                                                        className="flex-1 bg-[#FF5500] hover:bg-[#FF7733] text-white py-3 rounded-xl text-xs font-bold transition-colors"
+                                                    >
+                                                        一鍵轉化為任務 (Convert to Task)
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeclineRequest(selectedRequest)}
+                                                        className="bg-zinc-950 hover:bg-zinc-900 border border-zinc-900 text-zinc-400 hover:text-zinc-200 px-6 py-3 rounded-xl text-xs font-bold transition-colors"
+                                                    >
+                                                        婉拒 (Decline)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 flex flex-col items-center justify-center text-zinc-700 font-mono gap-1.5">
+                                                <span className="text-xs tracking-widest">// NO REQUEST SELECTED</span>
+                                                <span className="text-[11px]">請在左側選擇一筆客戶提交的需求以進行審核。</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* ── SETTINGS ─────────────────────────────────────── */}
                             {activeNav === 'settings' && (
