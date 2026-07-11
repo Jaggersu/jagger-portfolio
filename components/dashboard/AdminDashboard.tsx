@@ -12,6 +12,7 @@ import PlugConnectedIcon from '../icons/PlugConnectedIcon';
 import GearIcon from '../icons/GearIcon';
 import LayoutDashboardIcon from '../icons/LayoutDashboardIcon';
 import PenIcon from '../icons/PenIcon';
+import MailFilledIcon from '../icons/MailFilledIcon';
 import AdminContractPanel from './AdminContractPanel';
 import type { AnimatedIconHandle } from '../icons/types';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
@@ -626,6 +627,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                 {item.key === 'contracts' && <PenIcon             ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'projects'  && <LayoutDashboardIcon ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'files'     && <RocketIcon          ref={el => { iconRefs.current[i] = el; }} size={16} />}
+                                {item.key === 'inbox'     && <MailFilledIcon      ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'settings'  && <GearIcon            ref={el => { iconRefs.current[i] = el; }} size={16} />}
                             </span>
                             {item.label}
