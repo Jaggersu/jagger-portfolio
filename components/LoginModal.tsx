@@ -11,7 +11,7 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ onClose }: LoginModalProps) {
-    const { sendMagicLink } = useUserFlow();
+    const { sendMagicLink, openDashboard } = useUserFlow();
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
     const [errorMsg, setErrorMsg] = useState('');
@@ -26,6 +26,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         setDevError('');
         const { error } = await supabase.auth.signInWithPassword({ email: devEmail, password: devPassword });
         if (error) { setDevError(error.message); return; }
+        openDashboard();
         onClose();
     };
 
