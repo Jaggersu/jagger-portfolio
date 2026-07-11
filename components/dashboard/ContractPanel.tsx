@@ -78,7 +78,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
     const [agreed, setAgreed] = useState(false);
     const [paying, setPaying] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
-    const [paymentTab, setPaymentTab] = useState<'fiat' | 'crypto'>('fiat');
+    const [paymentTab, setPaymentTab] = useState<'fiat' | 'crypto' | 'coffee'>('fiat');
     const [cryptoChain, setCryptoChain] = useState<string>('TRC-20');
     const [copiedChain, setCopiedChain] = useState<string | null>(null);
     const [txid, setTxid] = useState('');
@@ -1071,8 +1071,8 @@ interface PaymentModalProps {
     newAmount: string;
     paying: boolean;
     checkoutError: string | null;
-    paymentTab: 'fiat' | 'crypto';
-    setPaymentTab: (tab: 'fiat' | 'crypto') => void;
+    paymentTab: 'fiat' | 'crypto' | 'coffee';
+    setPaymentTab: (tab: 'fiat' | 'crypto' | 'coffee') => void;
     cryptoChain: string;
     setCryptoChain: (chain: string) => void;
     copiedChain: string | null;
@@ -1106,78 +1106,94 @@ function PaymentFormModal({
     handleTxidSubmit
 }: PaymentModalProps) {
     const WALLETS = [
-        { chain: 'TRC-20',      network: 'Tron Network', address: 'TAgWCpyof2tNYEq67v5PBgUApqpKHviYEY',                   warn: '請務必使用波場 Tron 網路傳送，勿使用 ERC-20 或其他網路。',            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 2L2 8l10 14L22 8L12 2z" fill="#FF0013" opacity="0.8"/></svg> },
-        { chain: 'Base / Arb',  network: 'EVM Network',  address: '0x8D929F645fa9c97df90349203b8949c3318ceACE',             warn: '支援 Base 與 Arbitrum 網路，請勿使用主網 ETH 或其他 EVM 網路。',    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0"><circle cx="12" cy="12" r="10" fill="#0052FF" opacity="0.8"/><path d="M8 12h8M12 8v8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg> },
-        { chain: 'TON',         network: 'TON Network',  address: 'UQBXuoeso8Yxl-LNGxD_q8JQqtWKgkZIgOlyTfY57ESXTHSw',   warn: '僅限 TON 網路轉帳，請勿使用其他網路。',                              icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 2L3 9h18L12 2z" fill="#0098EA" opacity="0.8"/><path d="M3 9l9 13L21 9" fill="#0098EA" opacity="0.5"/></svg> },
+        { chain: 'TRC-20',      network: 'Tron Network', address: 'TAgWCpyof2tNYEq67v5PBgUApqpKHviYEY',                   warn: '請務必使用波場 Tron 網路傳送，勿使用 ERC-20 或其他網路。',            icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 2L2 8l10 14L22 8L12 2z" fill="#FF0013" opacity="0.8"/></svg> },
+        { chain: 'Base / Arb',  network: 'EVM Network',  address: '0x8D929F645fa9c97df90349203b8949c3318ceACE',             warn: '支援 Base 與 Arbitrum 網路，請勿使用主網 ETH 或其他 EVM 網路。',    icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0"><circle cx="12" cy="12" r="10" fill="#0052FF" opacity="0.8"/><path d="M8 12h8M12 8v8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg> },
+        { chain: 'TON',         network: 'TON Network',  address: 'UQBXuoeso8Yxl-LNGxD_q8JQqtWKgkZIgOlyTfY57ESXTHSw',   warn: '僅限 TON 網路轉帳，請勿使用其他網路。',                              icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 2L3 9h18L12 2z" fill="#0098EA" opacity="0.8"/><path d="M3 9l9 13L21 9" fill="#0098EA" opacity="0.5"/></svg> },
     ];
     const activeWallet = WALLETS.find(w => w.chain === cryptoChain) ?? WALLETS[0];
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-            <div className="bg-[#0A0A0B] border border-zinc-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="h-12 border-b border-zinc-900 flex items-center justify-between px-6 shrink-0">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-[#FF5500]" />
-                        <span className="text-[11px] text-zinc-400 tracking-widest font-mono">// PAYMENT</span>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 backdrop-blur-sm">
+            <div className="bg-[#0A0A0B] border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[92vh] transition-all">
+                <div className="h-14 border-b border-zinc-900 flex items-center justify-between px-7 shrink-0">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#FF5500] animate-pulse" />
+                        <span className="text-[12px] text-zinc-400 tracking-widest font-mono font-bold">// SECURE PAYMENT</span>
                     </div>
-                    <button onClick={() => setShowPayment(false)} className="text-zinc-650 hover:text-zinc-300 text-lg">×</button>
+                    <button onClick={() => setShowPayment(false)} className="text-zinc-500 hover:text-zinc-200 text-xl font-medium transition-colors">×</button>
                 </div>
 
-                <div className="grid grid-cols-2 border-b border-zinc-900 shrink-0">
+                <div className="grid grid-cols-3 border-b border-zinc-900 shrink-0">
                     {([
-                        { key: 'fiat' as const,   label: '信用卡 / 匯款',  sub: 'NewebPay 線上金流', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
-                        { key: 'crypto' as const, label: 'USDT / USDC', sub: '區塊鏈轉帳', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 9l4-3 4 3M8 15l4 3 4-3"/></svg> },
+                        { 
+                            key: 'fiat' as const,   
+                            label: '信用卡 / 匯款',  
+                            sub: '線上安全金流', 
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> 
+                        },
+                        { 
+                            key: 'crypto' as const, 
+                            label: 'USDT / USDC', 
+                            sub: '區塊鏈快速轉帳', 
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 9l4-3 4 3M8 15l4 3 4-3"/></svg> 
+                        },
+                        {
+                            key: 'coffee' as const,
+                            label: 'Buy Coffee',
+                            sub: '小額/贊助支付',
+                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+                        }
                     ]).map(tab => {
                         const isActive = paymentTab === tab.key;
                         return (
                             <button
                                 key={tab.key}
                                 onClick={() => setPaymentTab(tab.key)}
-                                className={`py-4 text-center transition-all flex flex-col items-center gap-1 hover:bg-zinc-900/40 border-b-2 ${
-                                    isActive ? 'border-[#FF5500] bg-zinc-900/20' : 'border-transparent text-zinc-600'
+                                className={`py-4.5 text-center transition-all flex flex-col items-center gap-1.5 hover:bg-zinc-900/40 border-b-2 ${
+                                    isActive ? 'border-[#FF5500] bg-zinc-900/25' : 'border-transparent text-zinc-500'
                                 }`}
                             >
-                                <div className="flex items-center gap-1.5">
-                                    <div className={isActive ? 'text-[#FF5500]' : 'text-zinc-550'}>{tab.icon}</div>
-                                    <div className={`text-[13px] font-bold font-mono ${isActive ? 'text-white' : 'text-zinc-550'}`}>{tab.label}</div>
+                                <div className="flex items-center gap-2">
+                                    <div className={isActive ? 'text-[#FF5500]' : 'text-zinc-500'}>{tab.icon}</div>
+                                    <div className={`text-[13px] font-bold font-mono transition-colors ${isActive ? 'text-white' : 'text-zinc-500'}`}>{tab.label}</div>
                                 </div>
-                                <div className="text-[10px] text-zinc-600 tracking-widest font-mono mt-0.5">{tab.sub}</div>
+                                <div className="text-[9px] text-zinc-650 tracking-wider font-mono mt-0.5 uppercase">{tab.sub}</div>
                             </button>
                         );
                     })}
                 </div>
 
-                {paymentTab === 'fiat' ? (
-                    <div className="p-6 space-y-5 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                {paymentTab === 'fiat' && (
+                    <div className="p-8 space-y-6 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                             </div>
                             <div>
-                                <div className="text-[13px] font-bold text-white font-mono">藍新金流 NewebPay</div>
-                                <div className="text-[11px] text-zinc-500 font-mono">信用卡、ATM 轉帳、超商代碼</div>
+                                <div className="text-[14px] font-bold text-white font-mono">藍新金流 NewebPay</div>
+                                <div className="text-[11px] text-zinc-500 font-mono">支援國內外信用卡、ATM 轉帳、超商付費</div>
                             </div>
                         </div>
 
-                        <p className="text-[12px] text-zinc-500 font-mono leading-relaxed">
-                            點擊下方按鈕後將跳轉至藍新金流，可依偏好選擇信用卡、ATM 匯款或超商付款等方式。
+                        <p className="text-[12px] text-zinc-400 font-mono leading-relaxed">
+                            點擊下方按鈕後將前往藍新金流安全收銀台，您可以選擇信用卡一次付清、ATM 轉帳或超商代碼付款。完成付款後系統將即時啟用您的專案。
                         </p>
 
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-2.5">
                             {[
-                                { label: '信用卡', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
-                                { label: 'ATM 匯款', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M6 14h.01M10 10h8M10 14h8"/></svg> },
-                                { label: '超商代碼', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg> },
+                                { label: '安全信用卡', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
+                                { label: 'ATM 匯款', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M6 14h.01M10 10h8M10 14h8"/></svg> },
+                                { label: '超商代碼', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg> },
                             ].map(m => (
-                                <div key={m.label} className="bg-zinc-900/30 border border-zinc-850 rounded-lg p-3 flex flex-col items-center gap-1.5">
+                                <div key={m.label} className="bg-zinc-900/30 border border-zinc-850 rounded-xl p-3.5 flex flex-col items-center gap-2">
                                     <div className="text-[#FF5500]">{m.icon}</div>
-                                    <span className="text-[11px] text-zinc-400 font-mono">{m.label}</span>
+                                    <span className="text-[11px] text-zinc-400 font-mono font-medium">{m.label}</span>
                                 </div>
                             ))}
                         </div>
 
                         {checkoutError && (
-                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2.5">
+                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                                 <p className="text-[12px] text-red-400 font-mono">⚠ {checkoutError}</p>
                             </div>
                         )}
@@ -1185,83 +1201,123 @@ function PaymentFormModal({
                         <button
                             onClick={handleSign}
                             disabled={paying}
-                            className="w-full py-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-lg transition-colors disabled:opacity-50"
+                            className="w-full py-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-xl transition-all duration-200 disabled:opacity-50 active:scale-[0.99]"
                         >
-                            {paying ? '⟳ 跳轉中…' : '確認簽名並前往付款 →'}
+                            {paying ? '⟳ 跳轉收銀台中…' : '確認合約並前往付款 →'}
                         </button>
                     </div>
-                ) : (
-                    <div className="p-6 space-y-5 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#FF5500] text-lg">
+                )}
+
+                {paymentTab === 'crypto' && (
+                    <div className="p-8 space-y-6 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#FF5500] text-xl">
                                 🪙
                             </div>
                             <div>
-                                <div className="text-[13px] font-bold text-white font-mono">USDT / USDC 區塊鏈轉帳</div>
-                                <div className="text-[11px] text-zinc-500 font-mono">請選擇鏈路並複製地址進行轉帳</div>
+                                <div className="text-[14px] font-bold text-white font-mono">USDT / USDC 區塊鏈轉帳</div>
+                                <div className="text-[11px] text-zinc-500 font-mono">請選擇公鏈鏈路，並複製專屬地址進行付款</div>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-3 gap-2.5">
                             {WALLETS.map(w => (
                                 <button
                                     key={w.chain}
                                     type="button"
                                     onClick={() => setCryptoChain(w.chain)}
-                                    className={`p-2.5 rounded-lg border text-left transition-all ${
+                                    className={`p-3 rounded-xl border text-left transition-all ${
                                         cryptoChain === w.chain
                                             ? 'border-[#FF5500]/60 bg-[#FF5500]/5 text-white'
-                                            : 'border-zinc-850 bg-zinc-950/20 text-zinc-500 hover:text-zinc-300'
+                                            : 'border-zinc-850 bg-zinc-950/20 text-zinc-500 hover:text-zinc-350'
                                     }`}
                                 >
                                     <div className="flex items-center gap-1.5 font-bold text-xs font-mono">
                                         {w.icon}
                                         {w.chain}
                                     </div>
-                                    <div className="text-[9px] text-zinc-650 mt-0.5">{w.network}</div>
+                                    <div className="text-[9px] text-zinc-650 mt-1 font-mono uppercase">{w.network}</div>
                                 </button>
                             ))}
                         </div>
 
-                        <div className="border border-zinc-900 bg-zinc-950/40 rounded-xl p-3.5 space-y-2">
-                            <div className="flex items-center justify-between text-[10px] text-zinc-600 font-mono">
+                        <div className="border border-zinc-900 bg-zinc-950/40 rounded-2xl p-5 space-y-3">
+                            <div className="flex items-center justify-between text-[11px] text-zinc-500 font-mono font-bold tracking-wider">
                                 <span>TRANSFER ADDRESS ({activeWallet.chain})</span>
                                 <button
                                     type="button"
                                     onClick={() => handleCopy(activeWallet.chain, activeWallet.address)}
-                                    className="text-[#FF5500] hover:text-white"
+                                    className="text-[#FF5500] hover:text-white transition-colors"
                                 >
-                                    {copiedChain === activeWallet.chain ? '✓ COPIED' : 'COPY'}
+                                    {copiedChain === activeWallet.chain ? '✓ COPIED' : 'COPY ADDRESS'}
                                 </button>
                             </div>
-                            <div className="bg-black/60 border border-zinc-850 p-2.5 rounded-lg text-xs text-zinc-300 break-all select-all font-mono leading-relaxed">
+                            <div className="bg-black/60 border border-zinc-850 p-3.5 rounded-xl text-[12px] text-zinc-300 break-all select-all font-mono leading-relaxed">
                                 {activeWallet.address}
                             </div>
-                            <div className="text-[10px] text-zinc-500 leading-normal font-mono pt-1">
-                                ⚠ {activeWallet.warn}
+                            <div className="text-[11px] text-zinc-500 leading-relaxed font-mono flex items-start gap-1.5">
+                                <span className="text-[#FF5500]">⚠</span>
+                                <span>{activeWallet.warn}</span>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] text-zinc-600 block">請輸入您的交易雜湊值 (TXID)</label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    placeholder="貼上轉帳 TXID..."
-                                    value={txid}
-                                    onChange={e => setTxid(e.target.value)}
-                                    className="flex-1 bg-zinc-950 border border-zinc-850 rounded-lg px-3 py-2 text-xs text-zinc-200 font-mono focus:outline-none focus:border-[#FF5500]/60 placeholder-zinc-700"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleTxidSubmit}
-                                    disabled={!txid.trim() || txidSubmitting}
-                                    className="px-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-xs rounded-lg transition-colors disabled:opacity-50"
-                                >
-                                    {txidSubmitting ? '送出中…' : '確認送出'}
-                                </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setTxid(`USER_CONFIRMED_${cryptoChain}_PAYMENT`);
+                                setTimeout(() => {
+                                    handleTxidSubmit();
+                                }, 50);
+                            }}
+                            disabled={txidSubmitting}
+                            className="w-full py-4.5 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-xl transition-all duration-200 disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2"
+                        >
+                            {txidSubmitting ? '通知中…' : '我已完成轉帳，通知管理員確認'}
+                        </button>
+                    </div>
+                )}
+
+                {paymentTab === 'coffee' && (
+                    <div className="p-8 space-y-6 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#FFDD00]">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+                            </div>
+                            <div>
+                                <div className="text-[14px] font-bold text-white font-mono">Buy Me a Coffee</div>
+                                <div className="text-[11px] text-zinc-500 font-mono">使用信用卡/Apple Pay等國際管道小額支付</div>
                             </div>
                         </div>
+
+                        <p className="text-[12px] text-zinc-400 font-mono leading-relaxed">
+                            請點擊下方按鈕前往我們的 Buy Me a Coffee 頁面完成付款或贊助支持（支援國內外信用卡、Google Pay 與 Apple Pay）。轉帳完成後請點選「我已完成付款」通知管理員。
+                        </p>
+
+                        <div className="bg-zinc-950/20 border border-zinc-850 rounded-2xl p-6 flex flex-col items-center justify-center gap-4">
+                            <a
+                                href="https://buymeacoffee.com/jaggersu"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full py-4 bg-[#FFDD00] hover:bg-[#FFEA00] text-black font-mono font-bold text-sm tracking-wider rounded-xl transition-all duration-200 text-center flex items-center justify-center gap-2 active:scale-[0.99] shadow-lg shadow-[#FFDD00]/10"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M20.216 11.455h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm-2.072 4.195l-.707-.707a1 1 0 1 1 1.414-1.414l.707.707a1 1 0 1 1-1.414 1.414zm-7.644-8.195a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-2.122-2.122a1 1 0 1 1-1.414 1.414 1 1 0 0 1 1.414-1.414zm13.122 8.122a6.002 6.002 0 0 1-5.9 5H6a6 6 0 0 1-6-6V9a6 6 0 0 1 6-6h7.622a6.002 6.002 0 0 1 5.9 5v1.455zm-1 0V9a4.002 4.002 0 0 0-3.9-3H6a4 4 0 0 0-4 4v2.455a4 4 0 0 0 4 4h7.622a4.002 4.002 0 0 0 3.9-3v-1.455zm-7 8.545a1 1 0 1 1-2 0V17h2v2.545z"/></svg>
+                                前往 Buy Me a Coffee ☕
+                            </a>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setTxid("USER_CONFIRMED_COFFEE_SPONSOR");
+                                setTimeout(() => {
+                                    handleTxidSubmit();
+                                }, 50);
+                            }}
+                            disabled={txidSubmitting}
+                            className="w-full py-4.5 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-xl transition-all duration-200 disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2"
+                        >
+                            {txidSubmitting ? '通知中…' : '我已完成付款，發送確認通知'}
+                        </button>
                     </div>
                 )}
             </div>
