@@ -200,6 +200,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
 
     const [clientRequests, setClientRequests] = useState<any[]>([]);
     const [clientRequestsLoading, setClientRequestsLoading] = useState(false);
+    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
     const fetchClientRequests = useCallback(async () => {
         setClientRequestsLoading(true);
@@ -209,6 +210,11 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
             .order('created_at', { ascending: false });
         if (!error && data) {
             setClientRequests(data);
+            setSelectedRequestId(prev => {
+                if (data.length === 0) return null;
+                if (prev && data.some((r: any) => r.id === prev)) return prev;
+                return data[0].id;
+            });
         } else if (error) {
             console.error('Failed to fetch client requests:', error);
         }
@@ -1140,11 +1146,11 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                 )}
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-6 max-w-4xl w-full mx-auto space-y-4" style={{ scrollbarWidth: 'thin' }}>
+                            <div className="flex-1 flex overflow-hidden w-full">
                                 {clientRequestsLoading ? (
-                                    <div className="text-center py-8 text-xs text-zinc-500 font-mono">載入中…</div>
+                                    <div className="flex-1 flex items-center justify-center text-xs text-zinc-500 font-mono">載入中…</div>
                                 ) : clientRequests.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-20 gap-2 border border-dashed border-zinc-900/60 rounded-xl bg-zinc-950/20">
+                                    <div className="flex-1 flex flex-col items-center justify-center p-6 gap-2">
                                         <div className="text-zinc-500 text-xs font-mono">目前沒有提交任何需求</div>
                                         <button
                                             onClick={() => {
@@ -1158,86 +1164,152 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                             立即點擊「提出需求」提交您的第一個項目
                                         </button>
                                     </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {clientRequests.map(req => (
-                                            <div key={req.id} className="bg-zinc-950 border border-zinc-900 rounded-xl p-5 font-mono space-y-3 relative">
-                                                <div className="flex items-start justify-between">
-                                                    <div>
-                                                        <div className="flex items-center gap-2.5">
-                                                            <span className="text-sm font-bold text-white leading-snug">{req.title}</span>
-                                                            <span className={`text-[9px] border px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
-                                                                req.status === '審核中'
-                                                                    ? 'border-[#FF5500]/30 text-[#FF5500] bg-[#FF5500]/5'
-                                                                    : req.status === '已轉任務'
-                                                                    ? 'border-emerald-900/60 text-emerald-400 bg-emerald-950/20'
-                                                                    : 'border-zinc-800 text-zinc-500'
-                                                            }`}>
-                                                                {req.status}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-[10px] text-zinc-650 mt-1">
-                                                            專案：{req.projects?.name || '未知專案'} · 提交時間：{new Date(req.created_at).toLocaleString('zh-TW')}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                ) : (() => {
+                                    const selectedReq = clientRequests.find(r => r.id === selectedRequestId) || clientRequests[0];
+                                    return (
+                                        <>
+                                            {/* Left List */}
+                                            <div className="w-80 md:w-96 border-r border-zinc-900 flex flex-col overflow-y-auto bg-[#040405] shrink-0" style={{ scrollbarWidth: 'thin' }}>
+                                                <div className="divide-y divide-zinc-900/60">
+                                                    {clientRequests.map(req => {
+                                                        const isSelected = selectedReq?.id === req.id;
+                                                        
+                                                        // Format Date: MM/DD
+                                                        const d = new Date(req.created_at);
+                                                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                                                        const date = String(d.getDate()).padStart(2, '0');
+                                                        const shortDate = `${month}/${date}`;
 
-                                                <div className="text-xs text-zinc-400 whitespace-pre-wrap leading-relaxed">
-                                                    {req.description}
-                                                </div>
+                                                        return (
+                                                            <div
+                                                                key={req.id}
+                                                                onClick={() => setSelectedRequestId(req.id)}
+                                                                className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-all ${
+                                                                    isSelected
+                                                                        ? 'bg-zinc-900/50 border-l-2 border-l-[#FF5500] pl-[14px]'
+                                                                        : 'hover:bg-zinc-900/20 border-l-2 border-l-transparent'
+                                                                }`}
+                                                            >
+                                                                {/* Status tag */}
+                                                                <span className={`text-[9px] border px-1.5 py-0.5 rounded font-bold uppercase tracking-wider shrink-0 ${
+                                                                    req.status === '審核中'
+                                                                        ? 'border-[#FF5500]/30 text-[#FF5500] bg-[#FF5500]/5'
+                                                                        : req.status === '已轉任務'
+                                                                        ? 'border-emerald-900/60 text-emerald-400 bg-emerald-950/20'
+                                                                        : 'border-zinc-800 text-zinc-500 bg-zinc-900/10'
+                                                                }`}>
+                                                                    {req.status === '審核中' ? '審核中' : req.status === '已轉任務' ? '已轉' : '已婉拒'}
+                                                                </span>
 
-                                                {/* AI structured review result */}
-                                                {req.ai_title && (
-                                                    <div className="border border-zinc-900/50 rounded-lg p-3.5 bg-zinc-950/40 space-y-2 text-xs">
-                                                        <div className="text-[10px] text-[#FF5500] tracking-wider">// AI 需求梳理與規格建議</div>
-                                                        <div className="font-bold text-zinc-200">優化主題：{req.ai_title}</div>
-                                                        {req.ai_structured_content && (
-                                                            <div className="text-zinc-400 space-y-2 mt-1.5 text-[11px] leading-relaxed">
-                                                                {req.ai_structured_content.features && req.ai_structured_content.features.length > 0 && (
-                                                                    <div>
-                                                                        <div className="text-[10px] text-zinc-500 font-bold mb-0.5">● 功能規格點 (Features)</div>
-                                                                        <ul className="list-disc pl-4 space-y-0.5">
-                                                                            {req.ai_structured_content.features.map((f: string, i: number) => (
-                                                                                <li key={i}>{f}</li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    </div>
-                                                                )}
-                                                                {req.ai_structured_content.deliverables && req.ai_structured_content.deliverables.length > 0 && (
-                                                                    <div className="mt-2">
-                                                                        <div className="text-[10px] text-zinc-500 font-bold mb-0.5">● 交付物清單 (Deliverables)</div>
-                                                                        <ul className="list-disc pl-4 space-y-0.5">
-                                                                            {req.ai_structured_content.deliverables.map((d: string, i: number) => (
-                                                                                <li key={i}>{d}</li>
-                                                                            ))}
-                                                                        </ul>
+                                                                {/* Title */}
+                                                                <span className={`text-xs font-mono truncate flex-1 ${
+                                                                    isSelected ? 'text-white font-semibold' : 'text-zinc-400 group-hover:text-zinc-200'
+                                                                }`}>
+                                                                    {req.ai_title || req.title}
+                                                                </span>
+
+                                                                {/* Date */}
+                                                                <span className="text-[10px] text-zinc-600 font-mono shrink-0">
+                                                                    {shortDate}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Right Details */}
+                                            <div className="flex-1 overflow-y-auto bg-[#000000] p-6 flex flex-col" style={{ scrollbarWidth: 'thin' }}>
+                                                {selectedReq ? (
+                                                    <div className="max-w-3xl w-full space-y-5 font-mono">
+                                                        {/* Header Details */}
+                                                        <div className="space-y-1">
+                                                            <div className="text-[10px] text-zinc-500 tracking-wider">
+                                                                專案：{selectedReq.projects?.name || '未知專案'} · 提交時間：{new Date(selectedReq.created_at).toLocaleString('zh-TW')}
+                                                            </div>
+                                                            <h3 className="text-sm font-bold text-white leading-snug flex items-center gap-2.5">
+                                                                {selectedReq.title}
+                                                                <span className={`text-[9px] border px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                                                                    selectedReq.status === '審核中'
+                                                                        ? 'border-[#FF5500]/30 text-[#FF5500] bg-[#FF5500]/5'
+                                                                        : selectedReq.status === '已轉任務'
+                                                                        ? 'border-emerald-900/60 text-emerald-400 bg-emerald-950/20'
+                                                                        : 'border-zinc-800 text-zinc-500'
+                                                                }`}>
+                                                                    {selectedReq.status}
+                                                                </span>
+                                                            </h3>
+                                                        </div>
+
+                                                        {/* Description */}
+                                                        <div className="space-y-1.5">
+                                                            <span className="text-[9px] text-zinc-600 tracking-wider">// 原始需求描述</span>
+                                                            <div className="bg-zinc-950/40 border border-zinc-900/80 rounded-xl p-4 text-xs text-zinc-400 whitespace-pre-wrap leading-relaxed">
+                                                                {selectedReq.description}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* AI Structured recommendation card */}
+                                                        {selectedReq.ai_title && (
+                                                            <div className="border border-[#FF5500]/15 rounded-xl p-4 bg-zinc-950/60 space-y-2.5 text-xs">
+                                                                <div className="text-[10px] text-[#FF5500] tracking-wider font-bold">// AI 需求梳理與規格建議</div>
+                                                                <div className="font-bold text-zinc-200">優化主題：{selectedReq.ai_title}</div>
+                                                                {selectedReq.ai_structured_content && (
+                                                                    <div className="text-zinc-400 space-y-3 mt-1.5 text-[11px] leading-relaxed">
+                                                                        {selectedReq.ai_structured_content.features && selectedReq.ai_structured_content.features.length > 0 && (
+                                                                            <div>
+                                                                                <div className="text-[10px] text-zinc-500 font-bold mb-1">● 功能規格點 (Features)</div>
+                                                                                <ul className="list-disc pl-4 space-y-0.5">
+                                                                                    {selectedReq.ai_structured_content.features.map((f: string, i: number) => (
+                                                                                        <li key={i}>{f}</li>
+                                                                                    ))}
+                                                                                </ul>
+                                                                            </div>
+                                                                        )}
+                                                                        {selectedReq.ai_structured_content.deliverables && selectedReq.ai_structured_content.deliverables.length > 0 && (
+                                                                            <div>
+                                                                                <div className="text-[10px] text-zinc-500 font-bold mb-1">● 交付物清單 (Deliverables)</div>
+                                                                                <ul className="list-disc pl-4 space-y-0.5">
+                                                                                    {selectedReq.ai_structured_content.deliverables.map((d: string, i: number) => (
+                                                                                        <li key={i}>{d}</li>
+                                                                                    ))}
+                                                                                </ul>
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         )}
-                                                    </div>
-                                                )}
 
-                                                {/* Attachments links */}
-                                                {req.drive_file_urls && req.drive_file_urls.length > 0 && (
-                                                    <div className="flex items-center gap-3 flex-wrap pt-2.5 border-t border-zinc-900/50">
-                                                        {req.drive_file_urls.map((file: any, idx: number) => (
-                                                            <a
-                                                                key={idx}
-                                                                href={file.url}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="text-[10px] text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1"
-                                                            >
-                                                                📄 {file.name} ↗
-                                                            </a>
-                                                        ))}
+                                                        {/* Attachments */}
+                                                        {selectedReq.drive_file_urls && selectedReq.drive_file_urls.length > 0 && (
+                                                            <div className="space-y-1.5">
+                                                                <span className="text-[9px] text-zinc-650 tracking-wider">// 相關附件</span>
+                                                                <div className="flex items-center gap-3 flex-wrap p-3.5 border border-zinc-900 rounded-xl bg-zinc-950/30">
+                                                                    {selectedReq.drive_file_urls.map((file: any, idx: number) => (
+                                                                        <a
+                                                                            key={idx}
+                                                                            href={file.url}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            className="text-[10px] text-sky-450 hover:text-sky-400 hover:underline flex items-center gap-1.5 bg-zinc-900/40 border border-zinc-900/60 px-2.5 py-1.5 rounded-lg"
+                                                                        >
+                                                                            📄 {file.name} ↗
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex-1 flex items-center justify-center text-xs text-zinc-600">
+                                                        請點擊左側列表項目以查閱詳細需求內容
                                                     </div>
                                                 )}
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
                     )}
