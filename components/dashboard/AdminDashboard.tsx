@@ -158,6 +158,8 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const uploadIconRefs   = useRef<Map<string, AnimatedIconHandle>>(new Map());
     const downloadIconRefs = useRef<Map<string, AnimatedIconHandle>>(new Map());
     const plugIconRefs     = useRef<Map<string, AnimatedIconHandle>>(new Map());
+    const boardUploadIconRef = useRef<AnimatedIconHandle>(null);
+    const boardDownloadIconRef = useRef<AnimatedIconHandle>(null);
 
     // Client detail extras
     const [clientProjects, setClientProjects]   = useState<ProjectRow[]>([]);
@@ -983,14 +985,20 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                             <span className="text-xs text-[#3b82f6] border border-[#3b82f6]/30 px-1.5 py-0.5 rounded">{selectedProject.client_name}</span>
                                             {selectedProject.drive_upload_url && (
                                                 <a href={selectedProject.drive_upload_url} target="_blank" rel="noreferrer"
-                                                    className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-950 bg-emerald-950/20 px-2.5 py-0.5 rounded transition-colors font-mono">
-                                                    📤 上傳區 ↗
+                                                    onMouseEnter={() => boardUploadIconRef.current?.startAnimation()}
+                                                    onMouseLeave={() => boardUploadIconRef.current?.stopAnimation()}
+                                                    className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-900/60 bg-emerald-950/20 hover:bg-emerald-950/40 px-2.5 py-1.5 rounded-lg transition-colors font-mono font-bold">
+                                                    <RocketIcon ref={boardUploadIconRef} size={15} color="currentColor" className="pointer-events-none" />
+                                                    上傳區 ↗
                                                 </a>
                                             )}
                                             {selectedProject.drive_view_url && (
                                                 <a href={selectedProject.drive_view_url} target="_blank" rel="noreferrer"
-                                                    className="text-xs text-sky-400 hover:text-sky-300 border border-sky-950 bg-sky-950/20 px-2.5 py-0.5 rounded transition-colors font-mono">
-                                                    📥 交付區 ↗
+                                                    onMouseEnter={() => boardDownloadIconRef.current?.startAnimation()}
+                                                    onMouseLeave={() => boardDownloadIconRef.current?.stopAnimation()}
+                                                    className="inline-flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 border border-sky-900/60 bg-sky-950/20 hover:bg-sky-950/40 px-2.5 py-1.5 rounded-lg transition-colors font-mono font-bold">
+                                                    <DownloadIcon ref={boardDownloadIconRef} size={15} color="currentColor" className="pointer-events-none" />
+                                                    交付區 ↗
                                                 </a>
                                             )}
                                             {(() => {
