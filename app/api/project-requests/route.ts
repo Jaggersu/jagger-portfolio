@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
 import { google } from 'googleapis';
+import { getDriveClient } from '@/lib/googleDrive';
 
 export async function POST(req: NextRequest) {
     try {
@@ -95,19 +96,8 @@ Analyze the following raw client request:
         if (!projErr && project && project.google_drive_folder_id) {
             const parentFolderId = project.google_drive_folder_id;
 
-            // 2. Configure Google Drive auth
-            const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-            let privateKey = process.env.GOOGLE_PRIVATE_KEY;
-
-            if (email && privateKey) {
-                privateKey = privateKey.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
-
-                const auth = new google.auth.GoogleAuth({
-                    credentials: { client_email: email, private_key: privateKey },
-                    scopes: ['https://www.googleapis.com/auth/drive'],
-                });
-
-                const drive = google.drive({ version: 'v3', auth });
+            try {
+                const drive = getDriveClient();
 
                 // 3. Find target folder (01_共用上傳區) inside the parent project folder
                 let targetFolderId = parentFolderId;
@@ -187,8 +177,8 @@ Analyze the following raw client request:
                         console.error(`[drive-upload] Failed to upload file ${file.name}:`, uploadErr);
                     }
                 }
-            } else {
-                console.warn('[drive-upload] Google Credentials missing, skipping file upload to Drive');
+            } catch (authErr) {
+                console.error('[drive-upload] Failed to initialize Google Drive client or upload files:', authErr);
             }
         } else {
             console.warn('[drive-upload] Project folder id not found in database, skipping file upload to Drive');

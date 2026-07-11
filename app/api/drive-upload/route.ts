@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
+import { getDriveClient } from '@/lib/googleDrive';
 
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,20 +32,7 @@ export async function POST(req: NextRequest) {
         const parentFolderId = project.google_drive_folder_id;
 
         // 2. Configure Google Drive auth
-        const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-        let privateKey = process.env.GOOGLE_PRIVATE_KEY;
-        if (!email || !privateKey) {
-            return NextResponse.json({ error: 'Google credentials not configured' }, { status: 500 });
-        }
-
-        privateKey = privateKey.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n');
-
-        const auth = new google.auth.GoogleAuth({
-            credentials: { client_email: email, private_key: privateKey },
-            scopes: ['https://www.googleapis.com/auth/drive'],
-        });
-
-        const drive = google.drive({ version: 'v3', auth });
+        const drive = getDriveClient();
 
         // 3. Find target folder (01_共用上傳區) inside the parent project folder
         let targetFolderId = parentFolderId;

@@ -1,29 +1,16 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
+import { getDriveClient } from '@/lib/googleDrive';
 
 export async function GET() {
     try {
-        const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-        let privateKey = process.env.GOOGLE_PRIVATE_KEY;
         const rootFolderId = process.env.GOOGLE_DRIVE_PORTFOLIO_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-        if (!email || !privateKey || !rootFolderId) {
+        if (!rootFolderId) {
             return NextResponse.json({ error: '環境變數配置不完整' }, { status: 500 });
         }
 
-        // 金鑰清洗
-        privateKey = privateKey.trim();
-        if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-            privateKey = privateKey.substring(1, privateKey.length - 1);
-        }
-        privateKey = privateKey.replace(/\\n/g, '\n');
-
-        const auth = new google.auth.GoogleAuth({
-            credentials: { client_email: email, private_key: privateKey },
-            scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-        });
-
-        const drive = google.drive({ version: 'v3', auth });
+        const drive = getDriveClient();
 
         // 1. 撈取所有子資料夾
         const foldersResponse = await drive.files.list({

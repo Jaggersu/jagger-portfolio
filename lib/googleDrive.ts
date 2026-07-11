@@ -7,45 +7,25 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-function normalizePrivateKey(raw: string): string {
-    // 1. Strip surrounding whitespace and quotes (single or double)
-    let key = raw.trim().replace(/^["']|["']$/g, '').trim();
-    // 2. If there are no real newlines, the string has literal \n – replace them
-    if (!key.includes('\n')) {
-        key = key.replace(/\\n/g, '\n');
-    }
-    // 3. Normalize CRLF → LF
-    key = key.replace(/\r\n/g, '\n').replace(/\r/g, '');
-    // 4. Ensure header/footer have their own lines (paranoia guard)
-    key = key
-        .replace(/-----BEGIN PRIVATE KEY-----\s*/g, '-----BEGIN PRIVATE KEY-----\n')
-        .replace(/\s*-----END PRIVATE KEY-----/g, '\n-----END PRIVATE KEY-----');
-    return key;
-}
+export function getDriveClient() {
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
 
-function getDriveClient() {
-    const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const rawKey = process.env.GOOGLE_PRIVATE_KEY;
-
-    if (!email || !rawKey) {
-        throw new Error('Google credentials not configured in environment variables');
+    if (!clientId || !clientSecret || !refreshToken) {
+        throw new Error('Google OAuth2 credentials not configured in environment variables');
     }
 
-    const privateKey = normalizePrivateKey(rawKey);
+    const oauth2Client = new google.auth.OAuth2(
+        clientId,
+        clientSecret
+    );
 
-    if (!privateKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
-        throw new Error(`GOOGLE_PRIVATE_KEY is malformed. First 80 chars: ${privateKey.slice(0, 80)}`);
-    }
-
-    // Use google.auth.JWT directly – more reliable than GoogleAuth wrapper on Vercel/OpenSSL 3
-    // Cast to any to satisfy googleapis type overload (JWT private property conflict)
-    const jwtClient = new google.auth.JWT({
-        email,
-        key: privateKey,
-        scopes: ['https://www.googleapis.com/auth/drive'],
+    oauth2Client.setCredentials({
+        refresh_token: refreshToken
     });
 
-    return google.drive({ version: 'v3', auth: jwtClient as any });
+    return google.drive({ version: 'v3', auth: oauth2Client });
 }
 
 
