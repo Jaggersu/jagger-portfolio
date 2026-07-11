@@ -258,7 +258,6 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
             handleFileUpload(e.target.files);
         }
     };
-
     const handleRequestSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!requestProjectId) return;
@@ -290,23 +289,49 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
             const { id: requestId } = data.request;
             const folderId = data.folderId;
 
-            // Step 2: Upload files individually if any exist
+            // Step 2: Upload files directly to Supabase Storage temp bucket
             if (requestFiles.length > 0 && folderId && requestId) {
+                const uploadedFilesList = [];
                 for (const file of requestFiles) {
-                    const uploadData = new FormData();
-                    uploadData.append('file', file);
-                    uploadData.append('projectId', requestProjectId);
-                    uploadData.append('folderId', folderId);
-                    uploadData.append('requestId', requestId);
+                    const uniqueFilename = `${Date.now()}_${file.name}`;
+                    const filePath = `uploads/${requestId}/${uniqueFilename}`;
+                    
+                    const { data: uploadData, error: uploadErr } = await supabase.storage
+                        .from('project-attachments')
+                        .upload(filePath, file);
 
-                    const uploadRes = await fetch('/api/drive-upload', {
-                        method: 'POST',
-                        body: uploadData,
-                    });
-                    if (!uploadRes.ok) {
-                        const errData = await uploadRes.json();
-                        throw new Error(errData.error || '檔案上傳失敗');
+                    if (uploadErr) {
+                        throw new Error(`上傳檔案至暫存區失敗 (${file.name}): ${uploadErr.message}`);
                     }
+
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('project-attachments')
+                        .getPublicUrl(filePath);
+
+                    uploadedFilesList.push({
+                        name: file.name,
+                        supabaseUrl: publicUrl,
+                        filePath: filePath
+                    });
+                }
+
+                // Step 3: Trigger backend sync from Supabase to Google Drive
+                const syncRes = await fetch('/api/drive-upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        projectId: requestProjectId,
+                        folderId: folderId,
+                        requestId: requestId,
+                        files: uploadedFilesList
+                    })
+                });
+
+                if (!syncRes.ok) {
+                    const errData = await syncRes.json();
+                    throw new Error(errData.error || '同步雲端硬碟失敗');
                 }
             }
 
@@ -323,7 +348,6 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
             setSubmitLoading(false);
         }
     };
-
     useEffect(() => {
         if (pendingPanel) {
             setActiveNav(pendingPanel as NavItem);
