@@ -261,8 +261,11 @@ create table if not exists public.project_requests (
   ai_structured_content jsonb default '{}'::jsonb,
   drive_file_urls       jsonb default '[]'::jsonb,
   status                text default '審核中' check (status in ('審核中','已轉任務','已婉拒')),
+  is_read               boolean default false,
   created_at            timestamptz default now() not null
 );
+
+alter table public.project_requests add column if not exists is_read boolean default false;
 
 alter table public.project_requests enable row level security;
 

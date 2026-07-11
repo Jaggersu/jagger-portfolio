@@ -217,6 +217,20 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
         setRequestsLoading(false);
     }, []);
 
+    const markRequestAsRead = useCallback(async (requestId: string) => {
+        const { error } = await supabase
+            .from('project_requests')
+            .update({ is_read: true })
+            .eq('id', requestId);
+        if (error) {
+            console.error('Failed to mark request as read:', error);
+        } else {
+            fetchRequests();
+        }
+    }, [fetchRequests]);
+
+    const unreadRequestCount = requests.filter(r => !r.is_read).length;
+
     const [newProjectError, setNewProjectError] = useState('');
 
     // Unread dots: task IDs that have client (is_admin=false) comments
@@ -664,7 +678,12 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                 {item.key === 'inbox'     && <MailFilledIcon      ref={el => { iconRefs.current[i] = el; }} size={16} />}
                                 {item.key === 'settings'  && <GearIcon            ref={el => { iconRefs.current[i] = el; }} size={16} />}
                             </span>
-                            {item.label}
+                            <span className="flex-1">{item.label}</span>
+                            {item.key === 'inbox' && unreadRequestCount > 0 && (
+                                <span className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                                    {unreadRequestCount}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </nav>
@@ -1501,14 +1520,21 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                             ) : (
                                                 requests.map(req => {
                                                     const isSelected = selectedRequest?.id === req.id;
+                                                    const isUnread = !req.is_read;
                                                     return (
                                                         <button
                                                             key={req.id}
-                                                            onClick={() => setSelectedRequest(req)}
-                                                            className={`w-full text-left p-3.5 rounded-xl transition-all font-mono flex flex-col gap-1.5 border border-transparent ${
+                                                            onClick={() => {
+                                                                setSelectedRequest(req);
+                                                                if (isUnread) markRequestAsRead(req.id);
+                                                            }}
+                                                            className={`w-full text-left p-3.5 rounded-xl transition-all font-mono flex flex-col gap-1.5 border border-transparent relative ${
                                                                 isSelected ? 'bg-zinc-905 border-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-950/40 hover:text-zinc-300'
                                                             }`}
                                                         >
+                                                            {isUnread && (
+                                                                <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-red-500" />
+                                                            )}
                                                             <div className="flex items-center justify-between w-full">
                                                                 <span className="text-[10px] text-zinc-500 max-w-[60%] truncate">
                                                                     {req.profiles?.name || '未知客戶'} ({req.projects?.name || '未知專案'})
@@ -1517,7 +1543,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                     {new Date(req.created_at).toLocaleDateString('zh-TW')}
                                                                 </span>
                                                             </div>
-                                                            <div className="text-xs font-bold truncate w-full">{req.title}</div>
+                                                            <div className={`text-xs truncate w-full ${isUnread ? 'font-bold text-zinc-200' : 'font-medium text-zinc-300'}`}>{req.title}</div>
                                                             <div className="text-[10px] text-zinc-600 line-clamp-2 leading-relaxed">
                                                                     {req.description}
                                                             </div>
