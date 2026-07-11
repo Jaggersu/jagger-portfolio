@@ -1532,14 +1532,17 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                 isSelected ? 'bg-zinc-905 border-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-950/40 hover:text-zinc-300'
                                                             }`}
                                                         >
-                                                            {isUnread && (
-                                                                <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-red-500" />
-                                                            )}
-                                                            <div className="flex items-center justify-between w-full">
+                                                            <div className="flex items-center gap-1.5 w-full">
+                                                                {isUnread && (
+                                                                    <span className="relative flex h-2 w-2 shrink-0">
+                                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                                                    </span>
+                                                                )}
                                                                 <span className="text-[10px] text-zinc-500 max-w-[60%] truncate">
                                                                     {req.profiles?.name || '未知客戶'} ({req.projects?.name || '未知專案'})
                                                                 </span>
-                                                                <span className="text-[9px] text-zinc-600">
+                                                                <span className="text-[9px] text-zinc-600 ml-auto">
                                                                     {new Date(req.created_at).toLocaleDateString('zh-TW')}
                                                                 </span>
                                                             </div>
