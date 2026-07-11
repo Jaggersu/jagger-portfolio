@@ -143,7 +143,7 @@ const PRIORITY_CONFIG = {
 
 const NAV: { key: NavItem; icon: React.ReactNode; label: string }[] = [
     { key: 'projects', icon: <LayoutList size={16} />,  label: '我的專案' },
-    { key: 'inbox',    icon: <MailFilledIcon size={16} />, label: '需求收件夾' },
+    { key: 'inbox',    icon: <MailFilledIcon size={16} />, label: '我的需求' },
     { key: 'files',    icon: <RocketIcon size={16} />,    label: '檔案中心' },
     { key: 'contract', icon: <PenIcon size={16} />,     label: '我的合約' },
     { key: 'settings', icon: <SettingsIcon size={16} />, label: '帳戶設定' },
@@ -1142,7 +1142,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                             <div className="px-6 py-4 border-b border-zinc-900 shrink-0 flex items-center justify-between bg-[#080809]">
                                 <div>
                                     <span className="text-[10px] text-zinc-650 tracking-widest font-mono">// REQUESTS INBOX</span>
-                                    <h2 className="text-sm font-bold text-white font-mono mt-0.5">需求收件夾</h2>
+                                    <h2 className="text-sm font-bold text-white font-mono mt-0.5">我的需求</h2>
                                 </div>
                                 {projects.length > 0 && (
                                     <button

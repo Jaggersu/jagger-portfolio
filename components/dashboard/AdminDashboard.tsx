@@ -82,7 +82,7 @@ const NAV_ITEMS: { key: AdminNav; label: string }[] = [
     { key: 'contracts', label: '合約管理'   },
     { key: 'projects',  label: '專案管理'   },
     { key: 'files',     label: '雲端設定'   },
-    { key: 'inbox',     label: '需求收件夾' },
+    { key: 'inbox',     label: '需求追蹤' },
     { key: 'settings',  label: '系統設定'   },
 ];
 
@@ -1510,13 +1510,13 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                     <div className="w-96 border-r border-zinc-900 flex flex-col shrink-0 bg-[#000000]">
                                         <div className="px-6 py-4 border-b border-zinc-900 shrink-0">
                                             <span className="text-[10px] text-zinc-500 font-mono tracking-widest">// TRIAGE INBOX</span>
-                                            <h2 className="text-sm font-bold text-white font-mono mt-0.5">客戶需求收件夾</h2>
+                                            <h2 className="text-sm font-bold text-white font-mono mt-0.5">客戶需求追蹤</h2>
                                         </div>
                                         <div className="flex-1 overflow-y-auto divide-y divide-zinc-900/60 p-2 space-y-1">
                                             {requestsLoading ? (
                                                 <div className="text-center py-8 text-xs text-zinc-500 font-mono">載入中…</div>
                                             ) : requests.length === 0 ? (
-                                                <div className="text-center py-12 text-xs text-zinc-650 font-mono">收件夾目前空無一物</div>
+                                                <div className="text-center py-12 text-xs text-zinc-650 font-mono">目前尚無任何需求提案</div>
                                             ) : (
                                                 requests.map(req => {
                                                     const isSelected = selectedRequest?.id === req.id;
