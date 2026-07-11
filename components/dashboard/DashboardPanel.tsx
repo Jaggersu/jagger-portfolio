@@ -268,13 +268,11 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
             const token = session?.access_token;
             if (!token) throw new Error('無法取得驗證 Token');
 
+            // Step 1: Submit the request details (without files) to generate folder and DB record
             const formData = new FormData();
             formData.append('projectId', requestProjectId);
             formData.append('title', requestTitle);
             formData.append('description', requestDesc);
-            requestFiles.forEach(f => {
-                formData.append('files', f);
-            });
 
             const res = await fetch('/api/project-requests', {
                 method: 'POST',
@@ -289,7 +287,30 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                 throw new Error(data.error || '提交失敗');
             }
 
-            alert('需求已成功提交至我的需求，並已完成 AI 規格梳理與檔案上傳！');
+            const { id: requestId } = data.request;
+            const folderId = data.folderId;
+
+            // Step 2: Upload files individually if any exist
+            if (requestFiles.length > 0 && folderId && requestId) {
+                for (const file of requestFiles) {
+                    const uploadData = new FormData();
+                    uploadData.append('file', file);
+                    uploadData.append('projectId', requestProjectId);
+                    uploadData.append('folderId', folderId);
+                    uploadData.append('requestId', requestId);
+
+                    const uploadRes = await fetch('/api/drive-upload', {
+                        method: 'POST',
+                        body: uploadData,
+                    });
+                    if (!uploadRes.ok) {
+                        const errData = await uploadRes.json();
+                        throw new Error(errData.error || '檔案上傳失敗');
+                    }
+                }
+            }
+
+            alert('需求已成功提交，並已完成 AI 規格梳理與檔案上傳！');
             setShowRequestModal(false);
             setRequestTitle('');
             setRequestDesc('');

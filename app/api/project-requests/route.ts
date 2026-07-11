@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
         const projectId = formData.get('projectId') as string | null;
         const title = formData.get('title') as string | null;
         const description = formData.get('description') as string | null;
-        const files = formData.getAll('files') as File[];
 
         if (!projectId || !title) {
             return NextResponse.json({ error: '缺少必要欄位：專案或標題' }, { status: 400 });
@@ -85,6 +84,7 @@ Analyze the following raw client request:
 
         // Upload files & create folders in Google Drive
         const drive_file_urls: { name: string; url: string }[] = [];
+        let requestFolderId: string | null = null;
 
         // 1. Fetch project's google_drive_folder_id
         const { data: project, error: projErr } = await supabase
@@ -129,7 +129,7 @@ Analyze the following raw client request:
                 const folderName = `[需求] ${dateStr}_${ai_title}`;
 
                 // 5. Create the new dynamic subfolder
-                let requestFolderId = targetFolderId;
+                requestFolderId = targetFolderId;
                 try {
                     const folderRes = await drive.files.create({
                         requestBody: {
@@ -147,58 +147,12 @@ Analyze the following raw client request:
                     console.error('[drive-upload] Failed to create request subfolder:', createFolderErr);
                 }
 
-                // 6. Upload all files into the new subfolder
-                const fs = require('fs');
-                const logPath = 'c:/Users/sujag/Documents/jagger-portfolio/upload-debug.log';
-                fs.appendFileSync(logPath, `[DEBUG] Start upload. Files count received: ${files.length}, Folder ID: ${requestFolderId}\n`);
-
-                for (const file of files) {
-                    try {
-                        fs.appendFileSync(logPath, `[DEBUG] Processing file: ${file.name}, size: ${file.size}, type: ${file.type}\n`);
-                        
-                        const arrayBuffer = await file.arrayBuffer();
-                        const buffer = Buffer.from(arrayBuffer);
-                        const readableStream = require('stream').Readable.from(buffer);
-
-                        fs.appendFileSync(logPath, `[DEBUG] Stream created for file: ${file.name}, buffer length: ${buffer.length}\n`);
-
-                        const uploaded = await drive.files.create({
-                            requestBody: {
-                                name: file.name,
-                                parents: [requestFolderId],
-                            },
-                            media: {
-                                mimeType: file.type || 'application/octet-stream',
-                                body: readableStream,
-                            },
-                            fields: 'id, webViewLink',
-                            supportsAllDrives: true,
-                        });
-
-                        fs.appendFileSync(logPath, `[DEBUG] Upload call completed. WebLink: ${uploaded.data.webViewLink}\n`);
-
-                        if (uploaded.data.webViewLink) {
-                            drive_file_urls.push({
-                                name: file.name,
-                                url: uploaded.data.webViewLink,
-                            });
-                        }
-                    } catch (uploadErr: any) {
-                        fs.appendFileSync(logPath, `[DEBUG] Failed to upload file ${file.name}: ${uploadErr.stack || uploadErr.message || uploadErr}\n`);
-                        console.error(`[drive-upload] Failed to upload file ${file.name}:`, uploadErr);
-                    }
-                }
+                // Files will be uploaded individually to /api/drive-upload by the client using this folderId
             } catch (authErr: any) {
-                const fs = require('fs');
-                const logPath = 'c:/Users/sujag/Documents/jagger-portfolio/upload-debug.log';
-                fs.appendFileSync(logPath, `[DEBUG] Auth error: ${authErr.stack || authErr.message || authErr}\n`);
-                console.error('[drive-upload] Failed to initialize Google Drive client or upload files:', authErr);
+                console.error('[drive-upload] Failed to initialize Google Drive client:', authErr);
             }
         } else {
-            const fs = require('fs');
-            const logPath = 'c:/Users/sujag/Documents/jagger-portfolio/upload-debug.log';
-            fs.appendFileSync(logPath, `[DEBUG] Project folder missing or DB error: ${projErr?.message || 'Folder ID is null'}\n`);
-            console.warn('[drive-upload] Project folder id not found in database, skipping file upload to Drive');
+            console.warn('[drive-upload] Project folder id not found in database');
         }
 
         // Insert request to database
@@ -221,7 +175,7 @@ Analyze the following raw client request:
             return NextResponse.json({ error: `寫入資料庫失敗: ${insertErr?.message}` }, { status: 500 });
         }
 
-        return NextResponse.json({ request });
+        return NextResponse.json({ request, folderId: requestFolderId });
 
     } catch (err: any) {
         console.error('[project-requests api error]', err);
