@@ -16,6 +16,8 @@ export async function GET() {
         const foldersResponse = await drive.files.list({
             q: `'${rootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
             fields: 'files(id, name)',
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
         });
 
         const subFolders = foldersResponse.data.files || [];
@@ -31,6 +33,8 @@ export async function GET() {
             // 關鍵：加入 description，用來存外部連結
             fields: 'files(id, name, mimeType, thumbnailLink, webViewLink, parents, description)',
             orderBy: 'name', // 依檔名排序
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
         });
 
         const allFiles = filesResponse.data.files || [];
