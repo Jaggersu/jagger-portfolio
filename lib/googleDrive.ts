@@ -1,11 +1,16 @@
 import { google } from 'googleapis';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Initialize Supabase Admin client for backend data updates (bypassing RLS)
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabaseAdmin: SupabaseClient | null = null;
+function getSupabaseAdmin() {
+    if (!supabaseAdmin) {
+        supabaseAdmin = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+    }
+    return supabaseAdmin;
+}
 
 export function getDriveClient() {
     const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
@@ -34,7 +39,7 @@ export function getDriveClient() {
  */
 export async function getOrCreateClientFolder(profileId: string, clientName: string, clientEmail: string): Promise<string> {
     // 1. Check database cache first using Admin client
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await getSupabaseAdmin()
         .from('profiles')
         .select('google_drive_folder_id')
         .eq('id', profileId)
@@ -80,7 +85,7 @@ export async function getOrCreateClientFolder(profileId: string, clientName: str
     }
 
     // 4. Cache folder ID in profiles table using Admin client
-    await supabaseAdmin
+    await getSupabaseAdmin()
         .from('profiles')
         .update({ google_drive_folder_id: folderId })
         .eq('id', profileId);
@@ -196,7 +201,7 @@ export async function createProjectFolders(
     }
 
     // 5. Update projects record in Supabase with folder IDs & URLs using Admin client
-    await supabaseAdmin
+    await getSupabaseAdmin()
         .from('projects')
         .update({
             google_drive_folder_id: projectFolderId,
@@ -219,7 +224,7 @@ export async function createProjectFolders(
  * High-level orchestration function to setup Google Drive folder structure for a given project ID.
  */
 export async function initializeProjectDriveFolders(projectId: string) {
-    const { data: project, error: projErr } = await supabaseAdmin
+    const { data: project, error: projErr } = await getSupabaseAdmin()
         .from('projects')
         .select('id, name, user_id, profiles(name, email)')
         .eq('id', projectId)

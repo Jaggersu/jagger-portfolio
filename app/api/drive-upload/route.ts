@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getDriveClient } from '@/lib/googleDrive';
 
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabaseAdmin: SupabaseClient | null = null;
+function getSupabaseAdmin() {
+    if (!supabaseAdmin) {
+        supabaseAdmin = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+    }
+    return supabaseAdmin;
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -59,7 +65,7 @@ export async function POST(req: NextRequest) {
 
                 // 3. Update database if requestId is provided
                 if (requestId) {
-                    const { data: reqData } = await supabaseAdmin
+                    const { data: reqData } = await getSupabaseAdmin()
                         .from('project_requests')
                         .select('drive_file_urls')
                         .eq('id', requestId)
@@ -68,14 +74,14 @@ export async function POST(req: NextRequest) {
                     const currentUrls = reqData?.drive_file_urls || [];
                     const updatedUrls = [...currentUrls, { name: fileName, url: fileUrl }];
 
-                    await supabaseAdmin
+                    await getSupabaseAdmin()
                         .from('project_requests')
                         .update({ drive_file_urls: updatedUrls })
                         .eq('id', requestId);
                 }
 
                 // 4. Delete temp file from Supabase Storage to keep footprint 0MB
-                const { error: removeErr } = await supabaseAdmin.storage
+                const { error: removeErr } = await getSupabaseAdmin().storage
                     .from('project-attachments')
                     .remove([filePath]);
 
