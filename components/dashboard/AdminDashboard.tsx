@@ -17,6 +17,7 @@ import AdminContractPanel from './AdminContractPanel';
 import type { AnimatedIconHandle } from '../icons/types';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
 import { useUserFlow } from '../../lib/userFlow';
+import LogoutIcon from '../icons/LogoutIcon';
 
 interface AdminDashboardProps {
     onClose: () => void;
@@ -165,6 +166,11 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const [selectedClient, setSelectedClient] = useState<ClientRow | null>(null);
     const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
     const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+    const [adminProfile, setAdminProfile]     = useState<{ name: string; email: string } | null>(null);
+    const [dbStatus, setDbStatus]             = useState<'checking' | 'ok' | 'error'>('checking');
+    const [announcement, setAnnouncement]     = useState({ text: '', enabled: false });
+    const [announceSaving, setAnnounceSaving] = useState(false);
+    const [announceSaved, setAnnounceSaved]   = useState(false);
     const [projectTabClientId, setProjectTabClientId] = useState<string | null>(null);
     const [filesTabClientId, setFilesTabClientId]     = useState<string | null>(null);
     const [generatingDriveProjectId, setGeneratingDriveProjectId] = useState<string | null>(null);
@@ -239,10 +245,54 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
     const closeIconRef = useRef<AnimatedIconHandle>(null);
     const iconRefs     = useRef<(AnimatedIconHandle | null)[]>([]);
     const adminChatEndRef = useRef<HTMLDivElement>(null);
+    const logoutIconRef = useRef<AnimatedIconHandle>(null);
+    const logoutIconRef2 = useRef<AnimatedIconHandle>(null);
 
     useEffect(() => {
         adminChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [taskComments]);
+
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => {
+            if (data?.user) {
+                supabase
+                    .from('profiles')
+                    .select('name, email')
+                    .eq('id', data.user.id)
+                    .single()
+                    .then(({ data: p }) => {
+                        if (p) setAdminProfile({ name: p.name ?? '', email: p.email ?? data.user.email ?? '' });
+                    });
+            }
+        });
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).then(({ error }) => {
+            setDbStatus(error ? 'error' : 'ok');
+        });
+        supabase
+            .from('system_settings')
+            .select('key, value')
+            .in('key', ['announcement_text', 'announcement_enabled'])
+            .then(({ data }) => {
+                if (data) {
+                    const txt = data.find(r => r.key === 'announcement_text')?.value ?? '';
+                    const en  = data.find(r => r.key === 'announcement_enabled')?.value === 'true';
+                    setAnnouncement({ text: txt, enabled: en });
+                }
+            });
+    }, []);
+
+    const handleSaveAnnouncement = useCallback(async () => {
+        setAnnounceSaving(true);
+        await Promise.all([
+            supabase.from('system_settings')
+                .upsert({ key: 'announcement_text',    value: announcement.text,              updated_at: new Date().toISOString() }),
+            supabase.from('system_settings')
+                .upsert({ key: 'announcement_enabled', value: String(announcement.enabled),   updated_at: new Date().toISOString() }),
+        ]);
+        setAnnounceSaving(false);
+        setAnnounceSaved(true);
+        setTimeout(() => setAnnounceSaved(false), 2500);
+    }, [announcement]);
 
     // ── Fetch helpers ────────────────────────────────────────────
     const fetchClients = useCallback(async () => {
@@ -696,7 +746,15 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                             <span className="text-[13px] text-blue-500">Active</span>
                         </div>
                     </div>
-                    <button onClick={handleSignOut} className="w-full text-xs text-zinc-600 hover:text-zinc-400 transition-colors py-1.5 border border-zinc-900 rounded hover:border-zinc-700">
+                    <button
+                        onClick={handleSignOut}
+                        onMouseEnter={() => logoutIconRef.current?.startAnimation()}
+                        onMouseLeave={() => logoutIconRef.current?.stopAnimation()}
+                        className="w-full flex items-center justify-center gap-1.5 text-xs text-zinc-600 hover:text-red-400 transition-colors py-1.5 border border-zinc-900 rounded hover:border-red-400/40"
+                    >
+                        <span className="pointer-events-none">
+                            <LogoutIcon ref={logoutIconRef} size={14} strokeWidth={2} color="currentColor" />
+                        </span>
                         Sign out
                     </button>
                 </div>
@@ -1289,11 +1347,16 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                                                     ) : (
                                                                         taskComments.map(item => {
                                                                             if (item.type === 'activity') {
+                                                                                if (!item.content?.trim()) return null;
                                                                                 return (
-                                                                                    <div key={item.id} className="flex flex-col items-center py-1">
-                                                                                        <div className="bg-zinc-900/40 border border-zinc-900 rounded px-2.5 py-1 text-center max-w-[90%]">
-                                                                                            <span className="text-[9px] text-zinc-600 block mb-0.5 font-mono">{new Date(item.created_at).toLocaleString('zh-TW')}</span>
-                                                                                            <span className="text-[11px] text-zinc-400 font-mono">⚡ {item.user_name}: {item.content}</span>
+                                                                                    <div key={item.id} className="flex flex-col items-end">
+                                                                                        <div className="flex items-center gap-1.5 px-1 text-[9px] text-zinc-600 font-mono">
+                                                                                            <span className="text-[#3b82f6] font-bold">Jagger Team</span>
+                                                                                            <span>·</span>
+                                                                                            <span>{new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                                        </div>
+                                                                                        <div className="mt-1 max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed bg-zinc-900 text-zinc-200 border border-zinc-800 font-mono">
+                                                                                            ⚡ {item.content}
                                                                                         </div>
                                                                                     </div>
                                                                                 );
@@ -1676,21 +1739,156 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                                 </div>
                             )}
 
-                            {/* ── SETTINGS ─────────────────────────────────────── */}
+                            {/* ── SETTINGS ───────────────────────────────────────────────────── */}
                             {activeNav === 'settings' && (
-                                <div className="flex flex-col px-6 py-6 gap-4 max-w-lg">
-                                    <span className="text-xs text-zinc-600 tracking-widest">// SYSTEM SETTINGS</span>
-                                    <div className="space-y-3 text-sm text-zinc-500">
-                                        {[
-                                            { label: 'Supabase 連線', value: 'CONNECTED',  color: 'text-emerald-400' },
-                                            { label: 'PKCE Auth Flow', value: 'ENABLED',   color: 'text-emerald-400' },
-                                            { label: 'Admin Role',     value: 'ACTIVE',    color: 'text-[#3b82f6]' },
-                                        ].map(item => (
-                                            <div key={item.label} className="flex items-center justify-between border border-zinc-900 rounded px-4 py-3">
-                                                <span>{item.label}</span>
-                                                <span className={`text-xs ${item.color}`}>● {item.value}</span>
+                                <div className="flex-1 overflow-y-auto px-6 py-6" style={{ scrollbarWidth: 'thin' }}>
+                                    <div className="max-w-xl space-y-6">
+                                        <span className="text-[10px] text-zinc-600 tracking-widest font-mono">// SYSTEM SETTINGS</span>
+
+                                        {/* 系統狀態 */}
+                                        <div className="space-y-2">
+                                            <div className="text-[10px] text-zinc-700 tracking-widest font-mono mb-2">// SERVICES STATUS</div>
+                                            {[
+                                                {
+                                                    label: 'Supabase Database',
+                                                    value: dbStatus === 'checking' ? 'CHECKING…' : dbStatus === 'ok' ? 'CONNECTED' : 'ERROR',
+                                                    color: dbStatus === 'ok' ? 'text-emerald-400' : dbStatus === 'error' ? 'text-red-400' : 'text-zinc-500',
+                                                },
+                                                { label: 'PKCE Auth Flow',   value: 'ENABLED',   color: 'text-emerald-400' },
+                                                { label: 'Realtime Channel', value: 'ACTIVE',    color: 'text-emerald-400' },
+                                                { label: 'Admin Role',       value: 'VERIFIED',  color: 'text-[#3b82f6]'  },
+                                            ].map(item => (
+                                                <div key={item.label} className="flex items-center justify-between border border-zinc-900 rounded-lg px-4 py-3 bg-zinc-950/20">
+                                                    <span className="text-sm text-zinc-400 font-mono">{item.label}</span>
+                                                    <span className={`text-xs font-mono ${item.color}`}>● {item.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Admin 身份資訊 */}
+                                        <div className="space-y-2">
+                                            <div className="text-[10px] text-zinc-700 tracking-widest font-mono mb-2">// ADMIN IDENTITY</div>
+                                            <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/20 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-zinc-600 font-mono">NAME</span>
+                                                    <span className="text-sm text-zinc-200 font-mono">{adminProfile?.name || '—'}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-zinc-600 font-mono">EMAIL</span>
+                                                    <span className="text-sm text-zinc-400 font-mono">{adminProfile?.email || '—'}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-zinc-600 font-mono">ROLE</span>
+                                                    <span className="text-xs font-mono border border-[#3b82f6]/40 text-[#3b82f6] bg-[#3b82f6]/10 px-2.5 py-0.5 rounded-full">admin</span>
+                                                </div>
                                             </div>
-                                        ))}
+                                        </div>
+
+                                        {/* 系統公告 */}
+                                        <div className="space-y-2">
+                                            <div className="text-[10px] text-zinc-700 tracking-widest font-mono mb-2">// 系統公告橫幅</div>
+                                            <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/20 space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="text-sm text-zinc-300 font-mono">啟用公告</div>
+                                                        <div className="text-[11px] text-zinc-600 font-mono mt-0.5">開啟後所有 Client 登入後頂部將顯示公告橫幅</div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setAnnouncement(a => ({ ...a, enabled: !a.enabled }))}
+                                                        className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
+                                                            announcement.enabled ? 'bg-[#FF5500]' : 'bg-zinc-800'
+                                                        }`}
+                                                    >
+                                                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                                                            announcement.enabled ? 'translate-x-5' : 'translate-x-0'
+                                                        }`} />
+                                                    </button>
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-zinc-600 font-mono block mb-1.5">公告內容</label>
+                                                    <textarea
+                                                        value={announcement.text}
+                                                        onChange={e => setAnnouncement(a => ({ ...a, text: e.target.value }))}
+                                                        placeholder="輸入要顯示給所有 Client 的公告訊息…"
+                                                        rows={3}
+                                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-zinc-600 resize-none"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={handleSaveAnnouncement}
+                                                        disabled={announceSaving}
+                                                        className="text-[13px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded-lg font-mono transition-colors disabled:opacity-40"
+                                                    >
+                                                        {announceSaving ? '儲存中…' : '發佈公告'}
+                                                    </button>
+                                                    {announceSaved && <span className="text-xs text-emerald-400 font-mono">● 已發佈</span>}
+                                                </div>
+                                                {announcement.enabled && announcement.text && (
+                                                    <div className="border border-[#FF5500]/30 rounded-lg px-3 py-2 bg-[#FF5500]/5">
+                                                        <div className="text-[10px] text-zinc-600 font-mono mb-1">// 預覽</div>
+                                                        <div className="text-xs text-zinc-300 font-mono">{announcement.text}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* 封存統計摘要 */}
+                                        <div className="space-y-2">
+                                            <div className="text-[10px] text-zinc-700 tracking-widest font-mono mb-2">// DATA OVERVIEW</div>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {[
+                                                    { label: 'Clients',  value: clients.length },
+                                                    { label: 'Projects', value: projects.length },
+                                                    { label: 'Tasks',    value: tasks.length },
+                                                ].map(stat => (
+                                                    <div key={stat.label} className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/20 text-center">
+                                                        <div className="text-2xl font-black text-[#FF5500] font-mono">{stat.value}</div>
+                                                        <div className="text-[11px] text-zinc-600 font-mono mt-1">{stat.label}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* 危險區 */}
+                                        <div className="space-y-2">
+                                            <div className="text-[10px] text-red-900 tracking-widest font-mono mb-2">// DANGER ZONE</div>
+                                            <div className="border border-red-950 rounded-xl p-4 bg-red-950/10 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <div className="text-sm text-zinc-300 font-mono">登出管理員帳號</div>
+                                                        <div className="text-[11px] text-zinc-600 font-mono mt-0.5">結束此制材主要工作區旧回首頁</div>
+                                                    </div>
+                                                    <button
+                                                        onClick={handleSignOut}
+                                                        onMouseEnter={() => logoutIconRef2.current?.startAnimation()}
+                                                        onMouseLeave={() => logoutIconRef2.current?.stopAnimation()}
+                                                        className="flex items-center gap-1.5 text-xs border border-red-900/60 text-red-400 hover:bg-red-950/40 px-4 py-2 rounded-lg font-mono transition-colors"
+                                                    >
+                                                        <span className="pointer-events-none">
+                                                            <LogoutIcon ref={logoutIconRef2} size={14} strokeWidth={2} color="currentColor" />
+                                                        </span>
+                                                        Sign Out
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center justify-between border-t border-zinc-900/60 pt-3">
+                                                    <div>
+                                                        <div className="text-sm text-zinc-300 font-mono">清除本地快取</div>
+                                                        <div className="text-[11px] text-zinc-600 font-mono mt-0.5">清除 localStorage 中的已讀標記與暫存資料</div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => {
+                                                            const keys = Object.keys(localStorage).filter(k => k.startsWith('seen-admin-task-'));
+                                                            keys.forEach(k => localStorage.removeItem(k));
+                                                            alert(`已清除 ${keys.length} 筆快取記錄`);
+                                                        }}
+                                                        className="text-xs border border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300 px-4 py-2 rounded-lg font-mono transition-colors"
+                                                    >
+                                                        Clear Cache
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}

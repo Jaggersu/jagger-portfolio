@@ -295,3 +295,26 @@ create policy "允許管理員刪除需求" on public.project_requests
     public.current_user_role() = 'admin'
   );
 
+-- ── system_settings ──────────────────────────────────────────
+create table if not exists public.system_settings (
+  key        text primary key,
+  value      text,
+  updated_at timestamptz default now()
+);
+
+alter table public.system_settings enable row level security;
+
+drop policy if exists "所有人可讀系統設定" on public.system_settings;
+create policy "所有人可讀系統設定" on public.system_settings
+  for select using (true);
+
+drop policy if exists "僅 Admin 可寫系統設定" on public.system_settings;
+create policy "僅 Admin 可寫系統設定" on public.system_settings
+  for all using (public.current_user_role() = 'admin')
+  with check (public.current_user_role() = 'admin');
+
+-- 預設公告資料（關閉狀態）
+insert into public.system_settings (key, value) values
+  ('announcement_text',    '')
+  ,('announcement_enabled', 'false')
+on conflict (key) do nothing;

@@ -2,6 +2,8 @@
 
 import React, { useState, useRef } from 'react';
 import BrandTelegramIcon from './icons/BrandTelegramIcon';
+import CopyrightIcon from './icons/CopyrightIcon';
+import MailFilledIcon from './icons/MailFilledIcon';
 import type { AnimatedIconHandle } from './icons/types';
 
 export default function ContactSection() {
@@ -9,6 +11,8 @@ export default function ContactSection() {
     const [sending, setSending] = useState(false);
     const [sent, setSent] = useState(false);
     const telegramIconRef = useRef<AnimatedIconHandle>(null);
+    const copyrightIconRef = useRef<AnimatedIconHandle>(null);
+    const emailIconRef = useRef<AnimatedIconHandle>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -70,11 +74,12 @@ export default function ContactSection() {
                     {/* Right — Email Form */}
                     <div className="p-8 border border-[#1F1F23] rounded-xl bg-[#0c0c0e]">
                         <div className="flex items-center gap-2 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-[#FF5500]/10 flex items-center justify-center">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect width="20" height="16" x="2" y="4" rx="2" />
-                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                                </svg>
+                            <div
+                                className="w-10 h-10 rounded-full bg-[#FF5500]/10 flex items-center justify-center cursor-pointer"
+                                onMouseEnter={() => emailIconRef.current?.startAnimation()}
+                                onMouseLeave={() => emailIconRef.current?.stopAnimation()}
+                            >
+                                <MailFilledIcon ref={emailIconRef} size={20} color="#FF5500" strokeWidth={1.5} />
                             </div>
                             <div>
                                 <h3 className="text-lg font-bold text-white font-mono">Email</h3>
@@ -136,9 +141,14 @@ export default function ContactSection() {
 
                 {/* Footer */}
                 <div className="mt-16 text-center border-t border-[#1F1F23] pt-8">
-                    <p className="text-zinc-600 text-[10px] font-mono tracking-wider">
-                        © {new Date().getFullYear()} JAGGER OS · ALL RIGHTS RESERVED
-                    </p>
+                    <div
+                        className="inline-flex items-center gap-2 text-zinc-600 text-sm font-mono tracking-wider cursor-default select-none"
+                        onMouseEnter={() => copyrightIconRef.current?.startAnimation()}
+                        onMouseLeave={() => copyrightIconRef.current?.stopAnimation()}
+                    >
+                        <CopyrightIcon ref={copyrightIconRef} size={20} strokeWidth={1.5} color="#FF5500" />
+                        {new Date().getFullYear()} JAGGER OS · ALL RIGHTS RESERVED
+                    </div>
                 </div>
             </div>
         </section>

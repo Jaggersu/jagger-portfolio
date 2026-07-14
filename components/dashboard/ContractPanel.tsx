@@ -6,6 +6,15 @@ import { supabase } from '../../lib/supabase';
 import XIcon from '../icons/XIcon';
 import type { AnimatedIconHandle } from '../icons/types';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
+import LetterPIcon from '../icons/LetterPIcon';
+import CreditCard from '../icons/CreditCard';
+import CurrencyBitcoinIcon from '../icons/CurrencyBitcoinIcon';
+import CoffeeIcon from '../icons/CoffeeIcon';
+import CopyIcon from '../icons/CopyIcon';
+import TriangleAlertIcon from '../icons/TriangleAlertIcon';
+import BrandTelegramIcon from '../icons/BrandTelegramIcon';
+import { QRCodeSVG } from 'qrcode.react';
+import Script from 'next/script';
 
 interface ContractPanelProps {
     plan: string;
@@ -17,32 +26,47 @@ const CONTRACT_CLAUSES = [
     {
         num: '01',
         title: '服務範疇',
-        body: '乙方依客戶所選方案，提供對應之平面設計、品牌識別、數位素材、網站開發及 AI 輔助工作流程等服務。具體交付物以開案確認書為準。',
+        body: '乙方依客戶所選方案，提供對應之平面設計、品牌識別、數位素材、網站開發及 AI 輔助工作流程等服務。具體交付項目、頁面數量與功能規格，以雙方簽認之開案確認書及報價單為準，確認書範圍外之額外需求須另行報價。',
     },
     {
         num: '02',
-        title: '費用與付款',
-        body: '本合約服務費用為 [[AMOUNT]]，執行時程為 [[TIMELINE]]。訂閱制方案按月預付；專案制依合約里程碑分期支付。逾期付款超過 7 個工作天，乙方有權暫停服務直至款項結清。',
+        title: '修改次數與範圍變更',
+        body: '每一交付階段提案包含合理修改次數（訂閱制每月 2 輪、專案制每里程碑 3 輪）。超出次數之修改，或因客戶需求變更導致工作範圍擴大者，乙方得另行報價。客戶如於確認稿後要求重大方向調整，視同新增需求處理。',
     },
     {
         num: '03',
-        title: '智慧財產權',
-        body: '所有交付物之著作權及相關智慧財產權，於客戶完成全額付款後，完整且不可撤銷地移轉予客戶。乙方保留作品集展示權。',
+        title: '費用、付款與逾期',
+        body: '本合約服務費用為 [[AMOUNT]]，執行時程為 [[TIMELINE]]。訂閱制方案按月預付，逾期視為自動暫停服務。專案制依開案 50%、交稿 30%、結案 20% 分三期支付。逾期付款超過 7 個工作天，乙方有權暫停所有進行中服務，並得就逾期金額按日加收萬分之三違約金，直至款項全數結清為止。',
     },
     {
         num: '04',
-        title: '合約終止',
-        body: '任何一方可提前 30 個日曆天以書面方式通知終止訂閱制合約。專案制合約一經開案，恕不退還已支付之訂金。',
+        title: '智慧財產權歸屬',
+        body: '客戶完成全額付款後，乙方將本專案之最終定稿著作財產權完整移轉予客戶。乙方保留：(a) 作品集展示與參展權；(b) 工作流程中所使用之通用框架、元件庫及可重用程式碼之所有權。未獲客戶採用之提案稿，著作權仍歸乙方所有；客戶如需取得，應另行議價。',
     },
     {
         num: '05',
-        title: '保密條款',
-        body: '雙方同意對合作過程中取得之商業機密、未公開素材及客戶資料予以保密，保密期限為合約終止後 3 年。',
+        title: '客戶素材與侵權責任',
+        body: '客戶提供之文字、圖片、商標及其他素材，應保證合法取得且不侵害任何第三方之智慧財產權；因客戶提供素材引發之任何法律責任，由客戶自行承擔，乙方不負連帶責任。乙方所使用之正版圖庫及字型授權，僅限本專案用途，客戶不得自行將相關素材另作他用或轉授權予第三方。',
     },
     {
         num: '06',
-        title: '準據法',
-        body: '本合約受中華民國法律管轄。因本合約引起之爭議，雙方同意以臺灣臺北地方法院為第一審管轄法院。',
+        title: '合約終止',
+        body: '訂閱制合約：任何一方得提前 30 個日曆天以書面通知終止，終止前已預付款項不予退還。專案制合約：客戶主動終止時，乙方得依已完成工作比例收取費用，已支付訂金不予退還；乙方主動終止時，應於 7 個工作天內退還未完成部分之預付款。',
+    },
+    {
+        num: '07',
+        title: '保密條款',
+        body: '雙方同意對合作過程中取得之商業機密、未公開素材、客戶資料及本合約條款予以嚴格保密；未經對方書面同意，不得向第三方揭露。保密義務於合約終止後繼續存續 3 年。違反保密義務者，應賠償對方因此所受之一切損害。',
+    },
+    {
+        num: '08',
+        title: '不可抗力',
+        body: '因天災、戰爭、政府法規變動、網路基礎設施故障、第三方服務中斷（如雲端平台、支付閘道）等不可抗力事件，導致乙方無法如期履約者，乙方得就受影響部分順延時程，雙方均不得以此為由要求違約賠償。',
+    },
+    {
+        num: '09',
+        title: '準據法與爭議解決',
+        body: '本合約受中華民國法律管轄。雙方應先以協商方式解決爭議；協商不成時，同意以臺灣臺北地方法院為第一審管轄法院。',
     },
 ];
 
@@ -89,6 +113,8 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
     
     const lastPos = useRef<{ x: number; y: number } | null>(null);
     const formSubmitRef = useRef(false);
+    const clauseScrollRef = useRef<HTMLDivElement>(null);
+    const printIconRef = useRef<AnimatedIconHandle>(null);
 
     // Fetch cabinet contracts
     const fetchContracts = useCallback(async () => {
@@ -303,6 +329,20 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
 
     // Download contract function - uses native print engine to guarantee A4 PDF vectors rendering
 
+    // 若條款區無需捲動，自動解鎖簽名
+    useEffect(() => {
+        if (!isAdding) return;
+        const el = clauseScrollRef.current;
+        if (!el) return;
+        const check = () => {
+            if (el.scrollHeight <= el.clientHeight + 4) setDraftReadBottom(true);
+        };
+        check();
+        const ro = new ResizeObserver(check);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [isAdding, newPlan, newAmount, newTimeline]);
+
     // Handle plan selection update price and timeline defaults
     useEffect(() => {
         setDraftReadBottom(false);
@@ -424,12 +464,9 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
         return (
             <div className="flex-1 flex overflow-hidden h-full" style={{ maxHeight: '100%' }}>
                 {/* Left: Cabinet Contract Cards */}
-                <div className="flex-1 flex flex-col min-w-0 bg-[#000000] border-r border-zinc-900">
-                    <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
-                        <div>
-                            <span className="text-[10px] font-mono text-zinc-600 tracking-widest block">// CABINET: SERVICE AGREEMENTS</span>
-                            <h2 className="text-sm font-bold text-white font-mono">合約檔案櫃</h2>
-                        </div>
+                <div className="w-[260px] shrink-0 flex flex-col min-w-0 bg-[#000000] border-r border-zinc-900">
+                    <div className="px-2 py-3 border-b border-zinc-900 flex flex-col items-start gap-2 shrink-0">
+                        <span className="text-[8px] font-mono text-zinc-600 tracking-widest truncate w-full">// CABINET</span>
                         <button
                             onClick={() => {
                                 setIsAdding(true);
@@ -437,17 +474,17 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                 setHasSig(false);
                                 setAgreed(false);
                             }}
-                            className="text-[11px] font-mono bg-[#FF5500] hover:bg-white text-black px-3 py-1.5 rounded font-bold transition-all"
+                            className="w-full text-[10px] font-mono bg-[#FF5500] hover:bg-white text-black px-1.5 py-1.5 rounded font-bold transition-all text-center"
                         >
                             + 新增合約
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-3" style={{ scrollbarWidth: 'thin' }}>
+                    <div className="flex-1 overflow-y-auto py-3 px-3 space-y-2" style={{ scrollbarWidth: 'thin' }}>
                         {loadingContracts ? (
-                            <div className="text-xs text-zinc-600 italic font-mono py-10 text-center">Loading cabinet…</div>
+                            <div className="text-xs text-zinc-600 italic font-mono py-10 text-center">Loading…</div>
                         ) : contracts.length === 0 ? (
-                            <div className="text-xs text-zinc-700 italic font-mono py-16 text-center">櫃中尚無合約檔案，點擊右上角簽署新合約。</div>
+                            <div className="text-xs text-zinc-700 italic font-mono py-16 text-center px-4">尚無合約，點擊右上角新增。</div>
                         ) : (
                             contracts.map(c => {
                                 const isSelected = selectedContractId === c.id;
@@ -460,24 +497,24 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                             setSelectedContractId(isSelected ? null : c.id);
                                             setIsAdding(false);
                                         }}
-                                        className={`p-4 border rounded-xl cursor-pointer transition-all ${
+                                        className={`px-3 py-2.5 border rounded-lg cursor-pointer transition-all ${
                                             isSelected
-                                                ? 'bg-zinc-900 border-[#FF5500]/50 shadow-[#FF5500]/5 shadow-lg'
+                                                ? 'bg-zinc-900 border-[#FF5500]/50'
                                                 : 'bg-zinc-950/40 border-zinc-900 hover:border-zinc-800'
                                         }`}
                                     >
-                                        <div className="flex items-center justify-between">
+                                        <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
-                                                <div className="text-xs font-mono text-zinc-500 tracking-widest">ORDER NO: {c.metadata?.merchantOrderNo || 'MOCK'}</div>
-                                                <h3 className="text-sm font-bold text-white mt-1 font-mono">{planName} 視覺開發合約</h3>
-                                                <div className="text-[11px] text-zinc-600 mt-0.5">{dateStr} · NT$ {Number(c.metadata?.amount || 0).toLocaleString()}</div>
+                                                <div className="text-[10px] font-mono text-zinc-600 truncate">{c.metadata?.merchantOrderNo || 'MOCK'}</div>
+                                                <div className="text-xs font-bold text-white mt-0.5 font-mono truncate">{planName} 合約</div>
+                                                <div className="text-[10px] text-zinc-600 mt-0.5">{dateStr}</div>
                                             </div>
-                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                                            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 mt-0.5 ${
                                                 c.status === 'SIGNED'
                                                     ? 'text-emerald-400 border-emerald-950 bg-emerald-950/20'
                                                     : 'text-yellow-400 border-yellow-950 bg-yellow-950/20'
                                             }`}>
-                                                {c.status === 'SIGNED' ? '✓ 已簽署' : '待付款'}
+                                                {c.status === 'SIGNED' ? '已簽署' : '待付款'}
                                             </span>
                                         </div>
                                     </div>
@@ -491,7 +528,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                 {(() => {
                     if (isAdding) {
                         return (
-                            <div className="w-[480px] shrink-0 border-l border-zinc-900 flex flex-col bg-[#0A0A0B] overflow-hidden"
+                            <div className="flex-1 border-l border-zinc-900 flex flex-col bg-[#0A0A0B] overflow-hidden"
                                 style={{ animation: 'slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}>
                                 <style dangerouslySetInnerHTML={{__html: `
                                     @keyframes slideInRight {
@@ -499,146 +536,146 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                         to { transform: translateX(0); }
                                     }
                                 `}} />
-                                <div className="px-5 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
+                                <div className="px-5 py-3.5 border-b border-zinc-900 flex items-center justify-between shrink-0">
                                     <div>
                                         <span className="text-[10px] text-zinc-600 font-mono tracking-widest">// NEW AGREEMENT</span>
                                         <h2 className="text-sm font-bold text-white font-mono">起草新合約</h2>
                                     </div>
                                     <button onClick={() => setIsAdding(false)} className="text-zinc-500 hover:text-zinc-300 text-sm">✕</button>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-5 space-y-4" style={{ scrollbarWidth: 'thin' }}>
-                                    
-                                    {/* Parameters selection */}
-                                    <div className="border border-zinc-900 rounded-xl p-3.5 space-y-3 bg-zinc-950/20">
-                                        <div className="text-[10px] text-zinc-600 tracking-widest font-mono">SELECT PLAN</div>
-                                        <div className="grid grid-cols-4 gap-1.5">
-                                            {['LITE', 'PRO', 'SCALE', 'ON-DEMAND'].map(p => (
-                                                <button
-                                                    key={p}
-                                                    type="button"
-                                                    onClick={() => setNewPlan(p)}
-                                                    className={`py-2 rounded-lg text-[9px] font-mono font-bold border transition-colors ${
-                                                        newPlan === p
-                                                            ? 'border-[#FF5500]/60 bg-[#FF5500]/5 text-[#FF5500]'
-                                                            : 'border-zinc-800 text-zinc-500 hover:text-zinc-350'
-                                                    }`}
-                                                >
-                                                    {p}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-3 pt-2">
-                                            <div>
-                                                <label className="text-[10px] text-zinc-600 block mb-1">AMOUNT (NT$)</label>
-                                                <input
-                                                    type="text"
-                                                    value={newAmount}
-                                                    onChange={e => setNewAmount(e.target.value)}
-                                                    className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-[#FF5500]/60"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] text-zinc-600 block mb-1">TIMELINE</label>
-                                                <input
-                                                    type="text"
-                                                    value={newTimeline}
-                                                    onChange={e => setNewTimeline(e.target.value)}
-                                                    className="w-full bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-[#FF5500]/60"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    {/* Preview Clauses strip */}
-                                    <div 
-                                        onScroll={e => {
-                                            const target = e.currentTarget;
-                                            if (target.scrollHeight - target.scrollTop <= target.clientHeight + 15) {
-                                                setDraftReadBottom(true);
-                                            }
-                                        }}
-                                        className="border border-zinc-900 rounded-xl p-3 bg-zinc-950/20 max-h-56 overflow-y-auto space-y-3" 
-                                        style={{ scrollbarWidth: 'thin' }}
-                                    >
-                                        <div className="text-[9px] text-zinc-600 tracking-widest font-mono">// CONTRACT PREVIEW CLAUSES (請向下滾動完整閱讀解鎖)</div>
-                                        {CONTRACT_CLAUSES.map(c => (
-                                            <div key={c.num} className="text-[11px] leading-relaxed">
-                                                <span className="text-[#FF5500] font-bold mr-1.5">{c.num}.</span>
-                                                {renderClauseBody(c.body, `NT$ ${Number(newAmount || 0).toLocaleString()}`, newTimeline, "text-zinc-400")}
-                                            </div>
-                                        ))}
-                                    </div>
+                                {/* 雙欄佈局：左=參數+條款，右=簽名+送出 */}
+                                <div className="flex flex-1 overflow-hidden">
 
-                                    {/* Signature Canvas */}
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] text-zinc-600 tracking-widest font-mono">SIGNATURE PAD</span>
-                                            <button onClick={clearCanvas} className="text-[9px] text-zinc-600 hover:text-zinc-400 border border-zinc-900 px-2 py-0.5 rounded">CLEAR</button>
-                                        </div>
-                                        <div className="border border-zinc-800 rounded-xl overflow-hidden relative bg-[#000000]" style={{ height: '110px' }}>
-                                            {(!draftReadBottom || !newAmount.trim() || !newTimeline.trim()) && (
-                                                <div className="absolute inset-0 bg-black/90 backdrop-blur-xs flex flex-col items-center justify-center text-[10px] text-zinc-500 font-mono text-center px-4 space-y-1 z-10 select-none">
-                                                    <span>🔒 請填寫金額、交期並向下滾動完整閱讀合約</span>
-                                                    <span className="text-[8px] text-zinc-750 font-bold">（完成後即可解鎖電子簽名區）</span>
+                                    {/* 左欄：方案選擇 + 條款 */}
+                                    <div className="flex-1 border-r border-zinc-900 flex flex-col overflow-hidden">
+                                        {/* 參數 */}
+                                        <div className="px-4 pt-4 pb-3 border-b border-zinc-900 space-y-3 shrink-0">
+                                            <div className="text-[10px] text-zinc-600 tracking-widest font-mono">選擇方案</div>
+                                            <div className="grid grid-cols-4 gap-1.5">
+                                                {['LITE', 'PRO', 'SCALE', 'ON-DEMAND'].map(p => (
+                                                    <button
+                                                        key={p}
+                                                        type="button"
+                                                        onClick={() => setNewPlan(p)}
+                                                        className={`py-1.5 rounded-lg text-[9px] font-mono font-bold border transition-colors ${
+                                                            newPlan === p
+                                                                ? 'border-[#FF5500]/60 bg-[#FF5500]/5 text-[#FF5500]'
+                                                                : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                                                        }`}
+                                                    >
+                                                        {p}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="text-[10px] text-zinc-600 block mb-1">金額 (NT$)</label>
+                                                    <input type="text" value={newAmount} onChange={e => setNewAmount(e.target.value)}
+                                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-[#FF5500]/60" />
                                                 </div>
-                                            )}
-                                            {!hasSig && (
-                                                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-zinc-700 pointer-events-none select-none">
-                                                    在此以滑鼠或觸控板簽名
-                                                </span>
-                                            )}
-                                            <canvas
-                                                ref={canvasRef}
-                                                width={600}
-                                                height={150}
-                                                className="w-full cursor-crosshair touch-none"
-                                                style={{ height: '110px' }}
-                                                onMouseDown={startDraw}
-                                                onMouseMove={draw}
-                                                onMouseUp={stopDraw}
-                                                onMouseLeave={stopDraw}
-                                                onTouchStart={startDraw}
-                                                onTouchMove={draw}
-                                                onTouchEnd={stopDraw}
-                                            />
+                                                <div>
+                                                    <label className="text-[10px] text-zinc-600 block mb-1">時程</label>
+                                                    <input type="text" value={newTimeline} onChange={e => setNewTimeline(e.target.value)}
+                                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-[#FF5500]/60" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/* 條款滾動區 */}
+                                        <div
+                                            ref={clauseScrollRef}
+                                            onScroll={e => {
+                                                const t = e.currentTarget;
+                                                if (t.scrollHeight - t.scrollTop <= t.clientHeight + 15) setDraftReadBottom(true);
+                                            }}
+                                            className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
+                                            style={{ scrollbarWidth: 'thin' }}
+                                        >
+                                            <div className={`text-[9px] tracking-widest font-mono ${draftReadBottom ? 'text-emerald-600' : 'text-amber-600 animate-pulse'}`}>
+                                                {draftReadBottom ? '// ✓ 已閱讀完畢，請至右側簽名' : '// ⚠ 請向下滾動至底部以解鎖電子簽名'}
+                                            </div>
+                                            {CONTRACT_CLAUSES.map(c => (
+                                                <div key={c.num} className="space-y-1">
+                                                    <div className="text-xs font-bold text-zinc-200 font-mono">
+                                                        <span className="text-[#FF5500] mr-1.5">{c.num}.</span>{c.title}
+                                                    </div>
+                                                    <div className="text-xs leading-relaxed pl-5">
+                                                        {renderClauseBody(c.body, `NT$ ${Number(newAmount || 0).toLocaleString()}`, newTimeline, 'text-zinc-400')}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <div className="h-2" />
                                         </div>
                                     </div>
 
-                                    {/* Agreement & Submit */}
-                                    <div
-                                        onClick={() => setAgreed(v => !v)}
-                                        className="flex items-start gap-2.5 cursor-pointer group"
-                                    >
-                                        <div className={`mt-0.5 w-3.5 h-3.5 rounded border shrink-0 flex items-center justify-center transition-all ${agreed ? 'bg-[#FF5500] border-[#FF5500]' : 'border-zinc-850 bg-transparent group-hover:border-zinc-500'}`}>
-                                            {agreed && (
-                                                <svg width="8" height="6" viewBox="0 0 9 7" fill="none">
-                                                    <path d="M1 3.5L3.5 6L8 1" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                </svg>
-                                            )}
+                                    {/* 右欄：簽名 + 同意 + 送出 */}
+                                    <div className="w-80 shrink-0 flex flex-col px-5 py-4 gap-4 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] text-zinc-600 tracking-widest font-mono">電子簽名</span>
+                                                <button onClick={clearCanvas} className="text-[9px] text-zinc-600 hover:text-zinc-400 border border-zinc-900 px-2 py-0.5 rounded">清除</button>
+                                            </div>
+                                            <div className="border border-zinc-800 rounded-xl overflow-hidden relative bg-[#000000]" style={{ height: '160px' }}>
+                                                {(!draftReadBottom || !newAmount.trim() || !newTimeline.trim()) && (
+                                                    <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-[10px] text-zinc-500 font-mono text-center px-3 space-y-1.5 z-10 select-none">
+                                                        <span>🔒 填寫金額、交期</span>
+                                                        <span>並向下讀完左側條款</span>
+                                                    </div>
+                                                )}
+                                                {!hasSig && (
+                                                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-zinc-700 pointer-events-none select-none">在此以滑鼠或觸控板簽名</span>
+                                                )}
+                                                <canvas
+                                                    ref={canvasRef}
+                                                    width={480}
+                                                    height={200}
+                                                    className="w-full cursor-crosshair touch-none"
+                                                    style={{ height: '160px' }}
+                                                    onMouseDown={startDraw}
+                                                    onMouseMove={draw}
+                                                    onMouseUp={stopDraw}
+                                                    onMouseLeave={stopDraw}
+                                                    onTouchStart={startDraw}
+                                                    onTouchMove={draw}
+                                                    onTouchEnd={stopDraw}
+                                                />
+                                            </div>
                                         </div>
-                                        <span className="text-[11px] text-zinc-500 leading-normal select-none">
-                                            我同意合約所有條款，並確認此電子簽名具法律效力。
-                                        </span>
+
+                                        <div
+                                            onClick={() => setAgreed(v => !v)}
+                                            className="flex items-start gap-2 cursor-pointer group"
+                                        >
+                                            <div className={`mt-0.5 w-3.5 h-3.5 rounded border shrink-0 flex items-center justify-center transition-all ${agreed ? 'bg-[#FF5500] border-[#FF5500]' : 'border-zinc-700 bg-transparent group-hover:border-zinc-500'}`}>
+                                                {agreed && (
+                                                    <svg width="8" height="6" viewBox="0 0 9 7" fill="none">
+                                                        <path d="M1 3.5L3.5 6L8 1" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <span className="text-[10px] text-zinc-500 leading-relaxed select-none">
+                                                我同意所有條款，此電子簽名具法律效力。
+                                            </span>
+                                        </div>
+
+                                        {checkoutError && (
+                                            <div className="text-[10px] text-red-400 font-mono">⚠ {checkoutError}</div>
+                                        )}
+
+                                        <button
+                                            onClick={() => { if (hasSig && agreed) setShowPayment(true); }}
+                                            disabled={!hasSig || !agreed || paying}
+                                            className={`w-full py-2.5 rounded-lg font-mono font-bold text-[10px] tracking-widest uppercase transition-all mt-auto ${
+                                                paying
+                                                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                                                    : hasSig && agreed
+                                                        ? 'bg-[#FF5500] text-black hover:bg-white cursor-pointer'
+                                                        : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
+                                            }`}
+                                        >
+                                            {paying ? '⟳ 處理中…' : '確認簽署並付款'}
+                                        </button>
                                     </div>
-
-                                    {checkoutError && (
-                                        <div className="text-[10px] text-red-400 font-mono">⚠ {checkoutError}</div>
-                                    )}
-
-                                    <button
-                                        onClick={() => { if (hasSig && agreed) setShowPayment(true); }}
-                                        disabled={!hasSig || !agreed || paying}
-                                        className={`w-full py-3 rounded-lg font-mono font-bold text-[11px] tracking-widest uppercase transition-all ${
-                                            paying
-                                                ? 'bg-zinc-800 text-zinc-650 cursor-not-allowed'
-                                                : hasSig && agreed
-                                                    ? 'bg-[#FF5500] text-black hover:bg-white cursor-pointer font-bold'
-                                                    : 'bg-zinc-900 text-zinc-650 cursor-not-allowed border border-zinc-850'
-                                        }`}
-                                    >
-                                        {paying ? '⟳ 處理中…' : '確認簽署並前往付款'}
-                                    </button>
                                 </div>
                             </div>
                         );
@@ -646,7 +683,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
 
                     if (!activeContract) {
                         return (
-                            <div className="w-[480px] shrink-0 border-l border-zinc-900 flex flex-col bg-[#0A0A0B] items-center justify-center p-8 text-zinc-600 italic text-xs font-mono">
+                            <div className="flex-1 border-l border-zinc-900 flex flex-col bg-[#0A0A0B] items-center justify-center p-8 text-zinc-600 italic text-xs font-mono">
                                 點擊左側合約查看詳細內容
                             </div>
                         );
@@ -655,7 +692,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                     const amtValue = activeContract.metadata?.amount || 0;
                     const timelineText = activeContract.metadata?.timeline || '按月續約';
                     return (
-                        <div className="w-[480px] shrink-0 border-l border-zinc-900 flex flex-col bg-[#0A0A0B] overflow-hidden"
+                        <div className="flex-1 border-l border-zinc-900 flex flex-col bg-[#0A0A0B] overflow-hidden"
                             style={{ animation: 'slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}>
                             <div className="px-5 py-4 border-b border-zinc-900 flex items-center justify-between shrink-0">
                                 <div>
@@ -667,7 +704,7 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                             <div className="flex-1 overflow-y-auto p-5 space-y-5" style={{ scrollbarWidth: 'thin' }}>
                                 
                                 {/* Info Strip */}
-                                <div className="grid grid-cols-2 gap-4 border border-zinc-900 rounded-xl p-3 bg-zinc-950/20 text-xs">
+                                <div className="grid grid-cols-2 gap-4 border border-zinc-900 rounded-xl p-3 bg-zinc-950/20 text-xs max-w-sm">
                                     <div>
                                         <span className="text-[10px] text-zinc-600 block">PLAN</span>
                                         <span className="text-zinc-200 font-mono">{activeContract.metadata?.plan || initialPlan}</span>
@@ -690,41 +727,53 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
 
                                 {/* Clauses Text Container */}
                                 {activeContract.status === 'SIGNED' ? (
-                                    <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/40 max-h-72 overflow-y-auto font-mono text-zinc-400 text-xs whitespace-pre-wrap leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
+                                    <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/40 overflow-y-auto font-mono text-zinc-400 text-xs whitespace-pre-wrap leading-relaxed" style={{ scrollbarWidth: 'thin' }}>
                                         {activeContract.raw_contract_body || activeContract.content || '（無合約本文封存）'}
                                     </div>
                                 ) : (
-                                    <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/40 space-y-4 max-h-72 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                                    <div className="border border-zinc-900 rounded-xl p-4 bg-zinc-950/40 space-y-4 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
                                         {CONTRACT_CLAUSES.map(clause => {
                                             const finalAmt = Number(amtValue).toLocaleString();
                                             return (
-                                                <div key={clause.num} className="text-xs leading-relaxed">
-                                                    <div className="font-bold text-zinc-200 mb-1 font-mono">{clause.num}. {clause.title}</div>
-                                                    {renderClauseBody(clause.body, `NT$ ${finalAmt}`, timelineText, "text-zinc-400 block")}
+                                                <div key={clause.num} className="space-y-1">
+                                                    <div className="text-xs font-bold text-zinc-200 font-mono">
+                                                        <span className="text-[#FF5500] mr-1.5">{clause.num}.</span>{clause.title}
+                                                    </div>
+                                                    <div className="text-xs leading-relaxed pl-5">
+                                                        {renderClauseBody(clause.body, `NT$ ${finalAmt}`, timelineText, 'text-zinc-400 block')}
+                                                    </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
                                 )}
 
-                                {/* Signature image */}
+                                {/* Signature + Date block */}
                                 {(activeContract.signature_snapshot || activeContract.metadata?.signature) && (
-                                    <div className="space-y-1.5">
-                                        <span className="text-[10px] text-zinc-600 tracking-widest font-mono">ELECTRONIC SIGNATURE</span>
-                                        <div className="border border-zinc-900 rounded-xl p-3 bg-zinc-950/40 flex items-center justify-center">
-                                            <img
-                                                src={activeContract.signature_snapshot || activeContract.metadata.signature}
-                                                alt="Signature"
-                                                className="max-h-20 bg-black filter invert scale-95 transition-transform"
-                                            />
+                                    <div className="border border-zinc-800/60 rounded-xl bg-zinc-950/40 overflow-hidden">
+                                        <div className="px-4 py-2 border-b border-zinc-900 flex items-center justify-between">
+                                            <span className="text-[10px] text-zinc-500 tracking-widest font-mono">// ELECTRONIC SIGNATURE</span>
+                                            <span className="text-[10px] text-emerald-500 font-mono">✓ VERIFIED</span>
+                                        </div>
+                                        <div className="flex items-center gap-4 p-4">
+                                            <div className="flex-1 space-y-1.5">
+                                                <div className="text-[10px] text-zinc-600 font-mono">簽署人</div>
+                                                <div className="text-xs text-zinc-300 font-mono">{activeContract.metadata?.clientName || profile?.name || '—'}</div>
+                                                <div className="text-[10px] text-zinc-600 font-mono mt-2">簽署時間</div>
+                                                <div className="text-xs text-zinc-400 font-mono">
+                                                    {activeContract.signed_at ? new Date(activeContract.signed_at).toLocaleString('zh-TW') : '—'}
+                                                </div>
+                                            </div>
+                                            <div className="shrink-0 border border-zinc-800 rounded-lg overflow-hidden bg-black">
+                                                <img
+                                                    src={activeContract.signature_snapshot || activeContract.metadata.signature}
+                                                    alt="Signature"
+                                                    className="h-16 w-auto filter invert"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Date Signed */}
-                                <div className="text-[11px] text-zinc-600 font-mono">
-                                    Signed At: {activeContract.signed_at ? new Date(activeContract.signed_at).toLocaleString('zh-TW') : 'Pending payment validation'}
-                                </div>
 
                                 {/* Forensic Fingerprint */}
                                 {activeContract.status === 'SIGNED' && activeContract.metadata && (
@@ -739,9 +788,14 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
                                 <div className="grid grid-cols-1 gap-3 pt-2">
                                     <button
                                         onClick={() => handlePrintContract(activeContract)}
-                                        className="py-2.5 border border-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-mono font-bold hover:border-zinc-700 transition-colors"
+                                        onMouseEnter={() => printIconRef.current?.startAnimation()}
+                                        onMouseLeave={() => printIconRef.current?.stopAnimation()}
+                                        className="py-2.5 border border-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-mono font-bold hover:border-zinc-700 transition-colors flex items-center justify-center gap-2"
                                     >
-                                        🖨 列印合約
+                                        <span className="pointer-events-none shrink-0">
+                                            <LetterPIcon ref={printIconRef} size={14} color="currentColor" strokeWidth={2} />
+                                        </span>
+                                        列印合約
                                     </button>
                                 </div>
                             </div>
@@ -1105,43 +1159,74 @@ function PaymentFormModal({
     handleCopy,
     handleTxidSubmit
 }: PaymentModalProps) {
-    const WALLETS = [
-        { chain: 'TRC-20',      network: 'Tron Network', address: 'TAgWCpyof2tNYEq67v5PBgUApqpKHviYEY',                   warn: '請務必使用波場 Tron 網路傳送，勿使用 ERC-20 或其他網路。',            icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 2L2 8l10 14L22 8L12 2z" fill="#FF0013" opacity="0.8"/></svg> },
-        { chain: 'Base / Arb',  network: 'EVM Network',  address: '0x8D929F645fa9c97df90349203b8949c3318ceACE',             warn: '支援 Base 與 Arbitrum 網路，請勿使用主網 ETH 或其他 EVM 網路。',    icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0"><circle cx="12" cy="12" r="10" fill="#0052FF" opacity="0.8"/><path d="M8 12h8M12 8v8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg> },
-        { chain: 'TON',         network: 'TON Network',  address: 'UQBXuoeso8Yxl-LNGxD_q8JQqtWKgkZIgOlyTfY57ESXTHSw',   warn: '僅限 TON 網路轉帳，請勿使用其他網路。',                              icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0"><path d="M12 2L3 9h18L12 2z" fill="#0098EA" opacity="0.8"/><path d="M3 9l9 13L21 9" fill="#0098EA" opacity="0.5"/></svg> },
-    ];
-    const activeWallet = WALLETS.find(w => w.chain === cryptoChain) ?? WALLETS[0];
+    const paymentCloseRef = useRef<AnimatedIconHandle>(null);
+    const fiatIconRef = useRef<AnimatedIconHandle>(null);
+    const fiatTabIconRef = useRef<AnimatedIconHandle>(null);
+    const cryptoIconRef = useRef<AnimatedIconHandle>(null);
+    const cryptoTabIconRef = useRef<AnimatedIconHandle>(null);
+    const coffeeIconRef = useRef<AnimatedIconHandle>(null);
+    const coffeeTabIconRef = useRef<AnimatedIconHandle>(null);
+    const copyIconRef = useRef<AnimatedIconHandle>(null);
+    const warnIconRef = useRef<AnimatedIconHandle>(null);
+    const fiatTgIconRef = useRef<AnimatedIconHandle>(null);
+    const BASE_USDC_ADDRESS = '0x7bf15c7fdce16613C0618d4a70C35f1B23688Ed4';
+    const [cryptoStep, setCryptoStep] = useState<'address' | 'verify' | 'success'>('address');
+    const [walletAddr, setWalletAddr] = useState('');
+    const [payAmt, setPayAmt] = useState(newAmount);
+    const [claimSubmitting, setClaimSubmitting] = useState(false);
+    const POLAR_URLS: Record<string, string> = {
+        'LITE':      'https://buy.polar.sh/polar_cl_Rm2yYkEaC40a1aYDfYr307Xzgu8TsinGC7f1c2PYaN8',
+        'PRO':       'https://buy.polar.sh/polar_cl_HR8gDEV0jVR4OGVundeQOCr6wzytOPNZ1et254ST7sz',
+        'SCALE':     'https://buy.polar.sh/polar_cl_w6xrmCqa4LwVZn6y9yrbgJ3VR26SJKHKMVUdn1NuyVo',
+        'ON-DEMAND': 'https://buy.polar.sh/polar_cl_ehuUiCJgm1frp5F7KRN00swV49LQqLLoU49Ua181Gjc',
+    };
+    const polarUrl = POLAR_URLS[newPlan] ?? POLAR_URLS['ON-DEMAND'];
 
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/85 backdrop-blur-sm">
             <div className="bg-[#0A0A0B] border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[92vh] transition-all">
-                <div className="h-14 border-b border-zinc-900 flex items-center justify-between px-7 shrink-0">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#FF5500] animate-pulse" />
-                        <span className="text-[12px] text-zinc-400 tracking-widest font-mono font-bold">// SECURE PAYMENT</span>
+                <div className="px-7 py-3 bg-zinc-950/60 border-b border-zinc-900 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-zinc-600 tracking-widest uppercase">// SECURE PAYMENT</span>
+                        <span className="text-[10px] font-mono text-zinc-700">·</span>
+                        <span className="text-[13px] font-bold font-mono text-[#FF5500] tracking-widest uppercase">{newPlan}</span>
                     </div>
-                    <button onClick={() => setShowPayment(false)} className="text-zinc-500 hover:text-zinc-200 text-xl font-medium transition-colors">×</button>
+                    <div className="flex items-center gap-3">
+                        {newAmount && <span className="text-[13px] font-bold font-mono text-[#FF5500] tracking-wider">NT$ {Number(newAmount).toLocaleString()}</span>}
+                        <button
+                            onClick={() => setShowPayment(false)}
+                            onMouseEnter={() => paymentCloseRef.current?.startAnimation()}
+                            onMouseLeave={() => paymentCloseRef.current?.stopAnimation()}
+                            className="text-zinc-500 hover:text-zinc-200 transition-colors"
+                        >
+                            <span className="pointer-events-none">
+                                <XIcon ref={paymentCloseRef} size={14} strokeWidth={2} color="currentColor" />
+                            </span>
+                        </button>
+                    </div>
                 </div>
-
                 <div className="grid grid-cols-3 border-b border-zinc-900 shrink-0">
                     {([
                         { 
                             key: 'fiat' as const,   
-                            label: '信用卡 / 匯款',  
+                            label: '信用卡 / Apple Pay',  
                             sub: '線上安全金流', 
-                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> 
+                            icon: <CreditCard ref={fiatTabIconRef} size={20} strokeWidth={1.8} color="currentColor" />,
+                            iconRef: fiatTabIconRef
                         },
                         { 
                             key: 'crypto' as const, 
-                            label: 'USDT / USDC', 
-                            sub: '區塊鏈快速轉帳', 
-                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 9l4-3 4 3M8 15l4 3 4-3"/></svg> 
+                            label: 'USDC', 
+                            sub: 'Base 區塊鏈', 
+                            icon: <CurrencyBitcoinIcon ref={cryptoTabIconRef} size={20} strokeWidth={1.8} color="currentColor" />,
+                            iconRef: cryptoTabIconRef
                         },
                         {
                             key: 'coffee' as const,
                             label: 'Buy Coffee',
                             sub: '小額/贊助支付',
-                            icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+                            icon: <CoffeeIcon ref={coffeeTabIconRef} size={20} strokeWidth={1.8} color="currentColor" />,
+                            iconRef: coffeeTabIconRef
                         }
                     ]).map(tab => {
                         const isActive = paymentTab === tab.key;
@@ -1149,6 +1234,8 @@ function PaymentFormModal({
                             <button
                                 key={tab.key}
                                 onClick={() => setPaymentTab(tab.key)}
+                                onMouseEnter={() => tab.iconRef.current?.startAnimation()}
+                                onMouseLeave={() => tab.iconRef.current?.stopAnimation()}
                                 className={`py-4.5 text-center transition-all flex flex-col items-center gap-1.5 hover:bg-zinc-900/40 border-b-2 ${
                                     isActive ? 'border-[#FF5500] bg-zinc-900/25' : 'border-transparent text-zinc-500'
                                 }`}
@@ -1164,124 +1251,248 @@ function PaymentFormModal({
                 </div>
 
                 {paymentTab === 'fiat' && (
-                    <div className="p-8 space-y-6 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                    <div className="p-8 space-y-5 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF5500" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                            <div
+                                className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center cursor-pointer"
+                                onMouseEnter={() => fiatIconRef.current?.startAnimation()}
+                                onMouseLeave={() => fiatIconRef.current?.stopAnimation()}
+                            >
+                                <CreditCard ref={fiatIconRef} size={24} strokeWidth={1.8} color="#FF5500" />
                             </div>
                             <div>
-                                <div className="text-[14px] font-bold text-white font-mono">藍新金流 NewebPay</div>
-                                <div className="text-[11px] text-zinc-500 font-mono">支援國內外信用卡、ATM 轉帳、超商付費</div>
+                                <div className="text-[14px] font-bold text-white font-mono">線上信用卡 / Apple Pay</div>
+                                <div className="text-[11px] text-zinc-500 font-mono">透過 Polar.sh 安全結帳，支援國際信用卡與 Apple Pay</div>
                             </div>
                         </div>
 
-                        <p className="text-[12px] text-zinc-400 font-mono leading-relaxed">
-                            點擊下方按鈕後將前往藍新金流安全收銀台，您可以選擇信用卡一次付清、ATM 轉帳或超商代碼付款。完成付款後系統將即時啟用您的專案。
-                        </p>
-
-                        <div className="grid grid-cols-3 gap-2.5">
-                            {[
-                                { label: '安全信用卡', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
-                                { label: 'ATM 匯款', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M6 14h.01M10 10h8M10 14h8"/></svg> },
-                                { label: '超商代碼', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg> },
-                            ].map(m => (
-                                <div key={m.label} className="bg-zinc-900/30 border border-zinc-850 rounded-xl p-3.5 flex flex-col items-center gap-2">
-                                    <div className="text-[#FF5500]">{m.icon}</div>
-                                    <span className="text-[11px] text-zinc-400 font-mono font-medium">{m.label}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {checkoutError && (
-                            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                                <p className="text-[12px] text-red-400 font-mono">⚠ {checkoutError}</p>
+                        {/* ON-DEMAND warning */}
+                        {newPlan === 'ON-DEMAND' && (
+                            <div className="bg-[#FF5500]/5 border border-[#FF5500]/20 rounded-xl px-4 py-3 text-[11px] text-zinc-400 font-mono leading-relaxed flex items-start gap-2">
+                                <TriangleAlertIcon size={20} strokeWidth={1.8} color="#FF5500" className="shrink-0 mt-0.5" />
+                                <span>請注意：此方案為自訂金額。前往結帳頁面時，請在金額欄位手動輸入您的合約金額：<span className="text-[#FF5500] font-bold">NT$ {Number(newAmount).toLocaleString()}</span></span>
                             </div>
                         )}
 
-                        <button
-                            onClick={handleSign}
-                            disabled={paying}
-                            className="w-full py-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-xl transition-all duration-200 disabled:opacity-50 active:scale-[0.99]"
+                        {/* Polar checkout */}
+                        <a
+                            href={polarUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-polar-checkout
+                            data-polar-checkout-theme="dark"
+                            className="w-full py-4 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-xl transition-all duration-200 active:scale-[0.99] flex items-center justify-center gap-2"
                         >
-                            {paying ? '⟳ 跳轉收銀台中…' : '確認合約並前往付款 →'}
-                        </button>
+                            <CreditCard size={20} strokeWidth={1.8} color="currentColor" />
+                            確認合約並前往付款 →
+                        </a>
+
+                        {/* Bank transfer via TG */}
+                        <div className="border-t border-zinc-900 pt-4 space-y-3">
+                            <p className="text-[11px] text-zinc-500 font-mono">若您需要使用銀行轉帳，請點擊下方按鈕聯絡。</p>
+                            <a
+                                href="https://t.me/jaggersu"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onMouseEnter={() => fiatTgIconRef.current?.startAnimation()}
+                                onMouseLeave={() => fiatTgIconRef.current?.stopAnimation()}
+                                className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/30 hover:bg-[#FF5500]/20 hover:border-[#FF5500] transition-colors group w-full justify-center"
+                            >
+                                <span className="pointer-events-none shrink-0">
+                                    <BrandTelegramIcon ref={fiatTgIconRef} size={16} color="#FF5500" strokeWidth={1.5} />
+                                </span>
+                                <span className="text-[10px] text-[#FF5500] group-hover:text-white font-bold tracking-wider">TELEGRAM</span>
+                            </a>
+                        </div>
                     </div>
                 )}
 
                 {paymentTab === 'crypto' && (
                     <div className="p-8 space-y-6 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#FF5500] text-xl">
-                                🪙
-                            </div>
-                            <div>
-                                <div className="text-[14px] font-bold text-white font-mono">USDT / USDC 區塊鏈轉帳</div>
-                                <div className="text-[11px] text-zinc-500 font-mono">請選擇公鏈鏈路，並複製專屬地址進行付款</div>
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-3 gap-2.5">
-                            {WALLETS.map(w => (
-                                <button
-                                    key={w.chain}
-                                    type="button"
-                                    onClick={() => setCryptoChain(w.chain)}
-                                    className={`p-3 rounded-xl border text-left transition-all ${
-                                        cryptoChain === w.chain
-                                            ? 'border-[#FF5500]/60 bg-[#FF5500]/5 text-white'
-                                            : 'border-zinc-850 bg-zinc-950/20 text-zinc-500 hover:text-zinc-350'
-                                    }`}
+                        {/* Step: Address */}
+                        {cryptoStep === 'address' && (<>
+                            <div className="flex items-center gap-4">
+                                <div
+                                    className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center cursor-pointer"
+                                    onMouseEnter={() => cryptoIconRef.current?.startAnimation()}
+                                    onMouseLeave={() => cryptoIconRef.current?.stopAnimation()}
                                 >
-                                    <div className="flex items-center gap-1.5 font-bold text-xs font-mono">
-                                        {w.icon}
-                                        {w.chain}
+                                    <CurrencyBitcoinIcon ref={cryptoIconRef} size={24} strokeWidth={1.8} color="#FF5500" />
+                                </div>
+                                <div>
+                                    <div className="text-[14px] font-bold text-white font-mono">USDC 區塊鏈轉帳</div>
+                                    <div className="text-[11px] text-zinc-500 font-mono">僅支援 Base 網路 USDC，請複製下方地址</div>
+                                </div>
+                            </div>
+
+                            {/* Network badge */}
+                            <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#0052FF]/50 bg-[#0052FF]/10 text-[11px] font-bold font-mono text-[#4F8EF7]">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#0052FF" opacity="0.8"/><path d="M8 12h8M12 8v8" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+                                    BASE 網路
+                                </div>
+                                <span className="text-[10px] text-zinc-600 font-mono">USDC 專用 · ERC-20 符合</span>
+                            </div>
+
+                            {/* QR + Address */}
+                            <div className="border border-zinc-900 bg-zinc-950/40 rounded-2xl p-5 space-y-4">
+                                <div className="flex justify-center">
+                                    <div className="p-3 bg-white rounded-xl">
+                                        <QRCodeSVG value={BASE_USDC_ADDRESS} size={120} bgColor="#ffffff" fgColor="#000000" />
                                     </div>
-                                    <div className="text-[9px] text-zinc-650 mt-1 font-mono uppercase">{w.network}</div>
-                                </button>
-                            ))}
-                        </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] text-zinc-500 font-mono font-bold tracking-wider">
+                                    <span>TRANSFER ADDRESS (Base)</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCopy('Base', BASE_USDC_ADDRESS)}
+                                        onMouseEnter={() => copyIconRef.current?.startAnimation()}
+                                        onMouseLeave={() => copyIconRef.current?.stopAnimation()}
+                                        className="flex items-center gap-1.5 text-[#FF5500] hover:text-white transition-colors"
+                                    >
+                                        {copiedChain === 'Base' ? (
+                                            <>✓ COPIED</>
+                                        ) : (
+                                            <>
+                                                <span className="pointer-events-none">
+                                                    <CopyIcon ref={copyIconRef} size={20} strokeWidth={1.8} color="currentColor" />
+                                                </span>
+                                                COPY ADDRESS
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                <div className="bg-black/60 border border-zinc-850 p-3.5 rounded-xl text-[12px] text-zinc-300 break-all select-all font-mono leading-relaxed">
+                                    {BASE_USDC_ADDRESS}
+                                </div>
+                            </div>
 
-                        <div className="border border-zinc-900 bg-zinc-950/40 rounded-2xl p-5 space-y-3">
-                            <div className="flex items-center justify-between text-[11px] text-zinc-500 font-mono font-bold tracking-wider">
-                                <span>TRANSFER ADDRESS ({activeWallet.chain})</span>
+                            {/* Warning */}
+                            <div
+                                className="bg-[#FF5500]/5 border border-[#FF5500]/20 rounded-xl px-4 py-3 text-[11px] text-zinc-400 font-mono leading-relaxed flex items-start gap-2 cursor-default"
+                                onMouseEnter={() => warnIconRef.current?.startAnimation()}
+                                onMouseLeave={() => warnIconRef.current?.stopAnimation()}
+                            >
+                                <span className="pointer-events-none shrink-0 mt-0.5">
+                                    <TriangleAlertIcon ref={warnIconRef} size={20} strokeWidth={1.8} color="#FF5500" />
+                                </span>
+                                <span>提醒：僅限從 Base 網路入金 USDC。入金其他資產（如 USDT）或從其他網路入金的資金可能會遣失。</span>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setCryptoStep('verify')}
+                                className="w-full py-4.5 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-xl transition-all duration-200 active:scale-[0.99]"
+                            >
+                                我已完成轉帳，通知管理員確認
+                            </button>
+                        </>)}
+
+                        {/* Step: Verify */}
+                        {cryptoStep === 'verify' && (
+                            <div className="space-y-5">
+                                <div>
+                                    <div className="text-[13px] font-bold text-white font-mono mb-1">申報付款資訊</div>
+                                    <div className="text-[11px] text-zinc-500 font-mono">管理員將根據以下資訊核對 Base 鏈上交易記錄</div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[11px] font-mono text-[#FF5500] tracking-widest block mb-1.5">您的付款錢包地址 *</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            placeholder="請貼上您的 Base 錢包地址 (0x...)"
+                                            value={walletAddr}
+                                            onChange={e => setWalletAddr(e.target.value)}
+                                            className="w-full bg-[#121214] border border-zinc-800 rounded-lg px-3 py-2.5 text-[12px] font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/60 transition-colors"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[11px] font-mono text-[#FF5500] tracking-widest block mb-1.5">付款金額 / AMOUNT (USDC) *</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            min="1"
+                                            placeholder="100"
+                                            value={payAmt}
+                                            onChange={e => setPayAmt(e.target.value)}
+                                            className="w-full bg-[#121214] border border-zinc-800 rounded-lg px-3 py-2.5 text-[12px] font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/60 transition-colors"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCryptoStep('address')}
+                                        className="flex-1 py-3 border border-zinc-800 text-zinc-500 hover:text-zinc-300 font-mono text-[12px] rounded-xl transition-colors"
+                                    >
+                                        返回
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={!walletAddr.trim() || !payAmt || claimSubmitting}
+                                        onClick={async () => {
+                                            if (!walletAddr.trim() || !payAmt) return;
+                                            setClaimSubmitting(true);
+                                            try {
+                                                await supabase.from('payment_claims').insert({
+                                                    wallet_address: walletAddr.trim(),
+                                                    amount: parseFloat(payAmt),
+                                                    network: 'Base',
+                                                    token: 'USDC',
+                                                    plan: newPlan,
+                                                    profile_id: profile?.id ?? null,
+                                                });
+                                            } catch { }
+                                            setClaimSubmitting(false);
+                                            setCryptoStep('success');
+                                        }}
+                                        className="flex-[2] py-3 bg-[#FF5500] hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed text-black font-mono font-bold text-[12px] tracking-widest rounded-xl transition-all"
+                                    >
+                                        {claimSubmitting ? '提交中…' : '確認申報 →'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step: Success */}
+                        {cryptoStep === 'success' && (
+                            <div className="flex flex-col items-center text-center gap-5 py-4">
+                                <div className="w-14 h-14 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-2xl">✓</div>
+                                <div>
+                                    <p className="text-white font-mono font-bold text-sm">申報成功！</p>
+                                    <p className="text-zinc-400 text-[12px] font-mono mt-2 leading-relaxed">
+                                        管理員將在 1-3 分鐘內核對 Base 鏈上交易，確認後將自動開通權限。
+                                    </p>
+                                </div>
+                                <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-left space-y-1.5 font-mono text-[11px] text-zinc-500">
+                                    <div className="text-[10px] text-zinc-600 tracking-widest mb-1">// 申報資訊</div>
+                                    <div>錢包：<span className="text-zinc-300 break-all">{walletAddr}</span></div>
+                                    <div>金額：<span className="text-zinc-300">{payAmt} USDC</span></div>
+                                    <div>網路：<span className="text-zinc-300">Base</span></div>
+                                </div>
                                 <button
                                     type="button"
-                                    onClick={() => handleCopy(activeWallet.chain, activeWallet.address)}
-                                    className="text-[#FF5500] hover:text-white transition-colors"
+                                    onClick={() => setShowPayment(false)}
+                                    className="text-[11px] font-mono text-zinc-600 hover:text-zinc-400 transition-colors tracking-widest"
                                 >
-                                    {copiedChain === activeWallet.chain ? '✓ COPIED' : 'COPY ADDRESS'}
+                                    關閉此視窗
                                 </button>
                             </div>
-                            <div className="bg-black/60 border border-zinc-850 p-3.5 rounded-xl text-[12px] text-zinc-300 break-all select-all font-mono leading-relaxed">
-                                {activeWallet.address}
-                            </div>
-                            <div className="text-[11px] text-zinc-500 leading-relaxed font-mono flex items-start gap-1.5">
-                                <span className="text-[#FF5500]">⚠</span>
-                                <span>{activeWallet.warn}</span>
-                            </div>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setTxid(`USER_CONFIRMED_${cryptoChain}_PAYMENT`);
-                                setTimeout(() => {
-                                    handleTxidSubmit();
-                                }, 50);
-                            }}
-                            disabled={txidSubmitting}
-                            className="w-full py-4.5 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-xl transition-all duration-200 disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2"
-                        >
-                            {txidSubmitting ? '通知中…' : '我已完成轉帳，通知管理員確認'}
-                        </button>
+                        )}
                     </div>
                 )}
 
                 {paymentTab === 'coffee' && (
                     <div className="p-8 space-y-6 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-[#FFDD00]">
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+                            <div
+                                className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center cursor-pointer"
+                                onMouseEnter={() => coffeeIconRef.current?.startAnimation()}
+                                onMouseLeave={() => coffeeIconRef.current?.stopAnimation()}
+                            >
+                                <CoffeeIcon ref={coffeeIconRef} size={24} strokeWidth={1.8} color="#FFDD00" />
                             </div>
                             <div>
                                 <div className="text-[14px] font-bold text-white font-mono">Buy Me a Coffee</div>
@@ -1290,34 +1501,26 @@ function PaymentFormModal({
                         </div>
 
                         <p className="text-[12px] text-zinc-400 font-mono leading-relaxed">
-                            請點擊下方按鈕前往我們的 Buy Me a Coffee 頁面完成付款或贊助支持（支援國內外信用卡、Google Pay 與 Apple Pay）。轉帳完成後請點選「我已完成付款」通知管理員。
+                            請點擊下方按鈕前往我們的 Buy Me a Coffee 頁面完成付款或贊助支持（支援國內外信用卡、Google Pay 與 Apple Pay）。完成後管理員將自動收到通知。
                         </p>
 
                         <div className="bg-zinc-950/20 border border-zinc-850 rounded-2xl p-6 flex flex-col items-center justify-center gap-4">
                             <a
-                                href="https://buymeacoffee.com/jaggersu"
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href="https://buy.polar.sh/polar_cl_L330YV4Tghll7TmXXEpyAzKjp7MDfpLDVsP2b3wcFQD"
+                                data-polar-checkout
+                                data-polar-checkout-theme="dark"
                                 className="w-full py-4 bg-[#FFDD00] hover:bg-[#FFEA00] text-black font-mono font-bold text-sm tracking-wider rounded-xl transition-all duration-200 text-center flex items-center justify-center gap-2 active:scale-[0.99] shadow-lg shadow-[#FFDD00]/10"
                             >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M20.216 11.455h-1a1 1 0 0 1 0-2h1a1 1 0 0 1 0 2zm-2.072 4.195l-.707-.707a1 1 0 1 1 1.414-1.414l.707.707a1 1 0 1 1-1.414 1.414zm-7.644-8.195a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-2.122-2.122a1 1 0 1 1-1.414 1.414 1 1 0 0 1 1.414-1.414zm13.122 8.122a6.002 6.002 0 0 1-5.9 5H6a6 6 0 0 1-6-6V9a6 6 0 0 1 6-6h7.622a6.002 6.002 0 0 1 5.9 5v1.455zm-1 0V9a4.002 4.002 0 0 0-3.9-3H6a4 4 0 0 0-4 4v2.455a4 4 0 0 0 4 4h7.622a4.002 4.002 0 0 0 3.9-3v-1.455zm-7 8.545a1 1 0 1 1-2 0V17h2v2.545z"/></svg>
-                                前往 Buy Me a Coffee ☕
+                                <CoffeeIcon size={20} strokeWidth={1.8} color="#000000" />
+                                前往結帳 ― Buy Me a Coffee
                             </a>
                         </div>
+                        <Script
+                            src="https://cdn.jsdelivr.net/npm/@polar-sh/checkout@0.1/dist/embed.global.js"
+                            strategy="lazyOnload"
+                            data-auto-init
+                        />
 
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setTxid("USER_CONFIRMED_COFFEE_SPONSOR");
-                                setTimeout(() => {
-                                    handleTxidSubmit();
-                                }, 50);
-                            }}
-                            disabled={txidSubmitting}
-                            className="w-full py-4.5 bg-[#FF5500] hover:bg-white text-black font-mono font-bold text-[13px] tracking-widest rounded-xl transition-all duration-200 disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2"
-                        >
-                            {txidSubmitting ? '通知中…' : '我已完成付款，發送確認通知'}
-                        </button>
                     </div>
                 )}
             </div>

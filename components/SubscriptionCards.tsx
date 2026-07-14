@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import BrandTelegramIcon from './icons/BrandTelegramIcon';
+import type { AnimatedIconHandle } from './icons/types';
 import { supabase } from '../lib/supabase';
 import { useUserFlow } from '../lib/userFlow';
 import OnboardingModal from './dashboard/OnboardingModal';
@@ -16,6 +18,26 @@ interface PlanItem {
     actionText: string;
     checkSpots: boolean;
     isPopular: boolean;
+    externalUrl?: string;
+}
+
+function TgExternalButton({ href, text }: { href: string; text: string }) {
+    const tgIconRef = useRef<AnimatedIconHandle>(null);
+    return (
+        <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onMouseEnter={() => tgIconRef.current?.startAnimation()}
+            onMouseLeave={() => tgIconRef.current?.stopAnimation()}
+            className="w-full py-2.5 rounded font-bold text-[11px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer flex items-center justify-center gap-2"
+        >
+            <span className="pointer-events-none">
+                <BrandTelegramIcon ref={tgIconRef} size={16} color="currentColor" strokeWidth={1.5} />
+            </span>
+            {text}
+        </a>
+    );
 }
 
 function SubscriptionContent() {
@@ -139,7 +161,8 @@ function SubscriptionContent() {
             ],
             actionText: '洽談專案細節',
             checkSpots: false,
-            isPopular: false
+            isPopular: false,
+            externalUrl: 'https://t.me/jaggersu'
         }
     ];
 
@@ -213,22 +236,26 @@ function SubscriptionContent() {
                                         </div>
                                     </div>
 
-                                    <button
-                                        disabled={isButtonDisabled}
-                                        onClick={() => !isButtonDisabled && openModal(plan.title)}
-                                        className={`w-full py-2.5 rounded font-bold text-[11px] tracking-wider uppercase transition-all duration-300 ${isLoading && plan.checkSpots
-                                                ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                                    {plan.externalUrl ? (
+                                        <TgExternalButton href={plan.externalUrl} text={plan.actionText} />
+                                    ) : (
+                                        <button
+                                            disabled={isButtonDisabled}
+                                            onClick={() => !isButtonDisabled && openModal(plan.title)}
+                                            className={`w-full py-2.5 rounded font-bold text-[11px] tracking-wider uppercase transition-all duration-300 ${isLoading && plan.checkSpots
+                                                    ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                                                    : plan.checkSpots && spotsAvailable === 0
+                                                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                                                        : 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
+                                                }`}
+                                        >
+                                            {isLoading && plan.checkSpots
+                                                ? '載入中'
                                                 : plan.checkSpots && spotsAvailable === 0
-                                                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                                                    : 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
-                                            }`}
-                                    >
-                                        {isLoading && plan.checkSpots
-                                            ? '載入中'
-                                            : plan.checkSpots && spotsAvailable === 0
-                                                ? '聯絡候補席位'
-                                                : plan.actionText}
-                                    </button>
+                                                    ? '聯絡候補席位'
+                                                    : plan.actionText}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

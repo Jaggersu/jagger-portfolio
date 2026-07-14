@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import BrandTelegramIcon from '../icons/BrandTelegramIcon';
+import XIcon from '../icons/XIcon';
 import type { AnimatedIconHandle } from '../icons/types';
 
 interface Message {
@@ -43,6 +44,7 @@ interface AskAIDialogProps {
 }
 
 export default function AskAIDialog({ onClose, context }: AskAIDialogProps) {
+    const closeIconRef = useRef<AnimatedIconHandle>(null);
     const [messages, setMessages] = useState<Message[]>([
         { role: 'ai', content: '你好！我是 JAGGER OS AI。有什麼關於你的專案或服務我可以幫你的嗎？' },
     ]);
@@ -111,7 +113,16 @@ export default function AskAIDialog({ onClose, context }: AskAIDialogProps) {
                             <div className="w-3 h-3 bg-[#FF5500] rounded-full animate-pulse" />
                             <span className="text-[11px] text-zinc-400 tracking-widest">JAGGER OS · JAG AGENT</span>
                         </div>
-                        <button onClick={onClose} className="text-zinc-600 hover:text-white text-lg">×</button>
+                        <button
+                            onClick={onClose}
+                            onMouseEnter={() => closeIconRef.current?.startAnimation()}
+                            onMouseLeave={() => closeIconRef.current?.stopAnimation()}
+                            className="text-zinc-600 hover:text-white transition-colors"
+                        >
+                            <span className="pointer-events-none">
+                                <XIcon ref={closeIconRef} size={14} strokeWidth={2} color="currentColor" />
+                            </span>
+                        </button>
                     </div>
 
                     {/* Messages */}

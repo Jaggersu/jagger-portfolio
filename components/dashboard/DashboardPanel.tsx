@@ -7,6 +7,8 @@ import { LayoutList } from '../icons/LayoutList';
 import { FileIcon } from '../icons/FileIcon';
 import PenIcon from '../icons/PenIcon';
 import { SettingsIcon } from '../icons/SettingsIcon';
+import GearIcon from '../icons/GearIcon';
+import SkullEmoji from '../icons/SkullEmoji';
 import RocketIcon from '../icons/RocketIcon';
 import DownloadIcon from '../icons/DownloadIcon';
 import BrandAnthropicIcon from '../icons/BrandAnthropicIcon';
@@ -16,6 +18,8 @@ import XIcon from '../icons/XIcon';
 import SatelliteDishIcon from '../icons/SatelliteDishIcon';
 import MailFilledIcon from '../icons/MailFilledIcon';
 import type { AnimatedIconHandle } from '../icons/types';
+import BrandTelegramIcon from '../icons/BrandTelegramIcon';
+import LogoutIcon from '../icons/LogoutIcon';
 
 interface DashboardPanelProps {
     onClose: () => void;
@@ -142,11 +146,11 @@ const PRIORITY_CONFIG = {
 };
 
 const NAV: { key: NavItem; icon: React.ReactNode; label: string }[] = [
-    { key: 'projects', icon: <LayoutList size={16} />,  label: '我的專案' },
-    { key: 'inbox',    icon: <MailFilledIcon size={16} />, label: '我的需求' },
+    { key: 'projects', icon: <SkullEmoji size={16} />,  label: '我的專案' },
+    { key: 'inbox',    icon: <MailFilledIcon size={16} />,  label: '我的需求' },
     { key: 'files',    icon: <RocketIcon size={16} />,    label: '檔案中心' },
     { key: 'contract', icon: <PenIcon size={16} />,     label: '我的合約' },
-    { key: 'settings', icon: <SettingsIcon size={16} />, label: '帳戶設定' },
+    { key: 'settings', icon: <GearIcon size={16} />,       label: '帳戶設定' },
 ];
 
 function fmt(bytes: number) {
@@ -183,12 +187,57 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     const filesIconRef                          = useRef<AnimatedIconHandle>(null);
     const cardUploadIconRef                     = useRef<AnimatedIconHandle>(null);
     const cardDownloadIconRef                   = useRef<AnimatedIconHandle>(null);
+    const telegramSupportRef                    = useRef<AnimatedIconHandle>(null);
+    const inboxNavIconRef                       = useRef<AnimatedIconHandle>(null);
+    const settingsNavIconRef                    = useRef<AnimatedIconHandle>(null);
+    const projectsNavIconRef                    = useRef<AnimatedIconHandle>(null);
+    const logoutIconRef                         = useRef<AnimatedIconHandle>(null);
+    const requestCloseIconRef                   = useRef<AnimatedIconHandle>(null);
+    const topbarCloseIconRef                    = useRef<AnimatedIconHandle>(null);
     const [settingsForm, setSettingsForm]       = useState({
         displayName:      profile?.name  ?? '',
         notifyEmail:      profile?.email ?? '',
         lineId:           '',
         telegramWebhook:  '',
     });
+    const [settingsSaving, setSettingsSaving]   = useState(false);
+    const [settingsSaved, setSettingsSaved]     = useState<string | null>(null);
+    const [settingsError, setSettingsError]     = useState<string | null>(null);
+    const [announcement, setAnnouncementBanner] = useState<{ text: string; enabled: boolean } | null>(null);
+    const [announceDismissed, setAnnounceDismissed] = useState(false);
+
+    useEffect(() => {
+        supabase
+            .from('system_settings')
+            .select('key, value')
+            .in('key', ['announcement_text', 'announcement_enabled'])
+            .then(({ data }) => {
+                if (data) {
+                    const txt = data.find(r => r.key === 'announcement_text')?.value ?? '';
+                    const en  = data.find(r => r.key === 'announcement_enabled')?.value === 'true';
+                    setAnnouncementBanner({ text: txt, enabled: en });
+                }
+            });
+    }, []);
+
+    useEffect(() => {
+        if (!profile?.id) return;
+        supabase
+            .from('profiles')
+            .select('line_id, telegram_webhook, notify_email')
+            .eq('id', profile.id)
+            .single()
+            .then(({ data }) => {
+                if (data) {
+                    setSettingsForm(f => ({
+                        ...f,
+                        lineId:          data.line_id          ?? '',
+                        telegramWebhook: data.telegram_webhook ?? '',
+                        notifyEmail:     data.notify_email     ?? f.notifyEmail,
+                    }));
+                }
+            });
+    }, [profile?.id]);
 
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [requestTitle, setRequestTitle]         = useState('');
@@ -592,6 +641,42 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
 
     const handleSignOut = () => { reset(); onClose(); };
 
+    const handleSaveAccount = useCallback(async () => {
+        if (!profile?.id) return;
+        setSettingsSaving(true); setSettingsSaved(null); setSettingsError(null);
+        const { error } = await supabase
+            .from('profiles')
+            .update({ name: settingsForm.displayName.trim(), notify_email: settingsForm.notifyEmail.trim() })
+            .eq('id', profile.id);
+        setSettingsSaving(false);
+        if (error) { setSettingsError(error.message); }
+        else { setSettingsSaved('account'); setTimeout(() => setSettingsSaved(null), 2500); }
+    }, [profile?.id, settingsForm.displayName, settingsForm.notifyEmail]);
+
+    const handleSaveIntegrations = useCallback(async () => {
+        if (!profile?.id) return;
+        setSettingsSaving(true); setSettingsSaved(null); setSettingsError(null);
+        const { error } = await supabase
+            .from('profiles')
+            .update({ line_id: settingsForm.lineId.trim(), telegram_webhook: settingsForm.telegramWebhook.trim() })
+            .eq('id', profile.id);
+        setSettingsSaving(false);
+        if (error) { setSettingsError(error.message); }
+        else { setSettingsSaved('integrations'); setTimeout(() => setSettingsSaved(null), 2500); }
+    }, [profile?.id, settingsForm.lineId, settingsForm.telegramWebhook]);
+
+    const handleCancelPlan = useCallback(async () => {
+        if (!confirm('確定要取消目前方案嗎？此操作將通知 Admin 並終止合約。')) return;
+        setSettingsSaving(true); setSettingsError(null);
+        const { error } = await supabase
+            .from('profiles')
+            .update({ status: 'REGISTERED' })
+            .eq('id', profile?.id ?? '');
+        setSettingsSaving(false);
+        if (error) { setSettingsError(error.message); }
+        else { setSettingsSaved('billing'); setTimeout(() => setSettingsSaved(null), 3000); }
+    }, [profile?.id]);
+
     const handleAiSummary = useCallback(async (task: Task) => {
         setAiPanel({ task, state: 'generating', summary: '', emailSent: false });
         try {
@@ -740,16 +825,21 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                             ) : (
                                 timeline.map((item) => {
                                     if (item.type === 'activity') {
+                                        if (!item.content?.trim()) return null;
                                         return (
-                                            <div key={item.id} className="flex flex-col items-center py-1">
-                                                <div className="bg-zinc-900/40 border border-zinc-900 rounded px-2.5 py-1 text-center max-w-[90%]">
-                                                    <span className="text-[9px] text-zinc-600 block mb-0.5 font-mono">{new Date(item.created_at).toLocaleString('zh-TW')}</span>
-                                                    <span className="text-[11px] text-zinc-400 font-mono">⚡ {item.user_name}: {item.content}</span>
+                                            <div key={item.id} className="flex flex-col items-start">
+                                                <div className="flex items-center gap-1.5 mb-1 px-1 text-[9px] text-zinc-500 font-mono">
+                                                    <span className="font-bold">Jagger Team</span>
+                                                    <span>·</span>
+                                                    <span>{new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                                <div className="max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed border bg-zinc-900/80 border-zinc-800 text-zinc-400 font-mono">
+                                                    ⚡ {item.content}
                                                 </div>
                                             </div>
                                         );
                                     } else {
-                                        // Comment bubble
+                                        // Comment bubble — Admin 靠右，Client 靠左
                                         const isAdmin = item.is_admin;
                                         return (
                                             <div key={item.id} className={`flex flex-col ${isAdmin ? 'items-start' : 'items-end'}`}>
@@ -759,8 +849,8 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                                     <span>{new Date(item.created_at).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}</span>
                                                 </div>
                                                 <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap border ${
-                                                    isAdmin 
-                                                        ? 'bg-zinc-900/80 border-zinc-800 text-zinc-200' 
+                                                    isAdmin
+                                                        ? 'bg-zinc-900/80 border-zinc-800 text-zinc-200'
                                                         : 'bg-[#FF5500]/5 border-[#FF5500]/20 text-[#FF5500]'
                                                 }`}>
                                                     {item.content}
@@ -881,10 +971,16 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                     {NAV.map(item => {
                         const isHovered = hoveredNav === item.key;
                         let iconWithAnimate = item.icon;
-                        if (item.key === 'contract') {
+                        if (item.key === 'projects') {
+                            iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { ref: projectsNavIconRef });
+                        } else if (item.key === 'contract') {
                             iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { ref: contractIconRef });
                         } else if (item.key === 'files') {
                             iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { ref: filesIconRef });
+                        } else if (item.key === 'inbox') {
+                            iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { ref: inboxNavIconRef });
+                        } else if (item.key === 'settings') {
+                            iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { ref: settingsNavIconRef });
                         } else {
                             iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { animate: isHovered ? 'hover' : 'idle' });
                         }
@@ -894,13 +990,19 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                 onClick={() => { setActiveNav(item.key); if (item.key !== 'projects') { setSelectedProject(null); setSelectedTask(null); } }}
                                 onMouseEnter={() => {
                                     setHoveredNav(item.key);
+                                    if (item.key === 'projects') projectsNavIconRef.current?.startAnimation();
                                     if (item.key === 'contract') contractIconRef.current?.startAnimation();
-                                    if (item.key === 'files') filesIconRef.current?.startAnimation();
+                                    if (item.key === 'files')    filesIconRef.current?.startAnimation();
+                                    if (item.key === 'inbox')    inboxNavIconRef.current?.startAnimation();
+                                    if (item.key === 'settings') settingsNavIconRef.current?.startAnimation();
                                 }}
                                 onMouseLeave={() => {
                                     setHoveredNav(null);
+                                    if (item.key === 'projects') projectsNavIconRef.current?.stopAnimation();
                                     if (item.key === 'contract') contractIconRef.current?.stopAnimation();
-                                    if (item.key === 'files') filesIconRef.current?.stopAnimation();
+                                    if (item.key === 'files')    filesIconRef.current?.stopAnimation();
+                                    if (item.key === 'inbox')    inboxNavIconRef.current?.stopAnimation();
+                                    if (item.key === 'settings') settingsNavIconRef.current?.stopAnimation();
                                 }}
                                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${activeNav === item.key ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}`}
                             >
@@ -911,21 +1013,55 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                 </nav>
                 <div className="px-3 py-3 border-t border-zinc-900">
                     <div className="bg-zinc-900/80 rounded-lg px-3 py-2 mb-3">
-                        <div className="text-[13px] text-zinc-600 mb-0.5">ACTIVE PLAN</div>
+                        <div className="text-[13px] text-zinc-600 mb-0.5">目前方案</div>
                         <div className="text-[13px] text-[#FF5500] font-bold">{selectedPlan}</div>
                         <div className="flex items-center gap-1 mt-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[13px] text-emerald-500">Active</span>
+                            <span className="text-[13px] text-emerald-500">使用中</span>
                         </div>
                     </div>
-                    <button onClick={handleSignOut} className="w-full text-xs text-zinc-600 hover:text-zinc-400 transition-colors py-1.5 border border-zinc-900 rounded hover:border-zinc-700">
-                        Sign out
+                    <a
+                        href="https://t.me/jaggersu"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onMouseEnter={() => telegramSupportRef.current?.startAnimation()}
+                        onMouseLeave={() => telegramSupportRef.current?.stopAnimation()}
+                        className="w-full flex items-center justify-center gap-1.5 text-xs text-[#FF5500] hover:text-white transition-colors py-1.5 border border-[#FF5500]/30 hover:border-[#FF5500] hover:bg-[#FF5500]/10 rounded mb-2 group"
+                    >
+                        <span className="pointer-events-none shrink-0">
+                            <BrandTelegramIcon ref={telegramSupportRef} size={13} color="currentColor" strokeWidth={1.5} />
+                        </span>
+                        <span>線上支援</span>
+                    </a>
+                    <button
+                        onClick={handleSignOut}
+                        onMouseEnter={() => logoutIconRef.current?.startAnimation()}
+                        onMouseLeave={() => logoutIconRef.current?.stopAnimation()}
+                        className="w-full flex items-center justify-center gap-1.5 text-xs text-zinc-600 hover:text-red-400 transition-colors py-1.5 border border-zinc-900 rounded hover:border-red-400/40"
+                    >
+                        <span className="pointer-events-none">
+                            <LogoutIcon ref={logoutIconRef} size={14} strokeWidth={2} color="currentColor" />
+                        </span>
+                        登出
                     </button>
                 </div>
             </aside>
 
             {/* ── Main ─────────────────────────────────────────────────── */}
             <main className="flex-1 flex flex-col overflow-hidden">
+                {/* 系統公告橫幅 */}
+                {announcement?.enabled && announcement.text && !announceDismissed && (
+                    <div className="flex items-center gap-3 px-5 py-2.5 bg-[#FF5500]/10 border-b border-[#FF5500]/30 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500] animate-pulse shrink-0" />
+                        <span className="text-xs text-zinc-300 font-mono flex-1">{announcement.text}</span>
+                        <button
+                            onClick={() => setAnnounceDismissed(true)}
+                            className="text-zinc-600 hover:text-zinc-400 text-xs shrink-0 transition-colors"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
                 {/* Topbar */}
                 <div className="h-12 border-b border-zinc-900 flex items-center justify-between px-6 shrink-0">
                     <div className="flex items-center gap-2">
@@ -934,13 +1070,18 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                         {selectedProject && activeNav === 'projects' ? (
                             <>
                                 <button onClick={() => { setSelectedProject(null); setSelectedTask(null); }}
-                                    className="text-[13px] text-zinc-500 hover:text-zinc-300 transition-colors">My Projects</button>
+                                    className="text-[13px] text-zinc-500 hover:text-zinc-300 transition-colors">我的專案</button>
                                 <span className="text-zinc-800">›</span>
                                 <span className="text-[13px] text-zinc-300 truncate max-w-[180px]">{selectedProject.name}</span>
                             </>
                         ) : (
-                            <span className="text-[13px] text-zinc-300 capitalize">
-                                {activeNav === 'projects' ? 'My Projects' : activeNav}
+                            <span className="text-[13px] text-zinc-300">
+                                {activeNav === 'projects' ? '我的專案'
+                                    : activeNav === 'inbox'    ? '我的需求'
+                                    : activeNav === 'files'    ? '檔案中心'
+                                    : activeNav === 'contract' ? '我的合約'
+                                    : activeNav === 'settings' ? '帳戶設定'
+                                    : activeNav}
                             </span>
                         )}
                     </div>
@@ -955,10 +1096,15 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                             Jag Agent
                         </button>
                         <span className="text-xs text-zinc-600 border border-zinc-900 px-2.5 py-1 rounded">{profile?.name ?? 'Client'}</span>
-                        <button onClick={onClose} className="text-zinc-600 hover:text-zinc-300 transition-colors">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
+                        <button
+                            onClick={onClose}
+                            onMouseEnter={() => topbarCloseIconRef.current?.startAnimation()}
+                            onMouseLeave={() => topbarCloseIconRef.current?.stopAnimation()}
+                            className="text-zinc-600 hover:text-zinc-300 transition-colors"
+                        >
+                            <span className="pointer-events-none">
+                                <XIcon ref={topbarCloseIconRef} size={14} strokeWidth={2} color="currentColor" />
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -1528,21 +1674,25 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                     {activeNav === 'settings' && (
                         <div className="flex h-full overflow-hidden">
                             <div className="w-44 border-r border-zinc-900 flex flex-col pt-4 shrink-0">
-                                {(['account', 'billing', 'integrations'] as SettingsTab[]).map(tab => (
-                                    <button key={tab} onClick={() => setSettingsTab(tab)}
-                                        className={`text-left px-4 py-2.5 text-[13px] capitalize transition-colors ${settingsTab === tab ? 'text-white bg-zinc-900' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                                        {tab}
+                                {([
+                                    { key: 'account',      label: '帳戶資料' },
+                                    { key: 'billing',      label: '訂閱方案' },
+                                    { key: 'integrations', label: '通知整合' },
+                                ] as { key: SettingsTab; label: string }[]).map(tab => (
+                                    <button key={tab.key} onClick={() => setSettingsTab(tab.key)}
+                                        className={`text-left px-4 py-2.5 text-[13px] transition-colors ${settingsTab === tab.key ? 'text-white bg-zinc-900' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                                        {tab.label}
                                     </button>
                                 ))}
                             </div>
                             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
                                 {settingsTab === 'account' && (
                                     <div>
-                                        <div className="text-xs text-zinc-600 tracking-widest mb-4">// ACCOUNT & NOTIFICATIONS</div>
+                                        <div className="text-xs text-zinc-600 tracking-widest mb-4">// 帳戶資料與通知設定</div>
                                         <div className="space-y-4 max-w-sm">
                                             {[
-                                                { key: 'displayName', label: 'DISPLAY NAME',        type: 'text',  placeholder: profile?.name  ?? '' },
-                                                { key: 'notifyEmail', label: 'NOTIFICATION EMAIL',  type: 'email', placeholder: profile?.email ?? '' },
+                                                { key: 'displayName', label: '顯示名稱',        type: 'text',  placeholder: profile?.name  ?? '' },
+                                                { key: 'notifyEmail', label: '通知 Email',       type: 'email', placeholder: profile?.email ?? '' },
                                             ].map(field => (
                                                 <div key={field.key}>
                                                     <label className="text-xs text-zinc-600 block mb-1.5">{field.label}</label>
@@ -1554,45 +1704,67 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                                     />
                                                 </div>
                                             ))}
-                                            <button className="text-[13px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded transition-colors">
-                                                SAVE CHANGES
-                                            </button>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={handleSaveAccount}
+                                                    disabled={settingsSaving}
+                                                    className="text-[13px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded transition-colors disabled:opacity-40"
+                                                >
+                                                    {settingsSaving ? '儲存中…' : '儲存變更'}
+                                                </button>
+                                                {settingsSaved === 'account' && <span className="text-xs text-emerald-400">● 已儲存</span>}
+                                                {settingsError && settingsSaved !== 'account' && <span className="text-xs text-red-400">{settingsError}</span>}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
                                 {settingsTab === 'billing' && (
                                     <>
-                                        <div className="text-xs text-zinc-600 tracking-widest mb-4">// BILLING & MANAGEMENT</div>
+                                        <div className="text-xs text-zinc-600 tracking-widest mb-4">// 訂閱方案與帳務管理</div>
                                         <div className="border border-zinc-900 rounded-xl p-5 max-w-sm space-y-4">
                                             <div>
-                                                <div className="text-[13px] text-zinc-600 mb-1">CURRENT PLAN</div>
-                                                <div className="text-base font-bold text-[#FF5500]">{selectedPlan ?? '—'}</div>
+                                                <div className="text-[13px] text-zinc-600 mb-1">目前方案</div>
+                                                <div className="text-base font-bold text-[#FF5500]">{selectedPlan ?? profile?.plan ?? '—'}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[13px] text-zinc-600 mb-1">帳戶 Email</div>
+                                                <div className="text-sm text-zinc-400 font-mono">{profile?.email ?? '—'}</div>
                                             </div>
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <div className="text-[13px] text-zinc-600 mb-0.5">STATUS</div>
+                                                    <div className="text-[13px] text-zinc-600 mb-0.5">狀態</div>
                                                     <div className="flex items-center gap-1.5">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                        <span className="text-[13px] text-emerald-400">Active</span>
+                                                        <span className="text-[13px] text-emerald-400">使用中</span>
                                                     </div>
                                                 </div>
-                                                <button className="text-xs border border-zinc-800 text-zinc-500 px-3 py-1.5 rounded hover:border-red-900 hover:text-red-400 transition-colors">
-                                                    Cancel Plan
+                                                <button
+                                                    onClick={handleCancelPlan}
+                                                    disabled={settingsSaving}
+                                                    className="text-xs border border-zinc-800 text-zinc-500 px-3 py-1.5 rounded hover:border-red-900 hover:text-red-400 transition-colors disabled:opacity-40"
+                                                >
+                                                    取消方案
                                                 </button>
                                             </div>
+                                            {settingsSaved === 'billing' && (
+                                                <div className="text-xs text-emerald-400 pt-1">● 已通知 Admin，方案取消申請已送出</div>
+                                            )}
+                                            {settingsError && (
+                                                <div className="text-xs text-red-400 pt-1">{settingsError}</div>
+                                            )}
                                             <div className="pt-3 border-t border-zinc-900 text-xs text-zinc-700">
-                                                // Stripe integration pending · Transaction history will appear here
+                                                // 付款記錄與發票將整合至此區塊
                                             </div>
                                         </div>
                                     </>
                                 )}
                                 {settingsTab === 'integrations' && (
                                     <>
-                                        <div className="text-xs text-zinc-600 tracking-widest mb-4">// INTEGRATIONS</div>
+                                        <div className="text-xs text-zinc-600 tracking-widest mb-4">// 通知整合設定</div>
                                         <div className="space-y-4 max-w-sm">
                                             {[
-                                                { key: 'lineId',          label: 'LINE USER ID',         placeholder: 'Uxxxxxxxxxxxxxxxx' },
-                                                { key: 'telegramWebhook', label: 'TELEGRAM WEBHOOK URL', placeholder: 'https://api.telegram.org/bot…' },
+                                                { key: 'lineId',          label: 'LINE 用戶 ID',          placeholder: 'Uxxxxxxxxxxxxxxxx' },
+                                                { key: 'telegramWebhook', label: 'Telegram Webhook 網址', placeholder: 'https://api.telegram.org/bot…' },
                                             ].map(field => (
                                                 <div key={field.key}>
                                                     <label className="text-xs text-zinc-600 block mb-1.5">{field.label}</label>
@@ -1604,10 +1776,18 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                                     />
                                                 </div>
                                             ))}
-                                            <button className="text-[13px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded transition-colors">
-                                                SAVE TOKENS
-                                            </button>
-                                            <p className="text-xs text-zinc-700">// Tokens stored locally until Supabase profiles hook is connected</p>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={handleSaveIntegrations}
+                                                    disabled={settingsSaving}
+                                                    className="text-[13px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-4 py-2 rounded transition-colors disabled:opacity-40"
+                                                >
+                                                    {settingsSaving ? '儲存中…' : '儲存設定'}
+                                                </button>
+                                                {settingsSaved === 'integrations' && <span className="text-xs text-emerald-400">● 已儲存</span>}
+                                                {settingsError && settingsSaved !== 'integrations' && <span className="text-xs text-red-400">{settingsError}</span>}
+                                            </div>
+                                            <p className="text-xs text-zinc-700">// 通知 Token 將用於任務更新推播提醒</p>
                                         </div>
                                     </>
                                 )}
@@ -1641,9 +1821,13 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                     setRequestDesc('');
                                     setRequestFiles([]);
                                 }}
+                                onMouseEnter={() => requestCloseIconRef.current?.startAnimation()}
+                                onMouseLeave={() => requestCloseIconRef.current?.stopAnimation()}
                                 className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"
                             >
-                                <XIcon size={16} />
+                                <span className="pointer-events-none">
+                                    <XIcon ref={requestCloseIconRef} size={16} strokeWidth={2} color="currentColor" />
+                                </span>
                             </button>
                         </div>
 
