@@ -1175,10 +1175,10 @@ function PaymentFormModal({
     const [payAmt, setPayAmt] = useState(newAmount);
     const [claimSubmitting, setClaimSubmitting] = useState(false);
     const POLAR_URLS: Record<string, string> = {
-        'LITE':      'https://buy.polar.sh/polar_cl_Rm2yYkEaC40a1aYDfYr307Xzgu8TsinGC7f1c2PYaN8',
-        'PRO':       'https://buy.polar.sh/polar_cl_HR8gDEV0jVR4OGVundeQOCr6wzytOPNZ1et254ST7sz',
-        'SCALE':     'https://buy.polar.sh/polar_cl_w6xrmCqa4LwVZn6y9yrbgJ3VR26SJKHKMVUdn1NuyVo',
-        'ON-DEMAND': 'https://buy.polar.sh/polar_cl_ehuUiCJgm1frp5F7KRN00swV49LQqLLoU49Ua181Gjc',
+        'LITE':      'https://buy.polar.sh/polar_cl_VEt5MTo2C1OAIrZIgNBSUQeklo5g3WhNKhDZQ2h5lZY',
+        'PRO':       'https://buy.polar.sh/polar_cl_Dy3SuF4wgk1q9PMxcKPdCSZV8gyCm8fNxKISO3RPSlE',
+        'SCALE':     'https://buy.polar.sh/polar_cl_sFJUfjCPk1xvtEH0B3c4BwTD0XQBNWuCo4Tkx43kaz0',
+        'ON-DEMAND': 'https://buy.polar.sh/polar_cl_bIKPCk6fDHRVhKqxO38KhzvJXBDulo9YlMRbl07lP0D',
     };
     const polarUrl = POLAR_URLS[newPlan] ?? POLAR_URLS['ON-DEMAND'];
 
