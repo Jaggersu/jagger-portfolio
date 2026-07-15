@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useUserFlow } from '../lib/userFlow';
 import OnboardingFlow from './onboarding/OnboardingFlow';
+import ArrowDown10Icon from './icons/ArrowDown10Icon';
+import type { AnimatedIconHandle } from './icons/types';
 
 interface PlanItem {
     tag: string;
@@ -19,6 +21,7 @@ interface PlanItem {
 function SubscriptionContent() {
     const { flowState } = useUserFlow();
     const [isExpanded, setIsExpanded] = useState(false);
+    const arrowIconRef = useRef<AnimatedIconHandle>(null);
 
     useEffect(() => {
         if (new URLSearchParams(window.location.search).get('onboarding') === '1') {
@@ -90,9 +93,12 @@ function SubscriptionContent() {
 
                             <button
                                 onClick={openModal}
-                                className="w-full py-3 rounded-lg font-bold text-[12px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer"
+                                onMouseEnter={() => arrowIconRef.current?.startAnimation()}
+                                onMouseLeave={() => arrowIconRef.current?.stopAnimation()}
+                                className="w-full py-3 rounded-lg font-bold text-[12px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer flex items-center justify-center gap-2"
                             >
-                                {flowState === 'ACTIVE' ? '新增合約 →' : '立即開始估價 →'}
+                                {flowState === 'ACTIVE' ? '新增合約' : '立即開始估價'}
+                                <ArrowDown10Icon ref={arrowIconRef} size={16} strokeWidth={2} />
                             </button>
 
                             <p className="text-[10px] font-mono text-zinc-600 mt-4 text-center tracking-wide">
