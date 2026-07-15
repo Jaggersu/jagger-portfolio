@@ -8,11 +8,31 @@ function getSupabaseClient() {
         if (!url || !key) {
             throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
         }
+        const cookieStorage = {
+            getItem: (key: string) => {
+                if (typeof document === 'undefined') return null;
+                const value = document.cookie
+                    .split('; ')
+                    .find((row) => row.startsWith(`${key}=`))
+                    ?.split('=')[1];
+                return value ? decodeURIComponent(value) : null;
+            },
+            setItem: (key: string, value: string) => {
+                if (typeof document === 'undefined') return;
+                document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
+            },
+            removeItem: (key: string) => {
+                if (typeof document === 'undefined') return;
+                document.cookie = `${key}=; path=/; max-age=0`;
+            },
+        };
+
         client = createClient(url, key, {
             auth: {
                 flowType: 'pkce',
                 detectSessionInUrl: true,
                 persistSession: true,
+                storage: cookieStorage,
             },
         });
     }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, User, Session } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 
 export async function GET(req: NextRequest) {
     const { searchParams, origin } = new URL(req.url);
@@ -14,9 +15,29 @@ export async function GET(req: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
     try {
+        const cookieStore = await cookies();
+        const getSupabaseWithCookies = () => {
+            return createClient(supabaseUrl, supabaseAnonKey, {
+                auth: {
+                    flowType: 'pkce',
+                    storage: {
+                        getItem: (key) => {
+                            return cookieStore.get(key)?.value ?? null;
+                        },
+                        setItem: (key, value) => {
+                            cookieStore.set(key, value, { path: '/' });
+                        },
+                        removeItem: (key) => {
+                            cookieStore.delete(key);
+                        }
+                    }
+                }
+            });
+        };
+
         // ── PKCE flow（code）──────────────────────────────────────────
         if (code) {
-            const sb = createClient(supabaseUrl, supabaseAnonKey);
+            const sb = getSupabaseWithCookies();
             const { data, error } = await sb.auth.exchangeCodeForSession(code);
             if (error || !data?.user) {
                 console.error("Auth exchange error:", error);
@@ -30,7 +51,7 @@ export async function GET(req: NextRequest) {
 
         // ── OTP / Magic Link flow（token_hash）───────────────────────
         if (token_hash) {
-            const sb = createClient(supabaseUrl, supabaseAnonKey);
+            const sb = getSupabaseWithCookies();
             const { data, error } = await sb.auth.verifyOtp({ token_hash, type: type });
             if (error || !data?.user) {
                 console.error("OTP verification error:", error);
