@@ -113,17 +113,13 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     }, [open]);
 
     useEffect(() => {
-        if (step !== 'contract') return;
         const canvas = signatureCanvasRef.current;
         const context = canvas?.getContext('2d');
         if (!canvas || !context) return;
-        context.clearRect(0, 0, canvas.width, canvas.height);
         context.strokeStyle = '#f4f4f5';
         context.lineWidth = 2;
         context.lineCap = 'round';
         context.lineJoin = 'round';
-        setHasSignature(false);
-        setAgreed(false);
     }, [step]);
 
     const handleGoogleLogin = async () => {
