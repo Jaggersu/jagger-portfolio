@@ -221,7 +221,7 @@ export default function OnboardingPage() {
                         // JAGGER OS · ONBOARDING
                     </span>
                     <h1 className="text-2xl sm:text-3xl font-bold text-white font-mono tracking-wider">
-                        開始你的 ON-DEMAND 流程
+                        開始 ON-DEMAND 流程
                     </h1>
                     <p className="text-zinc-500 text-xs font-mono mt-2">登入 → 簽署合約 → 付款 → 解鎖 Dashboard</p>
                 </header>

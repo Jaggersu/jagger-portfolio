@@ -25,6 +25,8 @@ const CONTRACT_CLAUSES = [
     ['09', '準據法與爭議解決', '本合約受中華民國法律管轄。雙方應先以協商方式解決爭議；協商不成時，同意以臺灣臺北地方法院為第一審管轄法院。'],
 ] as const;
 
+import ArrowBigUpDashIcon from '../icons/ArrowBigUpDashIcon';
+
 interface Props {
     open: boolean;
     onClose?: () => void;
@@ -56,6 +58,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const containerRef = useRef<HTMLDivElement>(null);
     const contractScrollRef = useRef<HTMLDivElement>(null);
     const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
+    const closeIconRef = useRef<AnimatedIconHandle>(null);
     const drawingRef = useRef(false);
     const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -264,16 +267,19 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                             {'// JAGGER OS · ONBOARDING'}
                         </span>
                         <h2 className="text-lg sm:text-xl font-bold text-white font-mono tracking-wider">
-                            開始你的 ON-DEMAND 流程
+                            開始 ON-DEMAND 流程
                         </h2>
                         <p className="text-zinc-600 text-[11px] font-mono mt-1">登入 → 簽署合約 → 付款 → 解鎖 Dashboard</p>
                     </div>
                     {onClose && (
                         <button
                             onClick={onClose}
-                            className="text-zinc-600 hover:text-white font-mono text-xs tracking-widest border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-lg transition-colors"
+                            onMouseEnter={() => closeIconRef.current?.startAnimation()}
+                            onMouseLeave={() => closeIconRef.current?.stopAnimation()}
+                            className="text-zinc-600 hover:text-white font-mono text-xs tracking-widest border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
                         >
-                            收合 ×
+                            收合
+                            <ArrowBigUpDashIcon ref={closeIconRef} size={15} strokeWidth={1.75} />
                         </button>
                     )}
                 </div>
