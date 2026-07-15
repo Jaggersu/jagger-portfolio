@@ -163,8 +163,11 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const signInWithGoogle = useCallback(async (plan?: string) => {
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-        const redirectTo = new URL('/auth/callback', siteUrl);
+        // OAuth 必須在同一個 origin 發起與回呼，才能讀取 PKCE code verifier cookie
+        const origin = typeof window !== 'undefined'
+            ? window.location.origin
+            : (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000');
+        const redirectTo = new URL('/auth/callback', origin);
         if (plan) {
             redirectTo.searchParams.set('plan', plan);
         }
