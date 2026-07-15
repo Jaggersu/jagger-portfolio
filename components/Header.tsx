@@ -26,7 +26,7 @@ export default function Header({ visible }: HeaderProps) {
     { name: '// LIVE PROJECTS', href: '#live-sites' },
     { name: '// PORTFOLIO', href: '#works' },
     { name: '// PROCESS', href: '#process' },
-    { name: '// ON-DEMAND', href: '/onboarding' },
+    { name: '// ON-DEMAND', href: '#subscription' },
     { name: '// CONTACT', href: '#contact' },
   ];
 
