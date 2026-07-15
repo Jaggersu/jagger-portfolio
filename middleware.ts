@@ -44,8 +44,8 @@ export async function middleware(request: NextRequest) {
             .from('profiles')
             .select('role')
             .eq('id', user.id)
-            .single();
-        if (profile?.role !== 'admin') {
+            .maybeSingle();
+        if (!profile || profile?.role !== 'admin') {
             return NextResponse.redirect(new URL('/dashboard', request.url));
         }
         return response;
@@ -60,11 +60,11 @@ export async function middleware(request: NextRequest) {
             .from('profiles')
             .select('role, onboarding_completed')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
         if (profile?.role === 'admin') {
             return NextResponse.redirect(new URL('/admin', request.url));
         }
-        if (!profile?.onboarding_completed) {
+        if (!profile || !profile?.onboarding_completed) {
             return NextResponse.redirect(new URL('/onboarding/contract', request.url));
         }
         return response;
@@ -79,7 +79,7 @@ export async function middleware(request: NextRequest) {
             .from('profiles')
             .select('role, onboarding_completed')
             .eq('id', user.id)
-            .single();
+            .maybeSingle();
         if (profile?.role === 'admin') {
             return NextResponse.redirect(new URL('/admin', request.url));
         }

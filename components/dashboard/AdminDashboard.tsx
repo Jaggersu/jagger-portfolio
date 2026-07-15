@@ -259,7 +259,7 @@ export default function AdminDashboard({ onClose }: AdminDashboardProps) {
                     .from('profiles')
                     .select('name, email')
                     .eq('id', data.user.id)
-                    .single()
+                    .maybeSingle()
                     .then(({ data: p }) => {
                         if (p) setAdminProfile({ name: p.name ?? '', email: p.email ?? data.user.email ?? '' });
                     });

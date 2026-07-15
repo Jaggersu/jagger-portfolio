@@ -227,7 +227,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
             .from('profiles')
             .select('line_id, telegram_webhook, notify_email')
             .eq('id', profile.id)
-            .single()
+            .maybeSingle()
             .then(({ data }) => {
                 if (data) {
                     setSettingsForm(f => ({

@@ -65,12 +65,12 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
         const syncSession = async (session: Session | null) => {
             if (session?.user) {
                 const u = session.user;
-                // 從 profiles 表讀取 role / onboarding 狀態
+                // 從 profiles 表讀取 role / onboarding 狀態（新用戶可能還沒 row，用 maybeSingle 避免 406）
                 const { data: profileRow } = await supabase
                     .from('profiles')
                     .select('name, email, phone, company, plan_type, role, status, onboarding_completed')
                     .eq('id', u.id)
-                    .single();
+                    .maybeSingle();
 
                 const isAdmin = u.email === 'jaggersu@gmail.com' || (profileRow?.role as 'client' | 'admin') === 'admin';
                 const isOnboarded = !!profileRow?.onboarding_completed || (profileRow?.status === 'ACTIVE');

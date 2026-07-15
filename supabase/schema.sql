@@ -45,8 +45,15 @@ update public.profiles set onboarding_completed = true where status = 'ACTIVE' a
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, name)
-  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'name', ''))
+  insert into public.profiles (id, email, name, status, onboarding_completed, role)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'name', ''),
+    'REGISTERED',
+    false,
+    'client'
+  )
   on conflict (id) do nothing;
   return new;
 end;
