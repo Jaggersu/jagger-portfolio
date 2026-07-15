@@ -296,9 +296,32 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                     <section className={`border rounded-2xl p-6 sm:p-8 transition-all duration-500 ${step === 'contract' ? 'border-zinc-800 bg-black' : 'border-zinc-900/60 bg-[#0A0A0B]/80'}`}>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold font-mono">2</div>
-                            <h3 className="text-sm font-mono font-bold text-white">線上合約簽署</h3>
-                            {step !== 'contract' && <span className="ml-auto text-[10px] font-mono text-[#FF5500] tracking-widest">SIGNED</span>}
-                        </div>
+                             <h3 className="text-sm font-mono font-bold text-white">線上合約簽署</h3>
+                             {step !== 'contract' ? (
+                                 <div className="ml-auto flex items-center gap-3">
+                                     {step === 'payment' && (
+                                         <button
+                                             type="button"
+                                             onClick={async () => {
+                                                 if (!user) return;
+                                                 const { error } = await supabase.from('profiles').update({
+                                                     contract_signed: false,
+                                                     signed_at: null,
+                                                 }).eq('id', user.id);
+                                                 if (!error) {
+                                                     await fetchProfile(user.id);
+                                                     if (newContract) setNewContractSigned(false);
+                                                 }
+                                             }}
+                                             className="text-[10px] font-mono text-zinc-400 hover:text-[#FF5500] border border-zinc-800 hover:border-[#FF5500]/40 rounded px-2.5 py-1 transition-all"
+                                         >
+                                             修改合約內容
+                                         </button>
+                                     )}
+                                     <span className="text-[10px] font-mono text-[#FF5500] tracking-widest">SIGNED</span>
+                                 </div>
+                             ) : null}
+                         </div>
 
                         {step === 'contract' ? (
                             <div className="space-y-5">
@@ -439,9 +462,11 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                 <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">請完成付款後系統將自動解鎖 Dashboard。</p>
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <button
-                                        onClick={() => { const u = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL; if (u) window.open(u, '_blank', 'noopener,noreferrer'); }}
-                                        disabled={!process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL}
-                                        className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        onClick={() => {
+                                            const u = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://buy.polar.sh/polar_cl_bIKPCk6fDHRVhKqxO38KhzvJXBDulo9YlMRbl07lP0D';
+                                            window.open(u, '_blank', 'noopener,noreferrer');
+                                        }}
+                                        className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors"
                                     >
                                         前往 Polar 付款 →
                                     </button>
@@ -452,9 +477,6 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                         </button>
                                     )}
                                 </div>
-                                {!process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL && (
-                                    <p className="text-yellow-600 text-[11px] font-mono">提示：Polar 付款連結尚未設定（NEXT_PUBLIC_POLAR_CHECKOUT_URL）</p>
-                                )}
                                 {paymentError && <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{paymentError}</p>}
                             </div>
                         ) : (

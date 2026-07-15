@@ -271,11 +271,31 @@ export default function OnboardingPage() {
                             <div className="w-8 h-8 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold">
                                 2
                             </div>
-                            <h2 className="text-sm font-mono font-bold text-white">線上合約簽署</h2>
-                            {step !== 'contract' && (
-                                <span className="ml-auto text-[10px] font-mono text-[#FF5500] tracking-widest">SIGNED</span>
-                            )}
-                        </div>
+                             <h2 className="text-sm font-mono font-bold text-white">線上合約簽署</h2>
+                             {step !== 'contract' ? (
+                                 <div className="ml-auto flex items-center gap-3">
+                                     {step === 'payment' && (
+                                         <button
+                                             type="button"
+                                             onClick={async () => {
+                                                 if (!user) return;
+                                                 const { error } = await supabase.from('profiles').update({
+                                                     contract_signed: false,
+                                                     signed_at: null,
+                                                 }).eq('id', user.id);
+                                                 if (!error) {
+                                                     await fetchProfile(user.id);
+                                                 }
+                                             }}
+                                             className="text-[10px] font-mono text-zinc-400 hover:text-[#FF5500] border border-zinc-800 hover:border-[#FF5500]/40 rounded px-2.5 py-1 transition-all"
+                                         >
+                                             修改合約內容
+                                         </button>
+                                     )}
+                                     <span className="text-[10px] font-mono text-[#FF5500] tracking-widest">SIGNED</span>
+                                 </div>
+                             ) : null}
+                         </div>
 
                         {step === 'contract' ? (
                             <div className="space-y-5">
@@ -466,11 +486,10 @@ export default function OnboardingPage() {
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <button
                                         onClick={() => {
-                                            const url = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL;
-                                            if (url) window.open(url, '_blank', 'noopener,noreferrer');
+                                            const url = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://buy.polar.sh/polar_cl_bIKPCk6fDHRVhKqxO38KhzvJXBDulo9YlMRbl07lP0D';
+                                            window.open(url, '_blank', 'noopener,noreferrer');
                                         }}
-                                        disabled={!process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL}
-                                        className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors"
                                     >
                                         前往 Polar 付款 →
                                     </button>
