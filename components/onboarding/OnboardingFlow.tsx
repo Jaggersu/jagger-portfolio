@@ -255,8 +255,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
         budget, timeline,
     };
 
-    if (!open && step === 'auth') return null;
-    if (!open) return null;
+
 
     return (
         <div ref={containerRef} className="w-full bg-[#0A0A0B] border-t border-zinc-900">
