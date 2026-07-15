@@ -65,26 +65,7 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/admin', request.url));
         }
         if (!profile || !profile?.onboarding_completed) {
-            return NextResponse.redirect(new URL('/onboarding/contract', request.url));
-        }
-        return response;
-    }
-
-    // ── Onboarding 路由 ────────────────────────────────────────
-    if (pathname.startsWith('/onboarding')) {
-        if (authError || !user) {
-            return NextResponse.redirect(new URL('/', request.url));
-        }
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role, onboarding_completed')
-            .eq('id', user.id)
-            .maybeSingle();
-        if (profile?.role === 'admin') {
-            return NextResponse.redirect(new URL('/admin', request.url));
-        }
-        if (profile?.onboarding_completed) {
-            return NextResponse.redirect(new URL('/dashboard', request.url));
+            return NextResponse.redirect(new URL('/onboarding', request.url));
         }
         return response;
     }
@@ -96,6 +77,5 @@ export const config = {
     matcher: [
         '/dashboard/:path*',
         '/admin/:path*',
-        '/onboarding/:path*',
     ],
 };
