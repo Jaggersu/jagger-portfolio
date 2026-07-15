@@ -23,6 +23,8 @@ export default function OnboardingPage() {
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
 
+    const [budget, setBudget] = useState('');
+    const [timeline, setTimeline] = useState('');
     const [signature, setSignature] = useState('');
     const [contractScrolled, setContractScrolled] = useState(false);
     const [signing, setSigning] = useState(false);
@@ -155,11 +157,19 @@ export default function OnboardingPage() {
         setPaymentBypassing(false);
     };
 
+    const partyName = profile?.name || user?.user_metadata?.name || user?.email || '';
+    const partyEmail = profile?.email || user?.email || '';
+    const budgetDisplay = budget ? `NT$ ${budget}` : '依件報價';
+    const timelineDisplay = timeline || '依需求議定';
+    const today = new Date().toLocaleDateString('zh-TW');
+
     const contractData: ContractData = {
-        partyName: profile?.name || user?.user_metadata?.name || user?.email || '',
-        partyEmail: profile?.email || user?.email || '',
+        partyName,
+        partyEmail,
         signature: profile?.contract_signed ? signature || profile?.name : undefined,
         signedAt: profile?.signed_at || undefined,
+        budget,
+        timeline,
     };
 
     const isDev = process.env.NODE_ENV === 'development';
@@ -269,77 +279,142 @@ export default function OnboardingPage() {
 
                         {step === 'contract' ? (
                             <div className="space-y-5">
-                                <p className="text-zinc-400 text-xs font-mono leading-relaxed">
-                                    請先完整閱讀以下合約，滾動到底部後即可解鎖簽名欄位。
+                                <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">
+                                    填入本次專案的預算與期限後，請完整閱讀合約。滾動到底部後即可解鎖電子簽名。
                                 </p>
 
-                                <div
-                                    ref={contractScrollRef}
-                                    className="h-[420px] overflow-y-auto rounded-xl border border-zinc-800 bg-white text-zinc-900 p-6 sm:p-8 text-[13px] leading-relaxed"
-                                >
-                                    <h3 className="text-xl font-bold text-center mb-6">設計服務合約書</h3>
-
-                                    <div className="space-y-2 mb-6">
-                                        <p><strong>甲方：</strong>Jagger OS / Jagger Su（jaggersu@gmail.com）</p>
-                                        <p><strong>乙方：</strong>{contractData.partyName}（{contractData.partyEmail}）</p>
-                                        <p><strong>方案：</strong>散戶單件計價（ON-DEMAND）</p>
-                                        <p><strong>簽約日：</strong>{new Date().toLocaleDateString('zh-TW')}</p>
-                                    </div>
-
-                                    <div className="space-y-4 text-justify">
-                                        <div>
-                                            <h4 className="font-bold mb-1">一、服務內容</h4>
-                                            <p>甲方依乙方需求提供單件式設計服務，範圍包含平面素材、數位圖文、社群素材等。每件服務採個別報價、個別交付，無長期綁約或月費。</p>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold mb-1">二、報價與付款</h4>
-                                            <p>每項需求由甲方個別報價，經乙方確認後付款。甲方收到款項後始開始製作。若乙方於製作開始前取消，可全額退款；製作開始後恕不退款。</p>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold mb-1">三、交付與修改</h4>
-                                            <p>甲方於收到款項後 24–48 小時內提供初稿。乙方享有 2 次小幅度修改機會；涉及新增範圍或大幅度調整，甲方得重新報價。</p>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold mb-1">四、智慧財產權</h4>
-                                            <p>乙方於付清款項後取得最終檔案之使用權。原始檔、設計源檔與相關源碼仍歸甲方所有，除非雙方另有書面約定。</p>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold mb-1">五、保密義務</h4>
-                                            <p>雙方對於專案相關資訊、檔案與溝通內容負有保密義務，未經對方同意不得揭露予第三人。</p>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold mb-1">六、爭議處理</h4>
-                                            <p>本合約以中華民國法律為準據法。雙方同意以誠信協商解決爭議；協商不成，雙方同意以台北地方法院為第一審管轄法院。</p>
+                                {/* 動態輸入：預算 & 期限 */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-mono text-zinc-500 tracking-widest block mb-1.5">
+                                            專案預算（NT$）
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 font-mono text-xs">NT$</span>
+                                            <input
+                                                type="text"
+                                                value={budget}
+                                                onChange={(e) => setBudget(e.target.value)}
+                                                placeholder="例如：1,800"
+                                                className="w-full bg-[#0D0D0F] border border-zinc-800 rounded-lg pl-9 pr-3 py-2.5 text-sm font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/50 transition-colors"
+                                            />
                                         </div>
                                     </div>
-
-                                    <div ref={contractSentinelRef} className="h-px mt-8" />
+                                    <div>
+                                        <label className="text-[10px] font-mono text-zinc-500 tracking-widest block mb-1.5">
+                                            預估交付期限
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={timeline}
+                                            onChange={(e) => setTimeline(e.target.value)}
+                                            placeholder="例如：24–48 小時"
+                                            className="w-full bg-[#0D0D0F] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/50 transition-colors"
+                                        />
+                                    </div>
                                 </div>
 
-                                {!contractScrolled && (
-                                    <p className="text-[11px] font-mono text-zinc-500">請將合約滾動到底部以解鎖簽名。</p>
-                                )}
+                                {/* 合約本文（暗黑主題） */}
+                                <div
+                                    ref={contractScrollRef}
+                                    className="h-[460px] overflow-y-auto rounded-xl border border-zinc-800 bg-[#0D0D0F] p-5 sm:p-7 text-[12px] font-mono leading-relaxed"
+                                >
+                                    {/* 標題 */}
+                                    <div className="text-center mb-6">
+                                        <span className="text-[9px] text-zinc-600 tracking-widest uppercase block mb-1">// CONTRACT</span>
+                                        <h3 className="text-sm font-bold text-white tracking-widest">設計服務合約書</h3>
+                                    </div>
 
-                                <div className={`transition-opacity duration-300 ${contractScrolled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-                                    <label className="text-[10px] font-mono text-[#FF5500] tracking-widest block mb-2">
-                                        電子簽名（請輸入你的姓名）
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={signature}
-                                        onChange={(e) => setSignature(e.target.value)}
-                                        placeholder="例如：王小明"
-                                        className="w-full bg-[#121214] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
-                                    />
+                                    {/* 當事人資訊 */}
+                                    <div className="space-y-2 mb-6 pb-5 border-b border-zinc-800/60">
+                                        {[
+                                            { label: '甲方', value: 'Jagger OS / Jagger Su（jaggersu@gmail.com）', accent: false },
+                                            { label: '乙方', value: `${partyName}（${partyEmail}）`, accent: false },
+                                            { label: '方案', value: '散戶單件計價（ON-DEMAND）', accent: true },
+                                            { label: '報價', value: budgetDisplay, accent: !!budget },
+                                            { label: '期限', value: timelineDisplay, accent: !!timeline },
+                                            { label: '簽約日', value: today, accent: false },
+                                        ].map(({ label, value, accent }) => (
+                                            <div key={label} className="flex gap-3">
+                                                <span className="text-zinc-600 w-12 shrink-0">{label}</span>
+                                                <span className={accent ? 'text-[#FF5500]' : 'text-zinc-300'}>{value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* 條款 */}
+                                    <div className="space-y-5 text-zinc-400">
+                                        <div>
+                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">一、服務內容</h4>
+                                            <p className="leading-relaxed">甲方依乙方需求提供單件式設計服務，範圍包含平面素材、數位圖文、社群素材等。每件服務採個別報價、個別交付，無長期綁約或月費。</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">二、報價與付款</h4>
+                                            <p className="leading-relaxed">
+                                                本次專案報價為{' '}
+                                                <span className={budget ? 'text-white font-bold' : 'text-zinc-500'}>{budgetDisplay}</span>
+                                                ，經乙方確認後付款。甲方收到款項後始開始製作。若乙方於製作開始前取消，可全額退款；製作開始後恕不退款。
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">三、交付與修改</h4>
+                                            <p className="leading-relaxed">
+                                                甲方於收到款項後{' '}
+                                                <span className={timeline ? 'text-white font-bold' : 'text-zinc-500'}>{timelineDisplay}</span>
+                                                {' '}內提供初稿。乙方享有 2 次小幅度修改機會；涉及新增範圍或大幅度調整，甲方得重新報價。
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">四、智慧財產權</h4>
+                                            <p className="leading-relaxed">乙方於付清款項後取得最終檔案之使用權。原始檔、設計源檔與相關源碼仍歸甲方所有，除非雙方另有書面約定。</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">五、保密義務</h4>
+                                            <p className="leading-relaxed">雙方對於專案相關資訊、檔案與溝通內容負有保密義務，未經對方同意不得揭露予第三人。</p>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">六、爭議處理</h4>
+                                            <p className="leading-relaxed">本合約以中華民國法律為準據法。雙方同意以誠信協商解決爭議；協商不成，雙方同意以台北地方法院為第一審管轄法院。</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Sentinel：滾動到底觸發解鎖 */}
+                                    <div ref={contractSentinelRef} className="h-6 mt-8 flex items-center justify-center">
+                                        <span className="text-[9px] text-zinc-700 tracking-widest">// END OF CONTRACT</span>
+                                    </div>
+                                </div>
+
+                                {/* 滾動提示 */}
+                                <div className={`flex items-center gap-2 transition-opacity duration-300 ${contractScrolled ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100'}`}>
+                                    <div className="w-1 h-1 rounded-full bg-zinc-600 animate-pulse" />
+                                    <p className="text-[11px] font-mono text-zinc-600">請將合約滾動到底部以解鎖電子簽名</p>
+                                </div>
+
+                                {/* 簽名區塊 */}
+                                <div className={`space-y-3 transition-all duration-500 ${contractScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none select-none'}`}>
+                                    <div className="border-t border-zinc-800 pt-4">
+                                        <label className="text-[10px] font-mono text-[#FF5500] tracking-widest block mb-2">
+                                            // 電子簽名（請輸入你的全名）
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={signature}
+                                            onChange={(e) => setSignature(e.target.value)}
+                                            placeholder="例如：王小明"
+                                            className="w-full bg-[#0D0D0F] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/50 transition-colors"
+                                        />
+                                    </div>
+
                                     {signError && (
-                                        <p className="text-red-400 text-xs font-mono mt-2 bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
+                                        <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
                                             {signError}
                                         </p>
                                     )}
+
                                     <button
                                         onClick={handleSignContract}
                                         disabled={!signature.trim() || signing}
-                                        className="w-full sm:w-auto mt-4 py-2.5 px-6 rounded-lg font-bold text-[11px] tracking-widest uppercase transition-all duration-200 bg-[#FF5500] text-black hover:bg-white disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800"
+                                        className="w-full sm:w-auto py-2.5 px-6 rounded-lg font-bold text-[11px] tracking-widest uppercase transition-all duration-200 bg-[#FF5500] text-black hover:bg-white disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800"
                                     >
                                         {signing ? '處理中…' : '同意並確認簽署 →'}
                                     </button>

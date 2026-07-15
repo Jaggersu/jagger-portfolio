@@ -86,6 +86,8 @@ export interface ContractData {
     partyEmail: string;
     signature?: string;
     signedAt?: string;
+    budget?: string;
+    timeline?: string;
 }
 
 function formatDate(date?: string) {
@@ -94,9 +96,11 @@ function formatDate(date?: string) {
     return d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-export function ContractDocument({ partyName, partyEmail, signature, signedAt }: ContractData) {
+export function ContractDocument({ partyName, partyEmail, signature, signedAt, budget, timeline }: ContractData) {
     const today = formatDate(new Date().toISOString());
     const signDate = signedAt ? formatDate(signedAt) : '';
+    const budgetDisplay = budget ? `NT$ ${budget}` : '依件報價';
+    const timelineDisplay = timeline || '依需求議定';
 
     return (
         <Document>
@@ -120,6 +124,14 @@ export function ContractDocument({ partyName, partyEmail, signature, signedAt }:
                         <Text style={styles.label}>方案：</Text>
                         <Text style={styles.value}>散戶單件計價（ON-DEMAND）</Text>
                     </View>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>專案報價：</Text>
+                        <Text style={styles.value}>{budgetDisplay}</Text>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>交付期限：</Text>
+                        <Text style={styles.value}>{timelineDisplay}</Text>
+                    </View>
                 </View>
 
                 <Text style={styles.heading}>一、服務內容</Text>
@@ -129,12 +141,12 @@ export function ContractDocument({ partyName, partyEmail, signature, signedAt }:
 
                 <Text style={styles.heading}>二、報價與付款</Text>
                 <Text style={styles.paragraph}>
-                    每項需求由甲方個別報價，經乙方確認後付款。甲方收到款項後始開始製作。若乙方於製作開始前取消，可全額退款；製作開始後恕不退款。
+                    本次專案報價為 {budgetDisplay}，經乙方確認後付款。甲方收到款項後始開始製作。若乙方於製作開始前取消，可全額退款；製作開始後恕不退款。
                 </Text>
 
                 <Text style={styles.heading}>三、交付與修改</Text>
                 <Text style={styles.paragraph}>
-                    甲方於收到款項後 24–48 小時內提供初稿。乙方享有 2 次小幅度修改機會；涉及新增範圍或大幅度調整，甲方得重新報價。
+                    甲方於收到款項後 {timelineDisplay} 內提供初稿。乙方享有 2 次小幅度修改機會；涉及新增範圍或大幅度調整，甲方得重新報價。
                 </Text>
 
                 <Text style={styles.heading}>四、智慧財產權</Text>
