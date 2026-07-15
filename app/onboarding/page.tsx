@@ -237,25 +237,40 @@ export default function OnboardingPage() {
                                 {authLoading ? '跳轉中…' : '使用 Google 登入 / 註冊'}
                             </button>
                         </div>
-                    ) : (
-                        <div className="flex items-center gap-3 text-sm text-zinc-300 font-mono">
-                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
-                                {user?.user_metadata?.avatar_url ? (
-                                    <img
-                                        src={user.user_metadata.avatar_url}
-                                        alt="avatar"
-                                        className="w-full h-full rounded-full object-cover"
-                                    />
-                                ) : (
-                                    '✓'
-                                )}
-                            </div>
-                            <div>
-                                <p className="text-white font-bold">{profile?.name || user?.user_metadata?.name || user?.email}</p>
-                                <p className="text-zinc-500 text-xs">{user?.email}</p>
-                            </div>
-                        </div>
-                    )}
+                     ) : (
+                         <div className="flex items-center justify-between font-mono w-full text-sm text-zinc-300">
+                             <div className="flex items-center gap-3">
+                                 <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
+                                     {user?.user_metadata?.avatar_url ? (
+                                         <img
+                                             src={user.user_metadata.avatar_url}
+                                             alt="avatar"
+                                             className="w-full h-full rounded-full object-cover"
+                                         />
+                                     ) : (
+                                         '✓'
+                                     )}
+                                 </div>
+                                 <div>
+                                     <p className="text-white font-bold">{profile?.name || user?.user_metadata?.name || user?.email}</p>
+                                     <p className="text-zinc-500 text-xs">{user?.email}</p>
+                                 </div>
+                             </div>
+                             {step !== 'success' && (
+                                 <button
+                                     type="button"
+                                     onClick={async () => {
+                                         await supabase.auth.signOut();
+                                         setUser(null);
+                                         setProfile(null);
+                                     }}
+                                     className="text-[10px] font-mono text-zinc-500 hover:text-red-400 border border-zinc-900 hover:border-red-950 px-2.5 py-1 rounded transition-all"
+                                 >
+                                     登出帳號
+                                 </button>
+                             )}
+                         </div>
+                     )}
                 </section>
 
                 {/* Step 2: Contract */}
