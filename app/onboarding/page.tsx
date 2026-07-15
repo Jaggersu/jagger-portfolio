@@ -408,11 +408,11 @@ export default function OnboardingPage() {
                                     {/* 條款 */}
                                     <div className="space-y-5 text-zinc-400">
                                         <div>
-                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">一、服務內容</h4>
+                                            <h4 className="text-[#FF5500] text-[13px] font-bold tracking-widest mb-2">一、服務內容</h4>
                                             <p className="leading-relaxed">甲方依乙方需求提供單件式設計服務，範圍包含平面素材、數位圖文、社群素材等。每件服務採個別報價、個別交付，無長期綁約或月費。</p>
                                         </div>
                                         <div>
-                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">二、報價與付款</h4>
+                                            <h4 className="text-[#FF5500] text-[13px] font-bold tracking-widest mb-2">二、報價與付款</h4>
                                             <p className="leading-relaxed">
                                                 本次專案報價為{' '}
                                                 <span className={budget ? 'text-white font-bold' : 'text-zinc-500'}>{budgetDisplay}</span>
@@ -420,7 +420,7 @@ export default function OnboardingPage() {
                                             </p>
                                         </div>
                                         <div>
-                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">三、交付與修改</h4>
+                                            <h4 className="text-[#FF5500] text-[13px] font-bold tracking-widest mb-2">三、交付與修改</h4>
                                             <p className="leading-relaxed">
                                                 甲方於收到款項後{' '}
                                                 <span className={timeline ? 'text-white font-bold' : 'text-zinc-500'}>{timelineDisplay}</span>
@@ -428,15 +428,15 @@ export default function OnboardingPage() {
                                             </p>
                                         </div>
                                         <div>
-                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">四、智慧財產權</h4>
+                                            <h4 className="text-[#FF5500] text-[13px] font-bold tracking-widest mb-2">四、智慧財產權</h4>
                                             <p className="leading-relaxed">乙方於付清款項後取得最終檔案之使用權。原始檔、設計源檔與相關源碼仍歸甲方所有，除非雙方另有書面約定。</p>
                                         </div>
                                         <div>
-                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">五、保密義務</h4>
+                                            <h4 className="text-[#FF5500] text-[13px] font-bold tracking-widest mb-2">五、保密義務</h4>
                                             <p className="leading-relaxed">雙方對於專案相關資訊、檔案與溝通內容負有保密義務，未經對方同意不得揭露予第三人。</p>
                                         </div>
                                         <div>
-                                            <h4 className="text-[#FF5500] text-[10px] tracking-widest mb-2">六、爭議處理</h4>
+                                            <h4 className="text-[#FF5500] text-[13px] font-bold tracking-widest mb-2">六、爭議處理</h4>
                                             <p className="leading-relaxed">本合約以中華民國法律為準據法。雙方同意以誠信協商解決爭議；協商不成，雙方同意以台北地方法院為第一審管轄法院。</p>
                                         </div>
                                     </div>

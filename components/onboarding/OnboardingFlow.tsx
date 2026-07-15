@@ -445,7 +445,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                             const hasTimeline = body.includes('[[TIMELINE]]');
                                             return (
                                                 <div key={number}>
-                                                    <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">{number}、{title}</h5>
+                                                    <h5 className="text-[#FF5500] text-[13px] font-bold tracking-widest mb-2">{number}、{title}</h5>
                                                     <p>
                                                         {hasAmount ? beforeAmount : body}
                                                         {hasAmount && <span className={budget ? 'text-white font-bold' : 'text-zinc-500'}>{budgetDisplay}</span>}
