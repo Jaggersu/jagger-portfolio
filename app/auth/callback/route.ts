@@ -21,11 +21,8 @@ export async function GET(req: NextRequest) {
             return NextResponse.redirect(`${siteUrl}/?auth=error`);
         }
         await upsertProfile(supabaseUrl, supabaseServiceKey, data.user, plan);
-        // 把 access_token 帶回主頁，讓瀏覽器端的 supabase client 接管 session
-        const res = NextResponse.redirect(`${siteUrl}/?auth=success`);
-        res.cookies.set('sb-access-token', data.session?.access_token ?? '', { path: '/', maxAge: 3600, sameSite: 'lax' });
-        res.cookies.set('sb-refresh-token', data.session?.refresh_token ?? '', { path: '/', maxAge: 7 * 24 * 3600, sameSite: 'lax', httpOnly: true });
-        return res;
+        // 把 access_token / refresh_token 帶回主頁 hash，讓瀏覽器端 supabase client detectSessionInUrl 接管 session
+        return redirectWithSession(`${siteUrl}/?auth=success`, data.session, 'signup');
     }
 
     // ── OTP / Magic Link flow（token_hash）───────────────────────
@@ -36,10 +33,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.redirect(`${siteUrl}/?auth=error`);
         }
         await upsertProfile(supabaseUrl, supabaseServiceKey, data.user, plan);
-        const res = NextResponse.redirect(`${siteUrl}/?auth=success`);
-        res.cookies.set('sb-access-token', data.session?.access_token ?? '', { path: '/', maxAge: 3600, sameSite: 'lax' });
-        res.cookies.set('sb-refresh-token', data.session?.refresh_token ?? '', { path: '/', maxAge: 7 * 24 * 3600, sameSite: 'lax', httpOnly: true });
-        return res;
+        return redirectWithSession(`${siteUrl}/?auth=success`, data.session, type);
     }
 
     return NextResponse.redirect(`${siteUrl}/?auth=error`);
@@ -48,6 +42,7 @@ export async function GET(req: NextRequest) {
 async function upsertProfile(url: string, serviceKey: string, user: any, plan?: string) {
     const admin = createClient(url, serviceKey);
     const meta = user.user_metadata ?? {};
+    const isAdmin = user.email === 'jaggersu@gmail.com';
     await admin.from('profiles').upsert({
         id: user.id,
         name: meta.name ?? meta.full_name ?? user.email ?? '',
@@ -56,5 +51,18 @@ async function upsertProfile(url: string, serviceKey: string, user: any, plan?: 
         company: meta.company ?? '',
         plan_type: plan ?? meta.plan ?? '',
         status: 'REGISTERED',
+        role: isAdmin ? 'admin' : 'client',
     }, { onConflict: 'id' });
+}
+
+function redirectWithSession(redirectUrl: string, session: any, authType: string) {
+    const url = new URL(redirectUrl);
+    const hash = new URLSearchParams();
+    if (session?.access_token) hash.set('access_token', session.access_token);
+    if (session?.refresh_token) hash.set('refresh_token', session.refresh_token);
+    if (session?.expires_in) hash.set('expires_in', String(session.expires_in));
+    if (session?.token_type) hash.set('token_type', session.token_type);
+    if (authType) hash.set('type', authType);
+    url.hash = hash.toString();
+    return NextResponse.redirect(url.toString());
 }

@@ -37,6 +37,7 @@ interface UserFlowContextValue {
     closeDashboard: () => void;
     pendingPanel: string | null;
     clearPendingPanel: () => void;
+    isLoading: boolean;
     register: (profile: UserProfile, plan: string) => Promise<{ error: string | null }>;
     sign: (signatureDataUrl: string) => void;
     activate: () => void;
@@ -55,6 +56,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
     const [dashboardOpen, setDashboardOpen] = useState(false);
     // pendingPanel: set when returning from external payment so DB opens on the right tab
     const [pendingPanel, setPendingPanel] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const syncSession = async (session: any) => {
@@ -68,7 +70,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
                     .single();
                 setProfile({
                     id: u.id,
-                    name: profileRow?.name ?? u.user_metadata?.name ?? '',
+                    name: profileRow?.name ?? u.user_metadata?.name ?? u.user_metadata?.full_name ?? '',
                     email: profileRow?.email ?? u.email ?? '',
                     phone: profileRow?.phone ?? u.user_metadata?.phone ?? '',
                     company: profileRow?.company ?? u.user_metadata?.company ?? '',
@@ -81,6 +83,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
                 setProfile(null);
                 setDashboardOpen(false);
             }
+            setIsLoading(false);
         };
 
         supabase.auth.getSession().then(({ data: { session } }) => syncSession(session));
@@ -102,9 +105,8 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
         let initialSessionHandled = false;
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             syncSession(session);
-            // 只有真正完成登入動作才自動開 Dashboard，
-            // TOKEN_REFRESHED / INITIAL_SESSION（頁面重整/分頁回來）不觸發
-            if (event === 'SIGNED_IN' && session?.user && !initialSessionHandled) {
+            // 真正完成登入動作（Google / Magic Link / 密碼）時自動開 Dashboard
+            if (event === 'SIGNED_IN' && session?.user) {
                 setDashboardOpen(true);
             }
             if (event === 'INITIAL_SESSION') {
@@ -190,7 +192,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <UserFlowContext.Provider value={{ flowState, profile, selectedPlan, contractParams, setContractParams, dashboardOpen, openDashboard, closeDashboard, pendingPanel, clearPendingPanel, register, sign, activate, reset, sendMagicLink, signInWithGoogle }}>
+        <UserFlowContext.Provider value={{ flowState, profile, selectedPlan, contractParams, setContractParams, dashboardOpen, openDashboard, closeDashboard, pendingPanel, clearPendingPanel, isLoading, register, sign, activate, reset, sendMagicLink, signInWithGoogle }}>
             {children}
         </UserFlowContext.Provider>
     );

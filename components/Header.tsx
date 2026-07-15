@@ -72,7 +72,7 @@ export default function Header({ visible }: HeaderProps) {
                   {/* 文字 */}
                   <span className="relative text-[11px] font-mono font-bold text-[#FF5500] tracking-widest group-hover:text-white transition-colors">
                     {profile?.name?.split(' ')[0] || profile?.email?.split('@')[0] || 'CLIENT'}
-                    <span className="text-[#FF5500]/60 group-hover:text-white/60"> · DB</span>
+                    <span className="text-[#FF5500]/60 group-hover:text-white/60"> // 控制台</span>
                   </span>
                 </button>
 
@@ -97,9 +97,9 @@ export default function Header({ visible }: HeaderProps) {
                 onMouseLeave={() => loginIconRef.current?.stopAnimation()}
                 className="flex items-center gap-1.5 text-[11px] text-[#FF5500] hover:text-white transition-colors tracking-wider border border-[#FF5500]/40 hover:border-white/40 px-3 py-1 rounded"
               >
-                LOGIN
+                LOGIN <span className="text-zinc-600">//</span> 登入
                 <span className="pointer-events-none">
-                  <GolangIcon ref={loginIconRef} size={25} color="currentColor" strokeWidth={1.5} />
+                  <GolangIcon ref={loginIconRef} size={18} color="currentColor" strokeWidth={1.5} />
                 </span>
               </button>
             )}

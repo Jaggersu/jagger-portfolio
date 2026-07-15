@@ -1,12 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import BrandTelegramIcon from './icons/BrandTelegramIcon';
-import type { AnimatedIconHandle } from './icons/types';
-import { supabase } from '../lib/supabase';
+import React, { useState, useCallback } from 'react';
 import { useUserFlow } from '../lib/userFlow';
 import OnboardingModal from './dashboard/OnboardingModal';
-import LoginModal from './LoginModal';
+import { useRouter } from 'next/navigation';
 
 interface PlanItem {
     tag: string;
@@ -15,72 +12,24 @@ interface PlanItem {
     price: string;
     period: string;
     features: string[];
-    actionText: string;
+    planKey: string;
     checkSpots: boolean;
     isPopular: boolean;
-    externalUrl?: string;
-}
-
-function TgExternalButton({ href, text }: { href: string; text: string }) {
-    const tgIconRef = useRef<AnimatedIconHandle>(null);
-    return (
-        <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            onMouseEnter={() => tgIconRef.current?.startAnimation()}
-            onMouseLeave={() => tgIconRef.current?.stopAnimation()}
-            className="w-full py-2.5 rounded font-bold text-[11px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer flex items-center justify-center gap-2"
-        >
-            <span className="pointer-events-none">
-                <BrandTelegramIcon ref={tgIconRef} size={16} color="currentColor" strokeWidth={1.5} />
-            </span>
-            {text}
-        </a>
-    );
 }
 
 function SubscriptionContent() {
-    const { flowState, openDashboard } = useUserFlow();
-    const [spotsAvailable, setSpotsAvailable] = useState<number>(2);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const { flowState, profile } = useUserFlow();
+    const router = useRouter();
     const [activeModal, setActiveModal] = useState<string | null>(null);
-    const [showLoginModal, setShowLoginModal] = useState(false);
 
-    const openModal = useCallback((planTitle: string) => {
+    const openModal = useCallback((planKey: string) => {
         if (flowState === 'ACTIVE') {
-            openDashboard();
+            router.push(profile?.role === 'admin' ? '/admin' : '/dashboard');
             return;
         }
-        if (planTitle === '散戶單件計價') {
-            setShowLoginModal(true);
-            return;
-        }
-        setActiveModal(planTitle);
-    }, [flowState, openDashboard]);
+        setActiveModal(planKey);
+    }, [flowState, profile?.role, router]);
     const closeModal = useCallback(() => setActiveModal(null), []);
-
-    useEffect(() => {
-        async function fetchSpots() {
-            try {
-                setIsLoading(true);
-                const { data, error } = await supabase
-                    .from('site_config')
-                    .select('value_int')
-                    .eq('key', 'subscription_spots')
-                    .single();
-
-                if (!error && data) {
-                    setSpotsAvailable(data.value_int);
-                }
-            } catch (err) {
-                // site_config 表尚未建立時靜默失敗，使用預設席位數
-            } finally {
-                setIsLoading(false);
-            }
-        }
-        fetchSpots();
-    }, []);
 
     const plans: PlanItem[] = [
         {
@@ -95,7 +44,7 @@ function SubscriptionContent() {
                 '⚠️ 註冊登入解鎖 Dashboard',
                 '🔑 解鎖後支援線上簽約機制'
             ],
-            actionText: '登入解鎖 Dashboard',
+            planKey: 'ON-DEMAND',
             checkSpots: false,
             isPopular: false
         },
@@ -111,7 +60,7 @@ function SubscriptionContent() {
                 '✅ 標配專屬 Dashboard 看板',
                 '✍️ 支援線上簽約與進度追蹤'
             ],
-            actionText: '申請開通 LITE',
+            planKey: 'LITE',
             checkSpots: true,
             isPopular: false
         },
@@ -127,7 +76,7 @@ function SubscriptionContent() {
                 '✅ 標配專屬 Dashboard 看板',
                 '✍️ 支援線上簽約與核心配置'
             ],
-            actionText: '立即開啟 PRO 訂閱',
+            planKey: 'PRO',
             checkSpots: true,
             isPopular: true
         },
@@ -143,7 +92,7 @@ function SubscriptionContent() {
                 '✅ 標配專屬 Dashboard 看板',
                 '✍️ 支援線上簽約與雙軌追蹤'
             ],
-            actionText: '申請代理方案',
+            planKey: 'SCALE',
             checkSpots: true,
             isPopular: false
         },
@@ -159,10 +108,9 @@ function SubscriptionContent() {
                 '✅ 標配專屬 Dashboard 看板',
                 '✍️ 強制啟動線上簽約流程'
             ],
-            actionText: '洽談專案細節',
+            planKey: 'FIXED',
             checkSpots: false,
-            isPopular: false,
-            externalUrl: 'https://t.me/jaggersu'
+            isPopular: false
         }
     ];
 
@@ -184,82 +132,64 @@ function SubscriptionContent() {
 
                 {/* 方案網格卡片 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {plans.map((plan, index) => {
-                        const isButtonDisabled = plan.checkSpots && (spotsAvailable === 0 || isLoading);
-
-                        return (
-                            <div
-                                key={index}
-                                className={`bg-[#0A0A0B] border rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between group transition-all duration-300 ${plan.isPopular ? 'border-[#FF5500]/60 shadow-[0_0_20px_rgba(255,85,0,0.05)]' : 'border-zinc-800'
-                                    } hover:border-[#FF5500]/50`}
-                            >
-                                {/* artboard 角落控制點 */}
-                                <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-zinc-700 pointer-events-none" />
-                                <div className="absolute top-3 right-3 w-3 h-3 border-t border-r border-zinc-700 pointer-events-none" />
-                                <div className="absolute bottom-3 left-3 w-3 h-3 border-b border-l border-zinc-700 pointer-events-none" />
-                                <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-zinc-700 pointer-events-none" />
+                    {plans.map((plan, index) => (
+                        <div
+                            key={index}
+                            className={`bg-[#0A0A0B] border rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between group transition-all duration-300 ${plan.isPopular ? 'border-[#FF5500]/60 shadow-[0_0_20px_rgba(255,85,0,0.05)]' : 'border-zinc-800'
+                                } hover:border-[#FF5500]/50`}
+                        >
+                            {/* artboard 角落控制點 */}
+                            <div className="absolute top-3 left-3 w-3 h-3 border-t border-l border-zinc-700 pointer-events-none" />
+                            <div className="absolute top-3 right-3 w-3 h-3 border-t border-r border-zinc-700 pointer-events-none" />
+                            <div className="absolute bottom-3 left-3 w-3 h-3 border-b border-l border-zinc-700 pointer-events-none" />
+                            <div className="absolute bottom-3 right-3 w-3 h-3 border-b border-r border-zinc-700 pointer-events-none" />
 
 
-                                {/* 卡片內容 */}
-                                <div>
-                                    <div className="mb-6 mt-2">
-                                        <span className="text-[10px] font-mono text-[#FF5500] tracking-widest block">{plan.tag}</span>
-                                        <h3 className="text-xl font-bold text-white mt-1 flex items-center gap-2">
-                                            {plan.title}
-                                            {plan.isPopular && <span className="text-[9px] bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/30 px-1.5 py-0.5 rounded uppercase tracking-wider">RECOMMENDED</span>}
-                                        </h3>
-                                        <p className="text-zinc-400 text-xs mt-3 leading-relaxed min-h-[40px]">
-                                            {plan.desc}
-                                        </p>
-                                    </div>
-
-                                    {/* 核心特色 */}
-                                    <ul className="space-y-2.5 text-xs font-mono text-zinc-300 border-t border-zinc-900 pt-5 mb-6">
-                                        {plan.features.map((feature, fIdx) => (
-                                            <li key={fIdx} className="flex items-start gap-2 leading-tight">
-                                                <span className="text-[#FF5500] shrink-0">✓</span>
-                                                <span>{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                            {/* 卡片內容 */}
+                            <div>
+                                <div className="mb-6 mt-2">
+                                    <span className="text-[10px] font-mono text-[#FF5500] tracking-widest block">{plan.tag}</span>
+                                    <h3 className="text-xl font-bold text-white mt-1 flex items-center gap-2">
+                                        {plan.title}
+                                        {plan.isPopular && <span className="text-[9px] bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/30 px-1.5 py-0.5 rounded uppercase tracking-wider">RECOMMENDED</span>}
+                                    </h3>
+                                    <p className="text-zinc-400 text-xs mt-3 leading-relaxed min-h-[40px]">
+                                        {plan.desc}
+                                    </p>
                                 </div>
 
-                                {/* 價格與行動按鈕 */}
-                                <div className="border-t border-zinc-900 pt-5 mt-auto">
-                                    <div className="mb-4">
-                                        <span className="text-[9px] font-mono text-zinc-500 block uppercase tracking-widest">PRICING MODEL</span>
-                                        <div className="text-lg font-bold text-white font-mono mt-0.5">
-                                            {plan.price !== '論斤計價' && plan.price !== 'NT$ 88,000 起' ? 'NT$ ' : ''}
-                                            <span className="text-2xl text-white font-bold">{plan.price.replace('NT$ ', '').replace(' 起', '')}</span>
-                                            {plan.price.includes('起') && <span className="text-sm text-white"> 起</span>}
-                                            <span className="text-xs text-zinc-500 font-normal">{plan.period}</span>
-                                        </div>
-                                    </div>
-
-                                    {plan.externalUrl ? (
-                                        <TgExternalButton href={plan.externalUrl} text={plan.actionText} />
-                                    ) : (
-                                        <button
-                                            disabled={isButtonDisabled}
-                                            onClick={() => !isButtonDisabled && openModal(plan.title)}
-                                            className={`w-full py-2.5 rounded font-bold text-[11px] tracking-wider uppercase transition-all duration-300 ${isLoading && plan.checkSpots
-                                                    ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                                                    : plan.checkSpots && spotsAvailable === 0
-                                                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                                                        : 'bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer'
-                                                }`}
-                                        >
-                                            {isLoading && plan.checkSpots
-                                                ? '載入中'
-                                                : plan.checkSpots && spotsAvailable === 0
-                                                    ? '聯絡候補席位'
-                                                    : plan.actionText}
-                                        </button>
-                                    )}
-                                </div>
+                                {/* 核心特色 */}
+                                <ul className="space-y-2.5 text-xs font-mono text-zinc-300 border-t border-zinc-900 pt-5 mb-6">
+                                    {plan.features.map((feature, fIdx) => (
+                                        <li key={fIdx} className="flex items-start gap-2 leading-tight">
+                                            <span className="text-[#FF5500] shrink-0">✓</span>
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        );
-                    })}
+
+                            {/* 價格與行動按鈕 */}
+                            <div className="border-t border-zinc-900 pt-5 mt-auto">
+                                <div className="mb-4">
+                                    <span className="text-[9px] font-mono text-zinc-500 block uppercase tracking-widest">PRICING MODEL</span>
+                                    <div className="text-lg font-bold text-white font-mono mt-0.5">
+                                        {plan.price !== '論斤計價' && plan.price !== 'NT$ 88,000 起' ? 'NT$ ' : ''}
+                                        <span className="text-2xl text-white font-bold">{plan.price.replace('NT$ ', '').replace(' 起', '')}</span>
+                                        {plan.price.includes('起') && <span className="text-sm text-white"> 起</span>}
+                                        <span className="text-xs text-zinc-500 font-normal">{plan.period}</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => openModal(plan.planKey)}
+                                    className="w-full py-2.5 rounded font-bold text-[11px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer"
+                                >
+                                    {flowState === 'ACTIVE' ? '進入 DASHBOARD' : '登入解鎖 DASHBOARD'}
+                                </button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 {/* EOF 終止標記 */}
@@ -270,17 +200,12 @@ function SubscriptionContent() {
                 </div>
             </div>
 
-            {/* Onboarding Modal */}
+            {/* Onboarding Modal（統一 Auth / Dashboard 入口） */}
             {activeModal && (
                 <OnboardingModal
                     plan={activeModal}
                     onClose={closeModal}
                 />
-            )}
-
-            {/* Login Modal (ON-DEMAND) */}
-            {showLoginModal && (
-                <LoginModal onClose={() => setShowLoginModal(false)} />
             )}
         </section>
     );
