@@ -26,6 +26,7 @@ const CONTRACT_CLAUSES = [
 ] as const;
 
 import ArrowBigUpDashIcon from '../icons/ArrowBigUpDashIcon';
+import TriangleAlertIcon from '../icons/TriangleAlertIcon';
 import type { AnimatedIconHandle } from '../icons/types';
 
 interface Props {
@@ -60,6 +61,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const contractScrollRef = useRef<HTMLDivElement>(null);
     const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
     const closeIconRef = useRef<AnimatedIconHandle>(null);
+    const alertIconRef = useRef<AnimatedIconHandle>(null);
     const drawingRef = useRef(false);
     const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -534,6 +536,19 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                             ) : (
                                 <div className="space-y-4">
                                     <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">請完成付款後系統將自動解鎖 Dashboard。</p>
+                                    <div 
+                                        onMouseEnter={() => alertIconRef.current?.startAnimation()}
+                                        onMouseLeave={() => alertIconRef.current?.stopAnimation()}
+                                        className="flex items-start gap-3 border border-yellow-600/30 bg-yellow-600/5 rounded-lg p-3 text-yellow-500/80 font-mono text-[11px] leading-relaxed"
+                                    >
+                                        <span className="shrink-0 pt-0.5">
+                                            <TriangleAlertIcon ref={alertIconRef} size={15} strokeWidth={2} color="#facc15" />
+                                        </span>
+                                        <div>
+                                            <span className="font-bold text-[#facc15] block mb-0.5">// 注意事項</span>
+                                            前往 Polar 付款頁面時，<span className="text-white font-bold underline">請務必自行輸入您的合約總額 ({budgetDisplay})</span>。
+                                        </div>
+                                    </div>
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <button
                                             onClick={() => {

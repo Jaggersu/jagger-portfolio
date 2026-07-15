@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
 import type { ContractData } from '@/components/onboarding/ContractPdf';
 
+import TriangleAlertIcon from '@/components/icons/TriangleAlertIcon';
+import type { AnimatedIconHandle } from '@/components/icons/types';
+
 const ContractDownloadButton = dynamic(
     () => import('@/components/onboarding/ContractPdf').then((m) => m.ContractDownloadButton),
     { ssr: false }
@@ -35,6 +38,7 @@ export default function OnboardingPage() {
 
     const contractScrollRef = useRef<HTMLDivElement>(null);
     const contractSentinelRef = useRef<HTMLDivElement>(null);
+    const alertIconRef = useRef<AnimatedIconHandle>(null);
 
     const step = !user
         ? 'auth'
@@ -534,6 +538,20 @@ export default function OnboardingPage() {
                                     <p className="text-zinc-400 text-xs font-mono leading-relaxed">
                                         請點擊下方 Polar 付款按鈕完成付款。完成後系統將自動解鎖 Dashboard。
                                     </p>
+
+                                    <div 
+                                        onMouseEnter={() => alertIconRef.current?.startAnimation()}
+                                        onMouseLeave={() => alertIconRef.current?.stopAnimation()}
+                                        className="flex items-start gap-3 border border-yellow-600/30 bg-yellow-600/5 rounded-lg p-3 text-yellow-500/80 font-mono text-[11px] leading-relaxed"
+                                    >
+                                        <span className="shrink-0 pt-0.5">
+                                            <TriangleAlertIcon ref={alertIconRef} size={15} strokeWidth={2} color="#facc15" />
+                                        </span>
+                                        <div>
+                                            <span className="font-bold text-[#facc15] block mb-0.5">// 注意事項</span>
+                                            前往 Polar 付款頁面時，<span className="text-white font-bold underline">請務必自行輸入您的合約總額 ({budgetDisplay})</span>。
+                                        </div>
+                                    </div>
 
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <button
