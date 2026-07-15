@@ -20,6 +20,7 @@ export interface UserProfile {
     company: string;
     plan: string;
     role: 'client' | 'admin';
+    status?: 'REGISTERED' | 'ACTIVE';
 }
 
 export interface ContractParams {
@@ -70,7 +71,8 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
                     .eq('id', u.id)
                     .single();
 
-                if (profileRow && profileRow.status !== 'ACTIVE') {
+                const isAdmin = u.email === 'jaggersu@gmail.com' || (profileRow?.role as 'client' | 'admin') === 'admin';
+                if (isAdmin && profileRow && profileRow.status !== 'ACTIVE') {
                     await supabase.from('profiles').update({ status: 'ACTIVE' }).eq('id', u.id);
                 }
                 setProfile({
@@ -80,7 +82,8 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
                     phone: profileRow?.phone ?? u.user_metadata?.phone ?? '',
                     company: profileRow?.company ?? u.user_metadata?.company ?? '',
                     plan: profileRow?.plan_type ?? u.user_metadata?.plan ?? '',
-                    role: (profileRow?.email === 'jaggersu@gmail.com' || (profileRow?.role as 'client' | 'admin') === 'admin') ? 'admin' : 'client',
+                    role: isAdmin ? 'admin' : 'client',
+                    status: isAdmin ? 'ACTIVE' : (profileRow?.status ?? 'REGISTERED'),
                 });
                 setFlowState('ACTIVE');
             } else {
