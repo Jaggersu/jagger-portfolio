@@ -42,6 +42,7 @@ interface UserFlowContextValue {
     activate: () => void;
     reset: () => void;
     sendMagicLink: (email: string) => Promise<{ error: string | null }>;
+    signInWithGoogle: (plan?: string) => Promise<{ error: string | null }>;
 }
 
 const UserFlowContext = createContext<UserFlowContextValue | null>(null);
@@ -163,8 +164,33 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
         return { error: error?.message ?? null };
     }, []);
 
+    const signInWithGoogle = useCallback(async (plan?: string) => {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+        const redirectTo = new URL('/auth/callback', siteUrl);
+        if (plan) {
+            redirectTo.searchParams.set('plan', plan);
+        }
+
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: redirectTo.toString(),
+            },
+        });
+
+        if (error) {
+            return { error: error.message };
+        }
+
+        if (data?.url) {
+            window.location.href = data.url;
+        }
+
+        return { error: null };
+    }, []);
+
     return (
-        <UserFlowContext.Provider value={{ flowState, profile, selectedPlan, contractParams, setContractParams, dashboardOpen, openDashboard, closeDashboard, pendingPanel, clearPendingPanel, register, sign, activate, reset, sendMagicLink }}>
+        <UserFlowContext.Provider value={{ flowState, profile, selectedPlan, contractParams, setContractParams, dashboardOpen, openDashboard, closeDashboard, pendingPanel, clearPendingPanel, register, sign, activate, reset, sendMagicLink, signInWithGoogle }}>
             {children}
         </UserFlowContext.Provider>
     );
