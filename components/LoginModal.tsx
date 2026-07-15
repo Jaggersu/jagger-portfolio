@@ -15,6 +15,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
     const [errorMsg, setErrorMsg] = useState('');
+    const [password, setPassword] = useState('');
     const [devEmail, setDevEmail] = useState('');
     const [devPassword, setDevPassword] = useState('');
     const [devError, setDevError] = useState('');
@@ -35,6 +36,20 @@ export default function LoginModal({ onClose }: LoginModalProps) {
         e.preventDefault();
         if (!email) return;
         setStatus('sending');
+
+        if (email === 'jaggersu@gmail.com' && password) {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            if (error) {
+                setErrorMsg(error.message);
+                setStatus('error');
+            }
+            // If successful, onAuthStateChange in userFlow will handle redirect
+            return;
+        }
+
         const { error } = await sendMagicLink(email);
         if (error) {
             setErrorMsg(error);
@@ -97,6 +112,19 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
                             />
                         </div>
+
+                        {email === 'jaggersu@gmail.com' && (
+                            <div>
+                                <label className="text-[10px] text-[#FF5500] block mb-1.5 tracking-widest">ADMIN PASSWORD</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="Admin Password"
+                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
+                                />
+                            </div>
+                        )}
 
                         {status === 'error' && (
                             <p className="text-red-400 text-xs">{errorMsg}</p>
