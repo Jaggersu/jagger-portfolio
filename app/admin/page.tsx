@@ -23,5 +23,9 @@ export default function AdminPage() {
         return <div className="min-h-screen bg-[#121214]" />;
     }
 
-    return <AdminDashboard onClose={() => router.push('/')} />;
+    return (
+        <div className="h-screen w-screen overflow-hidden">
+            <AdminDashboard onClose={() => router.push('/')} />
+        </div>
+    );
 }
