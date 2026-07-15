@@ -168,7 +168,8 @@ interface AiPanel {
 
 export default function DashboardPanel({ onClose, initialNav }: DashboardPanelProps) {
     const { profile, selectedPlan, reset, pendingPanel, clearPendingPanel } = useUserFlow();
-    const [activeNav, setActiveNav]             = useState<NavItem>(initialNav ?? 'projects');
+    const isActive = profile?.status === 'ACTIVE';
+    const [activeNav, setActiveNav]             = useState<NavItem>(initialNav ?? (isActive ? 'projects' : 'contract'));
     const [hoveredNav, setHoveredNav]           = useState<NavItem | null>(null);
     const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
     const [selectedTask, setSelectedTask]       = useState<Task | null>(null);
@@ -399,10 +400,13 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
     };
     useEffect(() => {
         if (pendingPanel) {
-            setActiveNav(pendingPanel as NavItem);
+            const nextNav = pendingPanel as NavItem;
+            if (isActive || nextNav === 'contract' || nextNav === 'settings') {
+                setActiveNav(nextNav);
+            }
             clearPendingPanel();
         }
-    }, [pendingPanel, clearPendingPanel]);
+    }, [pendingPanel, clearPendingPanel, isActive]);
 
     // ── Task detail: unified timeline feed ────────────────────────
     const [timeline, setTimeline]               = useState<any[]>([]);
@@ -984,11 +988,18 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                         } else {
                             iconWithAnimate = React.cloneElement(item.icon as React.ReactElement<any>, { animate: isHovered ? 'hover' : 'idle' });
                         }
+                        const isLocked = !isActive && (item.key === 'projects' || item.key === 'inbox' || item.key === 'files');
                         return (
                             <button
                                 key={item.key}
-                                onClick={() => { setActiveNav(item.key); if (item.key !== 'projects') { setSelectedProject(null); setSelectedTask(null); } }}
+                                disabled={isLocked}
+                                onClick={() => { 
+                                    if (isLocked) return;
+                                    setActiveNav(item.key); 
+                                    if (item.key !== 'projects') { setSelectedProject(null); setSelectedTask(null); } 
+                                }}
                                 onMouseEnter={() => {
+                                    if (isLocked) return;
                                     setHoveredNav(item.key);
                                     if (item.key === 'projects') projectsNavIconRef.current?.startAnimation();
                                     if (item.key === 'contract') contractIconRef.current?.startAnimation();
@@ -997,6 +1008,7 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                     if (item.key === 'settings') settingsNavIconRef.current?.startAnimation();
                                 }}
                                 onMouseLeave={() => {
+                                    if (isLocked) return;
                                     setHoveredNav(null);
                                     if (item.key === 'projects') projectsNavIconRef.current?.stopAnimation();
                                     if (item.key === 'contract') contractIconRef.current?.stopAnimation();
@@ -1004,9 +1016,18 @@ export default function DashboardPanel({ onClose, initialNav }: DashboardPanelPr
                                     if (item.key === 'inbox')    inboxNavIconRef.current?.stopAnimation();
                                     if (item.key === 'settings') settingsNavIconRef.current?.stopAnimation();
                                 }}
-                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${activeNav === item.key ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'}`}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${
+                                    isLocked 
+                                        ? 'text-zinc-800 cursor-not-allowed opacity-40' 
+                                        : activeNav === item.key 
+                                            ? 'bg-zinc-900 text-white' 
+                                            : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'
+                                }`}
+                                title={isLocked ? '請先於「我的合約」完成簽署付款以解鎖' : undefined}
                             >
-                                <span className="shrink-0">{iconWithAnimate}</span>{item.label}
+                                <span className="shrink-0">{iconWithAnimate}</span>
+                                <span className="flex-1">{item.label}</span>
+                                {isLocked && <span className="text-[10px] text-zinc-700">🔒</span>}
                             </button>
                         );
                     })}
