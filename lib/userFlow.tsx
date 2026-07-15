@@ -66,9 +66,13 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
                 // 從 profiles 表讀取 role
                 const { data: profileRow } = await supabase
                     .from('profiles')
-                    .select('name, email, phone, company, plan_type, role')
+                    .select('name, email, phone, company, plan_type, role, status')
                     .eq('id', u.id)
                     .single();
+
+                if (profileRow && profileRow.status !== 'ACTIVE') {
+                    await supabase.from('profiles').update({ status: 'ACTIVE' }).eq('id', u.id);
+                }
                 setProfile({
                     id: u.id,
                     name: profileRow?.name ?? u.user_metadata?.name ?? u.user_metadata?.full_name ?? '',
