@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, User, Session } from '@supabase/supabase-js';
 
 export async function GET(req: NextRequest) {
     const { searchParams, origin } = new URL(req.url);
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     // ── OTP / Magic Link flow（token_hash）───────────────────────
     if (token_hash) {
         const sb = createClient(supabaseUrl, supabaseAnonKey);
-        const { data, error } = await sb.auth.verifyOtp({ token_hash, type: type as any });
+        const { data, error } = await sb.auth.verifyOtp({ token_hash, type: type });
         if (error || !data?.user) {
             return NextResponse.redirect(`${siteUrl}/?auth=error`);
         }
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/?auth=error`);
 }
 
-async function upsertProfile(url: string, serviceKey: string, user: any, plan?: string) {
+async function upsertProfile(url: string, serviceKey: string, user: User, plan?: string) {
     const admin = createClient(url, serviceKey);
     const meta = user.user_metadata ?? {};
     const isAdmin = user.email === 'jaggersu@gmail.com';
@@ -55,7 +55,7 @@ async function upsertProfile(url: string, serviceKey: string, user: any, plan?: 
     }, { onConflict: 'id' });
 }
 
-function redirectWithSession(redirectUrl: string, session: any, authType: string) {
+function redirectWithSession(redirectUrl: string, session: Session | null, authType: string) {
     const url = new URL(redirectUrl);
     const hash = new URLSearchParams();
     if (session?.access_token) hash.set('access_token', session.access_token);

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
 // ─── State Machine ─────────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const syncSession = async (session: any) => {
+        const syncSession = async (session: Session | null) => {
             if (session?.user) {
                 const u = session.user;
                 // 從 profiles 表讀取 role
