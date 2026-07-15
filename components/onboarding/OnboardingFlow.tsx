@@ -140,7 +140,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     };
 
     const startSignature = (event: React.PointerEvent<HTMLCanvasElement>) => {
-        if (!contractScrolled || !budget.trim() || !timeline.trim()) return;
+        if (!contractScrolled) return;
         const point = getSignaturePoint(event);
         if (!point) return;
         drawingRef.current = true;
