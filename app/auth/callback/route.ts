@@ -50,9 +50,11 @@ export async function GET(req: NextRequest) {
                 const errMsg = error?.message || 'no_user';
                 return NextResponse.redirect(`${siteUrl}/?auth=error&msg=${encodeURIComponent(errMsg)}`);
             }
-            await upsertProfile(supabaseUrl, supabaseServiceKey, data.user, plan);
-            // 把 access_token / refresh_token 帶回主頁 hash，讓瀏覽器端 supabase client detectSessionInUrl 接管 session
-            return redirectWithSession(`${siteUrl}/?auth=success`, data.session, 'signup');
+            const status1 = await upsertProfile(supabaseUrl, supabaseServiceKey, data.user, plan);
+            const dest1 = status1 === 'REGISTERED'
+                ? `${siteUrl}/?auth=success&panel=contract`
+                : `${siteUrl}/?auth=success`;
+            return redirectWithSession(dest1, data.session, 'signup');
         }
 
         // ── OTP / Magic Link flow（token_hash）───────────────────────
@@ -64,8 +66,11 @@ export async function GET(req: NextRequest) {
                 const errMsg = error?.message || 'no_user';
                 return NextResponse.redirect(`${siteUrl}/?auth=error&msg=${encodeURIComponent(errMsg)}`);
             }
-            await upsertProfile(supabaseUrl, supabaseServiceKey, data.user, plan);
-            return redirectWithSession(`${siteUrl}/?auth=success`, data.session, type);
+            const status2 = await upsertProfile(supabaseUrl, supabaseServiceKey, data.user, plan);
+            const dest2 = status2 === 'REGISTERED'
+                ? `${siteUrl}/?auth=success&panel=contract`
+                : `${siteUrl}/?auth=success`;
+            return redirectWithSession(dest2, data.session, type);
         }
     } catch (err: any) {
         console.error("Auth callback exception:", err);
@@ -75,10 +80,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/?auth=error&msg=missing_code_or_token`);
 }
 
-async function upsertProfile(url: string, serviceKey: string, user: User, plan?: string) {
+async function upsertProfile(url: string, serviceKey: string, user: User, plan?: string): Promise<'ACTIVE' | 'REGISTERED'> {
     const admin = createClient(url, serviceKey);
     const meta = user.user_metadata ?? {};
     const isAdmin = user.email === 'jaggersu@gmail.com';
+
+    // 查既有 profile，避免把已 ACTIVE 的使用者覆蓋回 REGISTERED
+    const { data: existing } = await admin
+        .from('profiles')
+        .select('status')
+        .eq('id', user.id)
+        .single();
+
+    const newStatus: 'ACTIVE' | 'REGISTERED' = isAdmin
+        ? 'ACTIVE'
+        : (existing?.status === 'ACTIVE' ? 'ACTIVE' : 'REGISTERED');
+
     await admin.from('profiles').upsert({
         id: user.id,
         name: meta.name ?? meta.full_name ?? user.email ?? '',
@@ -86,9 +103,11 @@ async function upsertProfile(url: string, serviceKey: string, user: User, plan?:
         phone: meta.phone ?? '',
         company: meta.company ?? '',
         plan_type: plan ?? meta.plan ?? '',
-        status: 'REGISTERED',
+        status: newStatus,
         role: isAdmin ? 'admin' : 'client',
     }, { onConflict: 'id' });
+
+    return newStatus;
 }
 
 function redirectWithSession(redirectUrl: string, session: Session | null, authType: string) {

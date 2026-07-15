@@ -185,7 +185,7 @@ function SubscriptionContent() {
                                     onClick={() => openModal(plan.planKey)}
                                     className="w-full py-2.5 rounded font-bold text-[11px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer"
                                 >
-                                    {flowState === 'ACTIVE' ? '進入 DASHBOARD' : '登入解鎖 DASHBOARD'}
+                                    {flowState === 'ACTIVE' ? '進入 DASHBOARD →' : '立即申請 →'}
                                 </button>
                             </div>
                         </div>
