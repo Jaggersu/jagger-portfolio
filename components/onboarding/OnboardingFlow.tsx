@@ -26,6 +26,7 @@ const CONTRACT_CLAUSES = [
 ] as const;
 
 import ArrowBigUpDashIcon from '../icons/ArrowBigUpDashIcon';
+import type { AnimatedIconHandle } from '../icons/types';
 
 interface Props {
     open: boolean;
