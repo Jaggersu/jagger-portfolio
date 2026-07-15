@@ -48,7 +48,8 @@ function getSupabaseClient() {
             setItem: (key: string, value: string) => {
                 if (typeof window === 'undefined') return;
                 if (key.includes('-code-verifier')) {
-                    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=3600; SameSite=Lax`;
+                    const isHttps = window.location.protocol === 'https:';
+                    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=3600; SameSite=Lax${isHttps ? '; Secure' : ''}`;
                 } else {
                     try {
                         localStorage.setItem(key, value);

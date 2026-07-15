@@ -22,7 +22,13 @@ export async function GET(req: NextRequest) {
                     flowType: 'pkce',
                     storage: {
                         getItem: (key) => {
-                            return cookieStore.get(key)?.value ?? null;
+                            const val = cookieStore.get(key)?.value;
+                            if (!val) return null;
+                            try {
+                                return decodeURIComponent(val);
+                            } catch {
+                                return val;
+                            }
                         },
                         setItem: (key, value) => {
                             cookieStore.set(key, value, { path: '/' });
