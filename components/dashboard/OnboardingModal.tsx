@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useUserFlow, UserProfile } from '../../lib/userFlow';
+import { supabase } from '../../lib/supabase';
 import DashboardPanel from './DashboardPanel';
 import AdminDashboard from './AdminDashboard';
 import XIcon from '../icons/XIcon';
@@ -16,6 +17,7 @@ export default function OnboardingModal({ plan, onClose }: OnboardingModalProps)
     const { flowState, register, profile, closeDashboard, signInWithGoogle } = useUserFlow();
 
     const [form, setForm] = useState<UserProfile>({ id: '', name: '', email: '', phone: '', company: '', plan, role: 'client' });
+    const [password, setPassword] = useState('');
     const [registerError, setRegisterError] = useState<string | null>(null);
     const [registering, setRegistering] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
@@ -50,10 +52,22 @@ export default function OnboardingModal({ plan, onClose }: OnboardingModalProps)
         if (!form.name || !form.email) return;
         setRegisterError(null);
         setRegistering(true);
+        
+        if (form.email === 'jaggersu@gmail.com' && password) {
+            const { error } = await supabase.auth.signInWithPassword({
+                email: form.email,
+                password: password,
+            });
+            setRegistering(false);
+            if (error) setRegisterError(error.message);
+            // If successful, onAuthStateChange in userFlow will handle redirect
+            return;
+        }
+
         const { error } = await register(form, plan);
         setRegistering(false);
         if (error) setRegisterError(error);
-    }, [form, plan, register]);
+    }, [form, password, plan, register]);
 
     const handleGoogleRegister = useCallback(async () => {
         setRegisterError(null);
@@ -143,6 +157,18 @@ export default function OnboardingModal({ plan, onClose }: OnboardingModalProps)
                                     />
                                 </div>
                             ))}
+                            {form.email === 'jaggersu@gmail.com' && (
+                                <div>
+                                    <label className="text-[11px] font-mono text-[#FF5500] tracking-widest block mb-1.5">ADMIN PASSWORD</label>
+                                    <input
+                                        type="password"
+                                        placeholder="Admin Password"
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        className="w-full bg-[#121214] border border-zinc-800 rounded-lg px-3 py-2.5 text-[12px] font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/60 transition-colors"
+                                    />
+                                </div>
+                            )}
                             {registerError && (
                                 <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{registerError}</p>
                             )}
