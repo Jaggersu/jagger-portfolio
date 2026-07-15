@@ -4,7 +4,16 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useUserFlow } from '../lib/userFlow';
 import OnboardingFlow from './onboarding/OnboardingFlow';
 import ArrowDown10Icon from './icons/ArrowDown10Icon';
+import DownloadIcon from './icons/DownloadIcon';
+import CopyIcon from './icons/CopyIcon';
 import type { AnimatedIconHandle } from './icons/types';
+import dynamic from 'next/dynamic';
+import { supabase } from '../lib/supabase';
+
+const ContractDownloadButton = dynamic(
+    () => import('./onboarding/ContractPdf').then((m) => m.ContractDownloadButton),
+    { ssr: false }
+);
 
 interface PlanItem {
     tag: string;
@@ -19,9 +28,10 @@ interface PlanItem {
 }
 
 function SubscriptionContent() {
-    const { flowState } = useUserFlow();
+    const { flowState, profile } = useUserFlow();
     const [isExpanded, setIsExpanded] = useState(false);
     const arrowIconRef = useRef<AnimatedIconHandle>(null);
+    const copyIconRef = useRef<AnimatedIconHandle>(null);
 
     useEffect(() => {
         if (new URLSearchParams(window.location.search).get('onboarding') === '1') {
@@ -87,23 +97,56 @@ function SubscriptionContent() {
 
                         {/* 右側：價格與 CTA */}
                         <div className="md:w-80 lg:w-96 border-t md:border-t-0 md:border-l border-zinc-900 p-8 md:p-10 flex flex-col justify-center bg-[#080809]">
-                            <span className="text-[9px] font-mono text-zinc-500 block uppercase tracking-widest mb-2">PRICING MODEL</span>
-                            <div className="text-3xl font-bold text-white font-mono mb-1">依案報價</div>
-                            <p className="text-zinc-500 text-xs font-mono mb-6">依案報價 ． 無隱藏費用</p>
+                            {flowState === 'ACTIVE' ? (
+                                <div className="space-y-5 text-center md:text-left">
+                                    <span className="text-[9px] font-mono text-[#FF5500] block uppercase tracking-widest mb-1">// STATUS: ACTIVE</span>
+                                    <h4 className="text-lg font-bold text-white font-mono">感謝您的支持！</h4>
+                                    <p className="text-zinc-500 text-xs font-mono leading-relaxed">
+                                        您的付款與簽約流程均已完成，以下為您的合約選項：
+                                    </p>
+                                    <div className="space-y-2.5 pt-2">
+                                        {profile && (
+                                            <div className="w-full">
+                                                <ContractDownloadButton data={{
+                                                    partyName: profile.name,
+                                                    partyEmail: profile.email,
+                                                    signature: profile.name,
+                                                    signedAt: new Date().toISOString(),
+                                                }} />
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={openModal}
+                                            onMouseEnter={() => copyIconRef.current?.startAnimation()}
+                                            onMouseLeave={() => copyIconRef.current?.stopAnimation()}
+                                            className="w-full py-2.5 rounded-lg font-bold text-[11px] tracking-wider uppercase transition-all duration-300 border border-[#FF5500] text-white hover:bg-[#FF5500] hover:text-black cursor-pointer flex items-center justify-center gap-2"
+                                        >
+                                            新增合約
+                                            <CopyIcon ref={copyIconRef} size={14} strokeWidth={2} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <span className="text-[9px] font-mono text-zinc-500 block uppercase tracking-widest mb-2">PRICING MODEL</span>
+                                    <div className="text-3xl font-bold text-white font-mono mb-1">依案報價</div>
+                                    <p className="text-zinc-500 text-xs font-mono mb-6">依案報價 ． 無隱藏費用</p>
 
-                            <button
-                                onClick={openModal}
-                                onMouseEnter={() => arrowIconRef.current?.startAnimation()}
-                                onMouseLeave={() => arrowIconRef.current?.stopAnimation()}
-                                className="w-full py-3 rounded-lg font-bold text-[12px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer flex items-center justify-center gap-2"
-                            >
-                                {flowState === 'ACTIVE' ? '新增合約' : '立即開始估價'}
-                                <ArrowDown10Icon ref={arrowIconRef} size={16} strokeWidth={2} />
-                            </button>
+                                    <button
+                                        onClick={openModal}
+                                        onMouseEnter={() => arrowIconRef.current?.startAnimation()}
+                                        onMouseLeave={() => arrowIconRef.current?.stopAnimation()}
+                                        className="w-full py-3 rounded-lg font-bold text-[12px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer flex items-center justify-center gap-2"
+                                    >
+                                        立即開始估價
+                                        <ArrowDown10Icon ref={arrowIconRef} size={16} strokeWidth={2} />
+                                    </button>
 
-                            <p className="text-[10px] font-mono text-zinc-600 mt-4 text-center tracking-wide">
-                                使用 Google 帳號登入即可開始
-                            </p>
+                                    <p className="text-[10px] font-mono text-zinc-600 mt-4 text-center tracking-wide">
+                                        使用 Google 帳號登入即可開始
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
 

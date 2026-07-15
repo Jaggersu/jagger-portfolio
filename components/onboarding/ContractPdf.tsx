@@ -190,13 +190,86 @@ export default function ContractPreview({ data }: { data: ContractData }) {
 
 export function ContractDownloadButton({ data }: { data: ContractData }) {
     const fileName = `jagger-os-contract-${data.partyEmail || 'on-demand'}.pdf`;
+    const dlIconRef = React.useRef<any>(null);
+
     return (
         <PDFDownloadLink
             document={<ContractDocument {...data} />}
             fileName={fileName}
-            className="inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-[#FF5500] text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-white transition-colors"
+            style={{ textDecoration: 'none' }}
         >
-            {({ loading }) => (loading ? '產生 PDF 中…' : '下載合約 PDF')}
+            {({ loading }) => (
+                <button
+                    onMouseEnter={() => dlIconRef.current?.startAnimation?.()}
+                    onMouseLeave={() => dlIconRef.current?.stopAnimation?.()}
+                    className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-[#FF5500] text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-white transition-colors cursor-pointer"
+                >
+                    {loading ? (
+                        '產生 PDF 中…'
+                    ) : (
+                        <>
+                            下載合約 PDF
+                            {/* Dynamically import or render standard animation */}
+                            <svg 
+                                style={{ display: 'none' }} 
+                                ref={(el: any) => {
+                                    if (el) {
+                                        dlIconRef.current = {
+                                            startAnimation: () => {
+                                                const tray = el.parentNode.querySelector('.tray');
+                                                const arrowHead = el.parentNode.querySelector('.arrow-head');
+                                                const arrowStem = el.parentNode.querySelector('.arrow-stem');
+                                                if (tray) {
+                                                    tray.style.transform = 'translateY(1px) scale(1.03)';
+                                                    tray.style.transition = 'transform 0.15s ease';
+                                                }
+                                                if (arrowHead) {
+                                                    arrowHead.style.transform = 'translateY(2px)';
+                                                    arrowHead.style.transition = 'transform 0.15s ease';
+                                                }
+                                                if (arrowStem) {
+                                                    arrowStem.style.transform = 'translateY(2px)';
+                                                    arrowStem.style.transition = 'transform 0.15s ease';
+                                                }
+                                            },
+                                            stopAnimation: () => {
+                                                const tray = el.parentNode.querySelector('.tray');
+                                                const arrowHead = el.parentNode.querySelector('.arrow-head');
+                                                const arrowStem = el.parentNode.querySelector('.arrow-stem');
+                                                if (tray) {
+                                                    tray.style.transform = 'translateY(0) scale(1)';
+                                                }
+                                                if (arrowHead) {
+                                                    arrowHead.style.transform = 'translateY(0)';
+                                                }
+                                                if (arrowStem) {
+                                                    arrowStem.style.transform = 'translateY(0)';
+                                                }
+                                            }
+                                        };
+                                    }
+                                }}
+                            />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                style={{ overflow: "visible" }}
+                            >
+                                <path className="tray" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" style={{ transformOrigin: "center bottom" }} />
+                                <path className="arrow-stem" d="M12 15V3" style={{ transformOrigin: "center" }} />
+                                <path className="arrow-head" d="m17 10-5 5-5-5" style={{ transformOrigin: "center" }} />
+                            </svg>
+                        </>
+                    )}
+                </button>
+            )}
         </PDFDownloadLink>
     );
 }
