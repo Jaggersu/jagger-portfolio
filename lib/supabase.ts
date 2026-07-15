@@ -8,22 +8,45 @@ function getSupabaseClient() {
         if (!url || !key) {
             throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
         }
-        const cookieStorage = {
+        const hybridStorage = {
             getItem: (key: string) => {
-                if (typeof document === 'undefined') return null;
-                const value = document.cookie
-                    .split('; ')
-                    .find((row) => row.startsWith(`${key}=`))
-                    ?.split('=')[1];
-                return value ? decodeURIComponent(value) : null;
+                if (typeof window === 'undefined') return null;
+                if (key.includes('-code-verifier')) {
+                    const value = document.cookie
+                        .split('; ')
+                        .find((row) => row.startsWith(`${key}=`))
+                        ?.split('=')[1];
+                    return value ? decodeURIComponent(value) : null;
+                }
+                try {
+                    return localStorage.getItem(key);
+                } catch {
+                    return null;
+                }
             },
             setItem: (key: string, value: string) => {
-                if (typeof document === 'undefined') return;
-                document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
+                if (typeof window === 'undefined') return;
+                if (key.includes('-code-verifier')) {
+                    document.cookie = `${key}=${encodeURIComponent(value)}; path=/; max-age=3600; SameSite=Lax`;
+                } else {
+                    try {
+                        localStorage.setItem(key, value);
+                    } catch (e) {
+                        console.error('localStorage setItem failed:', e);
+                    }
+                }
             },
             removeItem: (key: string) => {
-                if (typeof document === 'undefined') return;
-                document.cookie = `${key}=; path=/; max-age=0`;
+                if (typeof window === 'undefined') return;
+                if (key.includes('-code-verifier')) {
+                    document.cookie = `${key}=; path=/; max-age=0`;
+                } else {
+                    try {
+                        localStorage.removeItem(key);
+                    } catch (e) {
+                        console.error('localStorage removeItem failed:', e);
+                    }
+                }
             },
         };
 
@@ -32,7 +55,7 @@ function getSupabaseClient() {
                 flowType: 'pkce',
                 detectSessionInUrl: true,
                 persistSession: true,
-                storage: cookieStorage,
+                storage: hybridStorage,
             },
         });
     }
