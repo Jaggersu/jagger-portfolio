@@ -33,13 +33,10 @@ function SubscriptionContent() {
 
     const plan = {
         tag: '// ON-DEMAND',
-        title: '散戶單件計價',
-        desc: '沒有長期合約，按件估價、按件交付。適合臨時急件、社群素材、小型平面或數位需求。',
+        title: '散戶單件計價 (ON-DEMAND)',
+        desc: '沒有長期合約，按件估價、按件交付。適合臨時急件、品牌視覺設計、客製化網站建置、或 SaaS 產品 UI/UX 與前端開發需求。',
         features: [
-            '單件平面 / 數位素材 / 社群圖文',
-            '24-48 小時內極速交付',
-            '註冊登入後線上估價與簽約',
-            '無月費、無綁約，隨用隨付'
+            '✓ 品牌平面與行銷視覺 / 高效 Next.js 網站 / SaaS 產品 UI-UX 整合'
         ],
         planKey: 'ON-DEMAND'
     };
@@ -76,10 +73,9 @@ function SubscriptionContent() {
                             <p className="text-zinc-400 text-sm leading-relaxed mb-6 max-w-2xl">
                                 {plan.desc}
                             </p>
-                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono text-zinc-300">
+                            <ul className="grid grid-cols-1 gap-3 text-xs font-mono text-zinc-300">
                                 {plan.features.map((feature, fIdx) => (
                                     <li key={fIdx} className="flex items-start gap-2 leading-tight">
-                                        <span className="text-[#FF5500] shrink-0">✓</span>
                                         <span>{feature}</span>
                                     </li>
                                 ))}
@@ -89,8 +85,8 @@ function SubscriptionContent() {
                         {/* 右側：價格與 CTA */}
                         <div className="md:w-80 lg:w-96 border-t md:border-t-0 md:border-l border-zinc-900 p-8 md:p-10 flex flex-col justify-center bg-[#080809]">
                             <span className="text-[9px] font-mono text-zinc-500 block uppercase tracking-widest mb-2">PRICING MODEL</span>
-                            <div className="text-3xl font-bold text-white font-mono mb-1">論斤計價</div>
-                            <p className="text-zinc-500 text-xs font-mono mb-6">依件報價 · 無隱藏費用</p>
+                            <div className="text-3xl font-bold text-white font-mono mb-1">依案報價</div>
+                            <p className="text-zinc-500 text-xs font-mono mb-6">依案報價 ． 無隱藏費用</p>
 
                             <button
                                 onClick={openModal}
