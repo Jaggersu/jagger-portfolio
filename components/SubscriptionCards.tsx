@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useUserFlow } from '../lib/userFlow';
-import { useRouter } from 'next/navigation';
+import OnboardingFlow from './onboarding/OnboardingFlow';
 
 interface PlanItem {
     tag: string;
@@ -16,21 +16,20 @@ interface PlanItem {
     isPopular: boolean;
 }
 
-interface Props {
-    onOpenOnboarding?: () => void;
-}
+function SubscriptionContent() {
+    const { flowState } = useUserFlow();
+    const [isExpanded, setIsExpanded] = useState(false);
 
-function SubscriptionContent({ onOpenOnboarding }: Props) {
-    const { flowState, profile } = useUserFlow();
-    const router = useRouter();
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).get('onboarding') === '1') {
+            setIsExpanded(true);
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, []);
 
     const openModal = useCallback(() => {
-        if (flowState === 'ACTIVE') {
-            router.push(profile?.role === 'admin' ? '/admin' : '/dashboard');
-            return;
-        }
-        onOpenOnboarding?.();
-    }, [flowState, profile?.role, router, onOpenOnboarding]);
+        setIsExpanded(true);
+    }, []);
 
     const plan = {
         tag: '// ON-DEMAND',
@@ -97,12 +96,18 @@ function SubscriptionContent({ onOpenOnboarding }: Props) {
                                 onClick={openModal}
                                 className="w-full py-3 rounded-lg font-bold text-[12px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer"
                             >
-                                {flowState === 'ACTIVE' ? '進入 DASHBOARD →' : '立即開始估價 →'}
+                                {flowState === 'ACTIVE' ? '新增合約 →' : '立即開始估價 →'}
                             </button>
 
                             <p className="text-[10px] font-mono text-zinc-600 mt-4 text-center tracking-wide">
                                 使用 Google 帳號登入即可開始
                             </p>
+                        </div>
+                    </div>
+
+                    <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 border-t border-zinc-800' : 'grid-rows-[0fr] opacity-0'}`}>
+                        <div className="min-h-0 overflow-hidden">
+                            <OnboardingFlow open={isExpanded} newContract={flowState === 'ACTIVE'} onClose={() => setIsExpanded(false)} />
                         </div>
                     </div>
                 </div>
@@ -119,6 +124,6 @@ function SubscriptionContent({ onOpenOnboarding }: Props) {
     );
 }
 
-export default function SubscriptionCards({ onOpenOnboarding }: Props) {
-    return <SubscriptionContent onOpenOnboarding={onOpenOnboarding} />;
+export default function SubscriptionCards() {
+    return <SubscriptionContent />;
 }

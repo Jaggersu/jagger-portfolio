@@ -13,12 +13,25 @@ const ContractDownloadButton = dynamic(
     { ssr: false }
 );
 
+const CONTRACT_CLAUSES = [
+    ['01', '服務範疇', '乙方依客戶所選方案，提供對應之平面設計、品牌識別、數位素材、網站開發及 AI 輔助工作流程等服務。具體交付項目、頁面數量與功能規格，以雙方簽認之開案確認書及報價單為準，確認書範圍外之額外需求須另行報價。'],
+    ['02', '修改次數與範圍變更', '每一交付階段提案包含合理修改次數（訂閱制每月 2 輪、專案制每里程碑 3 輪）。超出次數之修改，或因客戶需求變更導致工作範圍擴大者，乙方得另行報價。客戶如於確認稿後要求重大方向調整，視同新增需求處理。'],
+    ['03', '費用、付款與逾期', '本合約服務費用為 [[AMOUNT]]，執行時程為 [[TIMELINE]]。訂閱制方案按月預付，逾期視為自動暫停服務。專案制依開案 50%、交稿 30%、結案 20% 分三期支付。逾期付款超過 7 個工作天，乙方有權暫停所有進行中服務，並得就逾期金額按日加收萬分之三違約金，直至款項全數結清為止。'],
+    ['04', '智慧財產權歸屬', '客戶完成全額付款後，乙方將本專案之最終定稿著作財產權完整移轉予客戶。乙方保留：(a) 作品集展示與參展權；(b) 工作流程中所使用之通用框架、元件庫及可重用程式碼之所有權。未獲客戶採用之提案稿，著作權仍歸乙方所有；客戶如需取得，應另行議價。'],
+    ['05', '客戶素材與侵權責任', '客戶提供之文字、圖片、商標及其他素材，應保證合法取得且不侵害任何第三方之智慧財產權；因客戶提供素材引發之任何法律責任，由客戶自行承擔，乙方不負連帶責任。乙方所使用之正版圖庫及字型授權，僅限本專案用途，客戶不得自行將相關素材另作他用或轉授權予第三方。'],
+    ['06', '合約終止', '訂閱制合約：任何一方得提前 30 個日曆天以書面通知終止，終止前已預付款項不予退還。專案制合約：客戶主動終止時，乙方得依已完成工作比例收取費用，已支付訂金不予退還；乙方主動終止時，應於 7 個工作天內退還未完成部分之預付款。'],
+    ['07', '保密條款', '雙方同意對合作過程中取得之商業機密、未公開素材、客戶資料及本合約條款予以嚴格保密；未經對方書面同意，不得向第三方揭露。保密義務於合約終止後繼續存續 3 年。違反保密義務者，應賠償對方因此所受之一切損害。'],
+    ['08', '不可抗力', '因天災、戰爭、政府法規變動、網路基礎設施故障、第三方服務中斷（如雲端平台、支付閘道）等不可抗力事件，導致乙方無法如期履約者，乙方得就受影響部分順延時程，雙方均不得以此為由要求違約賠償。'],
+    ['09', '準據法與爭議解決', '本合約受中華民國法律管轄。雙方應先以協商方式解決爭議；協商不成時，同意以臺灣臺北地方法院為第一審管轄法院。'],
+] as const;
+
 interface Props {
     open: boolean;
     onClose?: () => void;
+    newContract?: boolean;
 }
 
-export default function OnboardingFlow({ open, onClose }: Props) {
+export default function OnboardingFlow({ open, onClose, newContract = false }: Props) {
     const { signInWithGoogle } = useUserFlow();
     const router = useRouter();
 
@@ -30,21 +43,28 @@ export default function OnboardingFlow({ open, onClose }: Props) {
 
     const [budget, setBudget] = useState('');
     const [timeline, setTimeline] = useState('');
-    const [signature, setSignature] = useState('');
+    const [hasSignature, setHasSignature] = useState(false);
+    const [agreed, setAgreed] = useState(false);
     const [contractScrolled, setContractScrolled] = useState(false);
     const [signing, setSigning] = useState(false);
     const [signError, setSignError] = useState<string | null>(null);
     const [paymentBypassing, setPaymentBypassing] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [newContractSigned, setNewContractSigned] = useState(false);
+    const [newContractPaid, setNewContractPaid] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const contractScrollRef = useRef<HTMLDivElement>(null);
-    const contractSentinelRef = useRef<HTMLDivElement>(null);
+    const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
+    const drawingRef = useRef(false);
+    const lastPointRef = useRef<{ x: number; y: number } | null>(null);
 
     const step = !user
         ? 'auth'
         : !profile
         ? 'auth'
+        : newContract
+        ? (newContractPaid ? 'success' : newContractSigned ? 'payment' : 'contract')
         : profile.payment_status === 'paid'
         ? 'success'
         : profile.contract_signed
@@ -83,6 +103,8 @@ export default function OnboardingFlow({ open, onClose }: Props) {
 
     useEffect(() => {
         if (!open) return;
+        setNewContractSigned(false);
+        setNewContractPaid(false);
         const el = containerRef.current;
         if (!el) return;
         requestAnimationFrame(() => {
@@ -91,13 +113,17 @@ export default function OnboardingFlow({ open, onClose }: Props) {
     }, [open]);
 
     useEffect(() => {
-        if (step !== 'contract' || !contractScrollRef.current || !contractSentinelRef.current) return;
-        const observer = new IntersectionObserver(
-            ([entry]) => { if (entry.isIntersecting) setContractScrolled(true); },
-            { root: contractScrollRef.current, threshold: 0.1 }
-        );
-        observer.observe(contractSentinelRef.current);
-        return () => observer.disconnect();
+        if (step !== 'contract') return;
+        const canvas = signatureCanvasRef.current;
+        const context = canvas?.getContext('2d');
+        if (!canvas || !context) return;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.strokeStyle = '#f4f4f5';
+        context.lineWidth = 2;
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        setHasSignature(false);
+        setAgreed(false);
     }, [step]);
 
     const handleGoogleLogin = async () => {
@@ -107,17 +133,63 @@ export default function OnboardingFlow({ open, onClose }: Props) {
         if (error) { setAuthError(error); setAuthLoading(false); }
     };
 
+    const getSignaturePoint = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        const canvas = signatureCanvasRef.current;
+        if (!canvas) return null;
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (event.clientX - rect.left) * (canvas.width / rect.width),
+            y: (event.clientY - rect.top) * (canvas.height / rect.height),
+        };
+    };
+
+    const startSignature = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!contractScrolled || !budget.trim() || !timeline.trim()) return;
+        const point = getSignaturePoint(event);
+        if (!point) return;
+        drawingRef.current = true;
+        lastPointRef.current = point;
+        event.currentTarget.setPointerCapture(event.pointerId);
+    };
+
+    const drawSignature = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!drawingRef.current || !lastPointRef.current) return;
+        const point = getSignaturePoint(event);
+        const context = signatureCanvasRef.current?.getContext('2d');
+        if (!point || !context) return;
+        context.beginPath();
+        context.moveTo(lastPointRef.current.x, lastPointRef.current.y);
+        context.lineTo(point.x, point.y);
+        context.stroke();
+        lastPointRef.current = point;
+        setHasSignature(true);
+    };
+
+    const stopSignature = () => {
+        drawingRef.current = false;
+        lastPointRef.current = null;
+    };
+
+    const clearSignature = () => {
+        const canvas = signatureCanvasRef.current;
+        const context = canvas?.getContext('2d');
+        if (!canvas || !context) return;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        setHasSignature(false);
+    };
+
     const handleSignContract = async () => {
-        if (!signature.trim() || !user || !profile) return;
+        if (!hasSignature || !agreed || !user || !profile) return;
         setSignError(null);
         setSigning(true);
         const { error } = await supabase.from('profiles').update({
             contract_signed: true,
             signed_at: new Date().toISOString(),
-            name: profile.name || user.user_metadata?.name || signature.trim(),
+            name: profile.name || user.user_metadata?.name || user.email || '',
         }).eq('id', user.id);
         if (error) { setSignError('簽署失敗，請稍後再試。'); setSigning(false); return; }
         await fetchProfile(user.id);
+        if (newContract) setNewContractSigned(true);
         setSigning(false);
     };
 
@@ -132,6 +204,7 @@ export default function OnboardingFlow({ open, onClose }: Props) {
         }).eq('id', user.id);
         if (error) { setPaymentError('更新失敗，請稍後再試。'); setPaymentBypassing(false); return; }
         await fetchProfile(user.id);
+        if (newContract) setNewContractPaid(true);
         setPaymentBypassing(false);
     };
 
@@ -144,7 +217,7 @@ export default function OnboardingFlow({ open, onClose }: Props) {
 
     const contractData: ContractData = {
         partyName, partyEmail,
-        signature: profile?.contract_signed ? signature || profile?.name : undefined,
+        signature: profile?.contract_signed ? profile?.name || partyName : undefined,
         signedAt: profile?.signed_at || undefined,
         budget, timeline,
     };
@@ -249,7 +322,14 @@ export default function OnboardingFlow({ open, onClose }: Props) {
                                 </div>
 
                                 {/* 合約本文（暗黑主題） */}
-                                <div ref={contractScrollRef} className="h-[440px] overflow-y-auto rounded-xl border border-zinc-800 bg-[#0D0D0F] p-5 sm:p-7 text-[12px] font-mono leading-relaxed">
+                                <div
+                                    ref={contractScrollRef}
+                                    onScroll={(event) => {
+                                        const target = event.currentTarget;
+                                        if (target.scrollHeight - target.scrollTop <= target.clientHeight + 16) setContractScrolled(true);
+                                    }}
+                                    className="h-[440px] overflow-y-auto rounded-xl border border-zinc-800 bg-[#0D0D0F] p-5 sm:p-7 text-[12px] font-mono leading-relaxed"
+                                >
                                     <div className="text-center mb-6">
                                         <span className="text-[9px] text-zinc-600 tracking-widest uppercase block mb-1">{'// CONTRACT'}</span>
                                         <h4 className="text-sm font-bold text-white tracking-widest">設計服務合約書</h4>
@@ -270,38 +350,26 @@ export default function OnboardingFlow({ open, onClose }: Props) {
                                         ))}
                                     </div>
                                     <div className="space-y-5 text-zinc-400">
-                                        <div>
-                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">一、服務內容</h5>
-                                            <p>甲方依乙方需求提供單件式設計服務，範圍包含平面素材、數位圖文、社群素材等。每件服務採個別報價、個別交付，無長期綁約或月費。</p>
-                                        </div>
-                                        <div>
-                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">二、報價與付款</h5>
-                                            <p>本次專案報價為{' '}
-                                                <span className={budget ? 'text-white font-bold' : 'text-zinc-500'}>{budgetDisplay}</span>
-                                                ，經乙方確認後付款。甲方收到款項後始開始製作。若乙方於製作開始前取消，可全額退款；製作開始後恕不退款。
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">三、交付與修改</h5>
-                                            <p>甲方於收到款項後{' '}
-                                                <span className={timeline ? 'text-white font-bold' : 'text-zinc-500'}>{timelineDisplay}</span>
-                                                {' '}內提供初稿。乙方享有 2 次小幅度修改機會；涉及新增範圍或大幅度調整，甲方得重新報價。
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">四、智慧財產權</h5>
-                                            <p>乙方於付清款項後取得最終檔案之使用權。原始檔、設計源檔與相關源碼仍歸甲方所有，除非雙方另有書面約定。</p>
-                                        </div>
-                                        <div>
-                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">五、保密義務</h5>
-                                            <p>雙方對於專案相關資訊、檔案與溝通內容負有保密義務，未經對方同意不得揭露予第三人。</p>
-                                        </div>
-                                        <div>
-                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">六、爭議處理</h5>
-                                            <p>本合約以中華民國法律為準據法。雙方同意以誠信協商解決爭議；協商不成，雙方同意以台北地方法院為第一審管轄法院。</p>
-                                        </div>
+                                        {CONTRACT_CLAUSES.map(([number, title, body]) => {
+                                            const [beforeAmount, afterAmount] = body.split('[[AMOUNT]]');
+                                            const [beforeTimeline, afterTimeline] = (afterAmount ?? beforeAmount).split('[[TIMELINE]]');
+                                            const hasAmount = body.includes('[[AMOUNT]]');
+                                            const hasTimeline = body.includes('[[TIMELINE]]');
+                                            return (
+                                                <div key={number}>
+                                                    <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">{number}、{title}</h5>
+                                                    <p>
+                                                        {hasAmount ? beforeAmount : body}
+                                                        {hasAmount && <span className={budget ? 'text-white font-bold' : 'text-zinc-500'}>{budgetDisplay}</span>}
+                                                        {hasAmount && beforeTimeline}
+                                                        {hasTimeline && <span className={timeline ? 'text-white font-bold' : 'text-zinc-500'}>{timelineDisplay}</span>}
+                                                        {hasTimeline && afterTimeline}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                    <div ref={contractSentinelRef} className="h-6 mt-8 flex items-center justify-center">
+                                    <div className="h-6 mt-8 flex items-center justify-center">
                                         <span className="text-[9px] text-zinc-700 tracking-widest">{'// END OF CONTRACT'}</span>
                                     </div>
                                 </div>
@@ -315,12 +383,31 @@ export default function OnboardingFlow({ open, onClose }: Props) {
 
                                 <div className={`space-y-3 transition-all duration-500 ${contractScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none select-none'}`}>
                                     <div className="border-t border-zinc-800 pt-4">
-                                        <label className="text-[10px] font-mono text-[#FF5500] tracking-widest block mb-2">{'// 電子簽名（請輸入你的全名）'}</label>
-                                        <input type="text" value={signature} onChange={(e) => setSignature(e.target.value)} placeholder="例如：王小明"
-                                            className="w-full bg-[#0D0D0F] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/50 transition-colors" />
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-[10px] font-mono text-[#FF5500] tracking-widest">{'// 電子簽名'}</label>
+                                            <button type="button" onClick={clearSignature} className="text-[10px] font-mono text-zinc-500 hover:text-white border border-zinc-800 rounded px-2 py-1">清除</button>
+                                        </div>
+                                        <div className="relative h-36 rounded-lg border border-zinc-800 bg-black overflow-hidden">
+                                            {!hasSignature && <span className="absolute inset-0 flex items-center justify-center pointer-events-none text-[11px] font-mono text-zinc-700">在此以滑鼠或觸控簽名</span>}
+                                            <canvas
+                                                ref={signatureCanvasRef}
+                                                width={960}
+                                                height={288}
+                                                className="w-full h-full touch-none cursor-crosshair"
+                                                onPointerDown={startSignature}
+                                                onPointerMove={drawSignature}
+                                                onPointerUp={stopSignature}
+                                                onPointerCancel={stopSignature}
+                                                onPointerLeave={stopSignature}
+                                            />
+                                        </div>
                                     </div>
+                                    <button type="button" onClick={() => setAgreed((value) => !value)} className="flex items-start gap-2.5 text-left">
+                                        <span className={`mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center ${agreed ? 'bg-[#FF5500] border-[#FF5500] text-black' : 'border-zinc-700 text-transparent'}`}>✓</span>
+                                        <span className="text-[11px] leading-relaxed font-mono text-zinc-400">我已詳閱合約全文，同意所有條款，並確認此電子簽名具有等同手簽之法律效力。</span>
+                                    </button>
                                     {signError && <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{signError}</p>}
-                                    <button onClick={handleSignContract} disabled={!signature.trim() || signing}
+                                    <button onClick={handleSignContract} disabled={!hasSignature || !agreed || signing}
                                         className="py-2.5 px-6 rounded-lg font-bold text-[11px] tracking-widest uppercase transition-all duration-200 bg-[#FF5500] text-black hover:bg-white disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800">
                                         {signing ? '處理中…' : '同意並確認簽署 →'}
                                     </button>
