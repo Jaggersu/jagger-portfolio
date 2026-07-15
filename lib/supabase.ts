@@ -18,11 +18,32 @@ function getSupabaseClient() {
                         ?.split('=')[1];
                     return value ? decodeURIComponent(value) : null;
                 }
+                
+                // Try localStorage first
+                let localVal = null;
                 try {
-                    return localStorage.getItem(key);
-                } catch {
-                    return null;
+                    localVal = localStorage.getItem(key);
+                } catch {}
+
+                // If localVal exists, we can return it, but also check if a fresh session cookie was set by the server
+                const cookieVal = document.cookie
+                    .split('; ')
+                    .find((row) => row.startsWith(`${key}=`))
+                    ?.split('=')[1];
+                
+                if (cookieVal) {
+                    try {
+                        const decoded = decodeURIComponent(cookieVal);
+                        localStorage.setItem(key, decoded);
+                        // Clear the cookie immediately to avoid sending huge headers on subsequent requests
+                        document.cookie = `${key}=; path=/; max-age=0`;
+                        return decoded;
+                    } catch (e) {
+                        console.error('Failed to migrate session cookie:', e);
+                    }
                 }
+
+                return localVal;
             },
             setItem: (key: string, value: string) => {
                 if (typeof window === 'undefined') return;
