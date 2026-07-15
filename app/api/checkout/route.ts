@@ -63,10 +63,10 @@ export async function POST(req: NextRequest) {
                 });
             if (contractErr) throw contractErr;
 
-            // 更新 profile plan_type + status
+            // 更新 profile plan_type + status + onboarding_completed
             await supabase
                 .from('profiles')
-                .update({ plan_type: plan, status: 'ACTIVE' })
+                .update({ plan_type: plan, status: 'ACTIVE', onboarding_completed: true })
                 .eq('id', userId);
 
             // 初始化 Google Drive 資料夾

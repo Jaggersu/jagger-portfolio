@@ -90,12 +90,12 @@ export async function POST(req: Request) {
                 INIT_TASKS.map(t => ({ ...t, project_id: projectId, user_id: userId }))
             );
 
-            // D. 更新 profile 狀態為 ACTIVE 且綁定 plan_type
+            // D. 更新 profile 狀態為 ACTIVE、onboarding_completed=true 且綁定 plan_type
             const { data: fullContract } = await supabaseAdmin.from('contracts').select('metadata').eq('project_id', projectId).single();
             const plan = (fullContract?.metadata as any)?.plan || 'LITE';
             await supabaseAdmin
                 .from('profiles')
-                .update({ plan_type: plan, status: 'ACTIVE' })
+                .update({ plan_type: plan, status: 'ACTIVE', onboarding_completed: true })
                 .eq('id', userId);
 
             return new Response('OK', { status: 200 });

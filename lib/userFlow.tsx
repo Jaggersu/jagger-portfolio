@@ -21,6 +21,7 @@ export interface UserProfile {
     plan: string;
     role: 'client' | 'admin';
     status?: 'REGISTERED' | 'ACTIVE';
+    onboarding_completed?: boolean;
 }
 
 export interface ContractParams {
@@ -64,17 +65,21 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
         const syncSession = async (session: Session | null) => {
             if (session?.user) {
                 const u = session.user;
-                // 從 profiles 表讀取 role
+                // 從 profiles 表讀取 role / onboarding 狀態
                 const { data: profileRow } = await supabase
                     .from('profiles')
-                    .select('name, email, phone, company, plan_type, role, status')
+                    .select('name, email, phone, company, plan_type, role, status, onboarding_completed')
                     .eq('id', u.id)
                     .single();
 
                 const isAdmin = u.email === 'jaggersu@gmail.com' || (profileRow?.role as 'client' | 'admin') === 'admin';
-                if (isAdmin && profileRow && profileRow.status !== 'ACTIVE') {
-                    await supabase.from('profiles').update({ status: 'ACTIVE' }).eq('id', u.id);
+                const isOnboarded = !!profileRow?.onboarding_completed || (profileRow?.status === 'ACTIVE');
+
+                // Admin 強制解鎖並修正資料庫狀態
+                if (isAdmin && profileRow && (profileRow.status !== 'ACTIVE' || !profileRow.onboarding_completed)) {
+                    await supabase.from('profiles').update({ status: 'ACTIVE', onboarding_completed: true }).eq('id', u.id);
                 }
+
                 setProfile({
                     id: u.id,
                     name: profileRow?.name ?? u.user_metadata?.name ?? u.user_metadata?.full_name ?? '',
@@ -84,8 +89,11 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
                     plan: profileRow?.plan_type ?? u.user_metadata?.plan ?? '',
                     role: isAdmin ? 'admin' : 'client',
                     status: isAdmin ? 'ACTIVE' : (profileRow?.status ?? 'REGISTERED'),
+                    onboarding_completed: isAdmin ? true : isOnboarded,
                 });
-                setFlowState('ACTIVE');
+
+                // 只有完成 onboarding 或 admin 才視為 ACTIVE
+                setFlowState(isAdmin || isOnboarded ? 'ACTIVE' : 'REGISTERED');
             } else {
                 setFlowState('GUEST');
                 setProfile(null);
@@ -96,30 +104,10 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
 
         supabase.auth.getSession().then(({ data: { session } }) => syncSession(session));
 
-        // ?auth=success 或 ?payment= 時主動再 getSession 並開啟 Dashboard
-        if (typeof window !== 'undefined' && (window.location.search.includes('auth=success') || window.location.search.includes('payment='))) {
-            // Capture panel param BEFORE clearing the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const panel = urlParams.get('panel');
-            if (panel) setPendingPanel(panel);
-            supabase.auth.getSession().then(({ data: { session } }) => {
-                syncSession(session);
-                if (session?.user) setDashboardOpen(true);
-                // 清掉 URL 參數避免重複觸發
-                window.history.replaceState({}, '', window.location.pathname);
-            });
-        }
-
-        let initialSessionHandled = false;
+        // 登入後的導流交給 /auth/callback 與 middleware 處理，
+        // 這裡只做 session 同步，不再自動開啟 Dashboard modal。
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             syncSession(session);
-            // 真正完成登入動作（Google / Magic Link / 密碼）時自動開 Dashboard
-            if (event === 'SIGNED_IN' && session?.user) {
-                setDashboardOpen(true);
-            }
-            if (event === 'INITIAL_SESSION') {
-                initialSessionHandled = true;
-            }
         });
 
         return () => subscription.unsubscribe();
@@ -141,8 +129,8 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
 
         if (error) return { error: error.message };
 
-        // 暫存資料供 UI 顯示，等 magic link 點擊後 onAuthStateChange 才真正 ACTIVE
-        setProfile({ ...p, id: '', plan });
+        // 暫存資料供 UI 顯示，等 magic link 點擊後導向 onboarding
+        setProfile({ ...p, id: '', plan, onboarding_completed: false });
         setSelectedPlan(plan);
         setFlowState('REGISTERED');
         return { error: null };

@@ -56,12 +56,12 @@ async function ensurePaymentSuccess(merchantOrderNo: string | null) {
         .update({ status: 'SIGNED', signed_at: new Date().toISOString() })
         .eq('project_id', contract.project_id);
 
-    // 4. 更新 profile 狀態為 ACTIVE 且綁定 plan_type
+    // 4. 更新 profile 狀態為 ACTIVE、onboarding_completed=true 且綁定 plan_type
     const { data: fullContract } = await supabaseAdmin.from('contracts').select('metadata').eq('project_id', contract.project_id).single();
     const plan = (fullContract?.metadata as any)?.plan || 'LITE';
     await supabaseAdmin
         .from('profiles')
-        .update({ plan_type: plan, status: 'ACTIVE' })
+        .update({ plan_type: plan, status: 'ACTIVE', onboarding_completed: true })
         .eq('id', contract.user_id);
 
     // 5. 初始化任務
@@ -104,9 +104,10 @@ export async function POST(request: NextRequest) {
     if (payment === 'success' && merchantOrderNo) {
         await ensurePaymentSuccess(merchantOrderNo);
     }
-    const redirectUrl = new URL('/', request.url);
-    redirectUrl.searchParams.set('payment', payment);
-    redirectUrl.searchParams.set('panel', 'contract');
+    const redirectUrl = new URL(
+        payment === 'success' ? '/onboarding/payment?status=success' : '/onboarding/contract?status=cancel',
+        request.url
+    );
     return NextResponse.redirect(redirectUrl, 302);
 }
 
@@ -117,8 +118,9 @@ export async function GET(request: NextRequest) {
     if (payment === 'success' && merchantOrderNo) {
         await ensurePaymentSuccess(merchantOrderNo);
     }
-    const redirectUrl = new URL('/', request.url);
-    redirectUrl.searchParams.set('payment', payment);
-    redirectUrl.searchParams.set('panel', 'contract');
+    const redirectUrl = new URL(
+        payment === 'success' ? '/onboarding/payment?status=success' : '/onboarding/contract?status=cancel',
+        request.url
+    );
     return NextResponse.redirect(redirectUrl, 302);
 }

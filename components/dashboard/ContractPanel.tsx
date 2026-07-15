@@ -20,6 +20,7 @@ interface ContractPanelProps {
     plan: string;
     onClose: () => void;
     embedded?: boolean;
+    onActivated?: () => void;
 }
 
 const CONTRACT_CLAUSES = [
@@ -80,7 +81,7 @@ const PLAN_PRICES: Record<string, number> = {
     '雙軌並行代理': 85000,
 };
 
-export default function ContractPanel({ plan: initialPlan, onClose, embedded = false }: ContractPanelProps) {
+export default function ContractPanel({ plan: initialPlan, onClose, embedded = false, onActivated }: ContractPanelProps) {
     const { sign, activate, profile, contractParams, setContractParams } = useUserFlow();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const closeIconRef = useRef<AnimatedIconHandle>(null);
@@ -424,7 +425,11 @@ export default function ContractPanel({ plan: initialPlan, onClose, embedded = f
 
             if (data.mock) {
                 setPaying(false);
-                activate();
+                if (onActivated) {
+                    onActivated();
+                } else {
+                    activate();
+                }
                 if (embedded) {
                     setIsAdding(false);
                     fetchContracts();

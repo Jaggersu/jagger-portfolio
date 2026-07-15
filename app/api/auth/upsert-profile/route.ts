@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
             ? 'ACTIVE'
             : (existing?.status === 'ACTIVE' ? 'ACTIVE' : 'REGISTERED');
 
+        const onboardingCompleted = isAdmin || newStatus === 'ACTIVE';
+
         await admin.from('profiles').upsert({
             id: user.id,
             name: meta.name ?? meta.full_name ?? user.email ?? '',
@@ -50,13 +52,14 @@ export async function POST(req: NextRequest) {
             company: meta.company ?? '',
             plan_type: plan ?? meta.plan ?? '',
             status: newStatus,
+            onboarding_completed: onboardingCompleted,
             role: isAdmin ? 'admin' : 'client',
         }, { onConflict: 'id' });
 
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
         const redirectUrl = newStatus === 'REGISTERED' && !isAdmin
-            ? `${siteUrl}/?auth=success&panel=contract`
-            : `${siteUrl}/?auth=success`;
+            ? `${siteUrl}/onboarding/contract?plan=${encodeURIComponent(plan ?? meta.plan ?? 'LITE')}`
+            : `${siteUrl}/dashboard`;
 
         return NextResponse.json({ status: newStatus, redirectUrl });
     } catch (err: any) {

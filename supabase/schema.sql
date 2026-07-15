@@ -13,6 +13,7 @@ create table if not exists public.profiles (
   company    text,
   plan_type  text check (plan_type in ('ON-DEMAND','LITE','PRO','SCALE','FIXED')),
   status     text check (status in ('REGISTERED','ACTIVE')) default 'REGISTERED',
+  onboarding_completed boolean not null default false,
   role       text not null default 'client' check (role in ('client','admin')),
   line_id    text,
   telegram_webhook text,
@@ -35,6 +36,10 @@ create policy "read_own_or_admin" on public.profiles
 drop policy if exists "write_own" on public.profiles;
 create policy "write_own" on public.profiles
   for all using (auth.uid() = id);
+
+-- 確保既有資料庫也已加上 onboarding_completed，並把原本已 ACTIVE 的用戶同步為 true
+alter table if exists public.profiles add column if not exists onboarding_completed boolean not null default false;
+update public.profiles set onboarding_completed = true where status = 'ACTIVE' and onboarding_completed = false;
 
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()

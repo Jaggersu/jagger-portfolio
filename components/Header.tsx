@@ -8,6 +8,7 @@ import LayoutDashboardIcon from './icons/LayoutDashboardIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import GolangIcon from './icons/GolangIcon';
 import type { AnimatedIconHandle } from './icons/types';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   visible: boolean;
@@ -15,6 +16,7 @@ interface HeaderProps {
 
 export default function Header({ visible }: HeaderProps) {
   const { flowState, profile, reset, openDashboard, dashboardOpen, closeDashboard } = useUserFlow();
+  const router = useRouter();
   const [showLogin, setShowLogin] = useState(false);
   const dashboardIconRef = useRef<AnimatedIconHandle>(null);
   const logoutIconRef = useRef<AnimatedIconHandle>(null);
@@ -55,7 +57,13 @@ export default function Header({ visible }: HeaderProps) {
               <div className="flex items-center gap-2">
                 {/* Dashboard 入口按鈕：呼吸橘光 + Linear 風格動態 icon */}
                 <button
-                  onClick={openDashboard}
+                  onClick={() => {
+                    if (profile?.role === 'admin') {
+                      router.push('/admin');
+                    } else {
+                      openDashboard();
+                    }
+                  }}
                   onMouseEnter={() => dashboardIconRef.current?.startAnimation()}
                   onMouseLeave={() => dashboardIconRef.current?.stopAnimation()}
                   className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#FF5500]/50 hover:border-[#FF5500] bg-[#FF5500]/5 hover:bg-[#FF5500]/10 transition-all duration-300"
