@@ -101,6 +101,39 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
         return () => { mounted = false; subscription.unsubscribe(); };
     }, [fetchProfile]);
 
+    const [verifyingPayment, setVerifyingPayment] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('success') === 'true' && user) {
+            setVerifyingPayment(true);
+            let attempts = 0;
+            const interval = setInterval(async () => {
+                attempts++;
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('payment_status')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (data?.payment_status === 'paid') {
+                    clearInterval(interval);
+                    await fetchProfile(user.id);
+                    if (newContract) setNewContractPaid(true);
+                    setVerifyingPayment(false);
+                    // Clear URL params to clean up state
+                    window.history.replaceState({}, '', window.location.pathname);
+                } else if (attempts >= 5) {
+                    clearInterval(interval);
+                    setVerifyingPayment(false);
+                }
+            }, 2000);
+
+            return () => clearInterval(interval);
+        }
+    }, [user, fetchProfile, newContract]);
+
     useEffect(() => {
         if (!open) return;
         setNewContractSigned(false);
@@ -484,27 +517,37 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                         </div>
 
                         {step === 'payment' ? (
-                            <div className="space-y-4">
-                                <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">請完成付款後系統將自動解鎖 Dashboard。</p>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <button
-                                        onClick={() => {
-                                            const u = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://buy.polar.sh/polar_cl_bIKPCk6fDHRVhKqxO38KhzvJXBDulo9YlMRbl07lP0D';
-                                            window.open(u, '_blank', 'noopener,noreferrer');
-                                        }}
-                                        className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors"
-                                    >
-                                        前往 Polar 付款 →
-                                    </button>
-                                    {isDev && (
-                                        <button onClick={handleBypassPayment} disabled={paymentBypassing}
-                                            className="flex-1 py-2.5 px-6 border border-yellow-600/40 text-yellow-500 font-bold text-[11px] tracking-widest rounded-lg hover:bg-yellow-600/10 transition-colors disabled:opacity-50">
-                                            {paymentBypassing ? '處理中…' : '[Dev Only] 繞過付款直接解鎖'}
-                                        </button>
-                                    )}
+                            verifyingPayment ? (
+                                <div className="flex items-center gap-3 font-mono text-zinc-400 py-2">
+                                    <svg className="animate-spin h-4 w-4 text-[#FF5500]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span className="text-[11px]">正在確認付款狀態 (Verifying Payment Status)...</span>
                                 </div>
-                                {paymentError && <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{paymentError}</p>}
-                            </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">請完成付款後系統將自動解鎖 Dashboard。</p>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <button
+                                            onClick={() => {
+                                                const u = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_eAXDoDFEJieSUah4qc5Rw64SNEsWfjaqmevXz2dgqDw/redirect';
+                                                window.open(u, '_blank', 'noopener,noreferrer');
+                                            }}
+                                            className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors"
+                                        >
+                                            前往 Polar 付款 →
+                                        </button>
+                                        {isDev && (
+                                            <button onClick={handleBypassPayment} disabled={paymentBypassing}
+                                                className="flex-1 py-2.5 px-6 border border-yellow-600/40 text-yellow-500 font-bold text-[11px] tracking-widest rounded-lg hover:bg-yellow-600/10 transition-colors disabled:opacity-50">
+                                                {paymentBypassing ? '處理中…' : '[Dev Only] 繞過付款直接解鎖'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {paymentError && <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{paymentError}</p>}
+                                </div>
+                            )
                         ) : (
                             <div className="flex items-center gap-3 font-mono">
                                 <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs">✓</div>

@@ -84,6 +84,37 @@ export default function OnboardingPage() {
         };
     }, [fetchProfile]);
 
+    const [verifyingPayment, setVerifyingPayment] = useState(false);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('success') === 'true' && user) {
+            setVerifyingPayment(true);
+            let attempts = 0;
+            const interval = setInterval(async () => {
+                attempts++;
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('payment_status')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (data?.payment_status === 'paid') {
+                    clearInterval(interval);
+                    await fetchProfile(user.id);
+                    setVerifyingPayment(false);
+                    window.history.replaceState({}, '', window.location.pathname);
+                } else if (attempts >= 5) {
+                    clearInterval(interval);
+                    setVerifyingPayment(false);
+                }
+            }, 2000);
+
+            return () => clearInterval(interval);
+        }
+    }, [user, fetchProfile]);
+
     useEffect(() => {
         if (step !== 'contract' || !contractScrollRef.current || !contractSentinelRef.current) return;
         const observer = new IntersectionObserver(
@@ -490,45 +521,49 @@ export default function OnboardingPage() {
                         </div>
 
                         {step === 'payment' ? (
-                            <div className="space-y-5">
-                                <p className="text-zinc-400 text-xs font-mono leading-relaxed">
-                                    請點擊下方 Polar 付款按鈕完成付款。完成後系統將自動解鎖 Dashboard。
-                                </p>
+                            verifyingPayment ? (
+                                <div className="flex items-center gap-3 font-mono text-zinc-400 py-2">
+                                    <svg className="animate-spin h-4 w-4 text-[#FF5500]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span className="text-[11px]">正在確認付款狀態 (Verifying Payment Status)...</span>
+                                </div>
+                            ) : (
+                                <div className="space-y-5">
+                                    <p className="text-zinc-400 text-xs font-mono leading-relaxed">
+                                        請點擊下方 Polar 付款按鈕完成付款。完成後系統將自動解鎖 Dashboard。
+                                    </p>
 
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <button
-                                        onClick={() => {
-                                            const url = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://buy.polar.sh/polar_cl_bIKPCk6fDHRVhKqxO38KhzvJXBDulo9YlMRbl07lP0D';
-                                            window.open(url, '_blank', 'noopener,noreferrer');
-                                        }}
-                                        className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors"
-                                    >
-                                        前往 Polar 付款 →
-                                    </button>
-
-                                    {isDev && (
+                                    <div className="flex flex-col sm:flex-row gap-3">
                                         <button
-                                            onClick={handleBypassPayment}
-                                            disabled={paymentBypassing}
-                                            className="flex-1 py-2.5 px-6 border border-yellow-600/40 text-yellow-500 font-bold text-[11px] tracking-widest rounded-lg hover:bg-yellow-600/10 transition-colors disabled:opacity-50"
+                                            onClick={() => {
+                                                const url = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_eAXDoDFEJieSUah4qc5Rw64SNEsWfjaqmevXz2dgqDw/redirect';
+                                                window.open(url, '_blank', 'noopener,noreferrer');
+                                            }}
+                                            className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors"
                                         >
-                                            {paymentBypassing ? '處理中…' : '[Dev Only] 繞過付款直接解鎖'}
+                                            前往 Polar 付款 →
                                         </button>
+
+                                        {isDev && (
+                                            <button
+                                                onClick={handleBypassPayment}
+                                                disabled={paymentBypassing}
+                                                className="flex-1 py-2.5 px-6 border border-yellow-600/40 text-yellow-500 font-bold text-[11px] tracking-widest rounded-lg hover:bg-yellow-600/10 transition-colors disabled:opacity-50"
+                                            >
+                                                {paymentBypassing ? '處理中…' : '[Dev Only] 繞過付款直接解鎖'}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {paymentError && (
+                                        <p className="text-red-400 text-xs font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
+                                            {paymentError}
+                                        </p>
                                     )}
                                 </div>
-
-                                {!process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL && (
-                                    <p className="text-yellow-600 text-[11px] font-mono">
-                                        提示：Polar 付款連結尚未設定（NEXT_PUBLIC_POLAR_CHECKOUT_URL）。
-                                    </p>
-                                )}
-
-                                {paymentError && (
-                                    <p className="text-red-400 text-xs font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
-                                        {paymentError}
-                                    </p>
-                                )}
-                            </div>
+                            )
                         ) : (
                             <div className="flex items-center gap-3 text-sm text-zinc-300 font-mono">
                                 <div className="w-8 h-8 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold">
