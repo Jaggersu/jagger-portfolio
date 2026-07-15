@@ -60,6 +60,10 @@ export default function OnboardingPage() {
             console.error('[onboarding] fetch profile error:', error);
         }
         setProfile(data);
+        if (data) {
+            if (data.contract_budget) setBudget(data.contract_budget);
+            if (data.contract_timeline) setTimeline(data.contract_timeline);
+        }
     }, []);
 
     useEffect(() => {

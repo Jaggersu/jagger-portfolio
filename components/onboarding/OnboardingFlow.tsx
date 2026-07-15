@@ -84,6 +84,10 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
             .eq('id', uid)
             .maybeSingle();
         setProfile(data);
+        if (data) {
+            if (data.contract_budget) setBudget(data.contract_budget);
+            if (data.contract_timeline) setTimeline(data.contract_timeline);
+        }
     }, []);
 
     useEffect(() => {
