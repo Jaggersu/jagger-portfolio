@@ -14,6 +14,9 @@ create table if not exists public.profiles (
   plan_type  text check (plan_type in ('ON-DEMAND','LITE','PRO','SCALE','FIXED')),
   status     text check (status in ('REGISTERED','ACTIVE')) default 'REGISTERED',
   onboarding_completed boolean not null default false,
+  contract_signed boolean not null default false,
+  signed_at  timestamptz,
+  payment_status text check (payment_status in ('unpaid','paid')) default 'unpaid',
   role       text not null default 'client' check (role in ('client','admin')),
   line_id    text,
   telegram_webhook text,
@@ -37,21 +40,26 @@ drop policy if exists "write_own" on public.profiles;
 create policy "write_own" on public.profiles
   for all using (auth.uid() = id);
 
--- 確保既有資料庫也已加上 onboarding_completed，並把原本已 ACTIVE 的用戶同步為 true
+-- 確保既有資料庫也已加上 onboarding_completed / contract_signed / payment_status，並把原本已 ACTIVE 的用戶同步為 true
 alter table if exists public.profiles add column if not exists onboarding_completed boolean not null default false;
-update public.profiles set onboarding_completed = true where status = 'ACTIVE' and onboarding_completed = false;
+alter table if exists public.profiles add column if not exists contract_signed boolean not null default false;
+alter table if exists public.profiles add column if not exists signed_at timestamptz;
+alter table if exists public.profiles add column if not exists payment_status text check (payment_status in ('unpaid','paid')) default 'unpaid';
+update public.profiles set onboarding_completed = true, contract_signed = true, payment_status = 'paid' where status = 'ACTIVE' and onboarding_completed = false;
 
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, name, status, onboarding_completed, role)
+  insert into public.profiles (id, email, name, status, onboarding_completed, contract_signed, payment_status, role)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'name', ''),
     'REGISTERED',
     false,
+    false,
+    'unpaid',
     'client'
   )
   on conflict (id) do nothing;

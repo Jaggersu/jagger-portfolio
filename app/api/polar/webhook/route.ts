@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     if (!profile.onboarding_completed) {
         const { error } = await admin
             .from('profiles')
-            .update({ onboarding_completed: true, status: 'ACTIVE' })
+            .update({ onboarding_completed: true, status: 'ACTIVE', payment_status: 'paid' })
             .eq('id', profile.id);
         if (error) {
             console.error('[polar/webhook] update failed:', error);

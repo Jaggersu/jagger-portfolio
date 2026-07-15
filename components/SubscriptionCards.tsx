@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useUserFlow } from '../lib/userFlow';
-import OnboardingModal from './dashboard/OnboardingModal';
 import { useRouter } from 'next/navigation';
 
 interface PlanItem {
@@ -20,16 +19,14 @@ interface PlanItem {
 function SubscriptionContent() {
     const { flowState, profile } = useUserFlow();
     const router = useRouter();
-    const [activeModal, setActiveModal] = useState<string | null>(null);
 
-    const openModal = useCallback((planKey: string) => {
+    const openModal = useCallback(() => {
         if (flowState === 'ACTIVE') {
             router.push(profile?.role === 'admin' ? '/admin' : '/dashboard');
             return;
         }
-        setActiveModal(planKey);
+        router.push('/onboarding');
     }, [flowState, profile?.role, router]);
-    const closeModal = useCallback(() => setActiveModal(null), []);
 
     const plan = {
         tag: '// ON-DEMAND',
@@ -93,7 +90,7 @@ function SubscriptionContent() {
                             <p className="text-zinc-500 text-xs font-mono mb-6">依件報價 · 無隱藏費用</p>
 
                             <button
-                                onClick={() => openModal(plan.planKey)}
+                                onClick={openModal}
                                 className="w-full py-3 rounded-lg font-bold text-[12px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer"
                             >
                                 {flowState === 'ACTIVE' ? '進入 DASHBOARD →' : '立即開始估價 →'}
@@ -114,13 +111,6 @@ function SubscriptionContent() {
                 </div>
             </div>
 
-            {/* Onboarding Modal */}
-            {activeModal && (
-                <OnboardingModal
-                    plan={activeModal}
-                    onClose={closeModal}
-                />
-            )}
         </section>
     );
 }

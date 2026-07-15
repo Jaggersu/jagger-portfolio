@@ -71,16 +71,16 @@ export async function GET(request: NextRequest) {
             email: user.email ?? '',
             phone: meta.phone ?? '',
             company: meta.company ?? '',
-            plan_type: plan ?? meta.plan ?? '',
+            plan_type: plan ?? meta.plan ?? 'ON-DEMAND',
             status: newStatus,
             onboarding_completed: onboardingCompleted,
+            contract_signed: isAdmin || newStatus === 'ACTIVE',
+            payment_status: isAdmin || newStatus === 'ACTIVE' ? 'paid' : 'unpaid',
             role: isAdmin ? 'admin' : 'client',
         }, { onConflict: 'id' });
 
         const origin = request.nextUrl.origin;
-        const redirectUrl = newStatus === 'REGISTERED' && !isAdmin
-            ? new URL(`/onboarding/contract?plan=${encodeURIComponent(plan ?? meta.plan ?? 'LITE')}`, origin)
-            : new URL('/dashboard', origin);
+        const redirectUrl = new URL('/onboarding', origin);
 
         return NextResponse.redirect(redirectUrl);
     } catch (err: any) {
