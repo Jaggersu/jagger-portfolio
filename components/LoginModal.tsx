@@ -3,7 +3,6 @@
 import React, { useState, useRef } from 'react';
 import { useUserFlow } from '../lib/userFlow';
 import XIcon from './icons/XIcon';
-import { supabase } from '../lib/supabase';
 import type { AnimatedIconHandle } from './icons/types';
 
 interface LoginModalProps {
@@ -11,60 +10,17 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ onClose }: LoginModalProps) {
-    const { sendMagicLink, openDashboard, signInWithGoogle } = useUserFlow();
-    const [email, setEmail] = useState('');
-    const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-    const [errorMsg, setErrorMsg] = useState('');
-    const [password, setPassword] = useState('');
-    const [devEmail, setDevEmail] = useState('');
-    const [devPassword, setDevPassword] = useState('');
-    const [devError, setDevError] = useState('');
+    const { signInWithGoogle } = useUserFlow();
     const [googleLoading, setGoogleLoading] = useState(false);
-    const isDev = process.env.NODE_ENV === 'development';
+    const [errorMsg, setErrorMsg] = useState('');
     const closeIconRef = useRef<AnimatedIconHandle>(null);
 
-    const handleDevLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setDevError('');
-        const { error } = await supabase.auth.signInWithPassword({ email: devEmail, password: devPassword });
-        if (error) { setDevError(error.message); return; }
-        openDashboard();
-        onClose();
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!email) return;
-        setStatus('sending');
-
-        if (email === 'jaggersu@gmail.com' && password) {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
-            if (error) {
-                setErrorMsg(error.message);
-                setStatus('error');
-            }
-            // If successful, onAuthStateChange in userFlow will handle redirect
-            return;
-        }
-
-        const { error } = await sendMagicLink(email);
-        if (error) {
-            setErrorMsg(error);
-            setStatus('error');
-        } else {
-            setStatus('sent');
-        }
-    };
-
     const handleGoogleLogin = async () => {
+        setErrorMsg('');
         setGoogleLoading(true);
         const { error } = await signInWithGoogle();
         if (error) {
             setErrorMsg(error);
-            setStatus('error');
             setGoogleLoading(false);
         }
     };
@@ -93,60 +49,21 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                     <span className="text-[11px] text-zinc-400 tracking-widest">// CLIENT LOGIN</span>
                 </div>
 
-                {status === 'sent' ? (
-                    <div className="text-center space-y-3">
-                        <div className="text-[#FF5500] text-2xl">✓</div>
-                        <p className="text-zinc-300 text-sm">Magic link 已寄出</p>
-                        <p className="text-zinc-600 text-xs">請檢查 <span className="text-zinc-400">{email}</span> 的收件匣，點擊連結即可登入 Dashboard。</p>
-                    </div>
-                ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="text-[10px] text-zinc-600 block mb-1.5 tracking-widest">EMAIL</label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                placeholder="your@email.com"
-                                required
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
-                            />
-                        </div>
+                <p className="text-zinc-500 text-xs font-mono mb-4 leading-relaxed">
+                    為確保流程單一與安全，目前僅開放 Google 帳號登入。
+                </p>
 
-                        {email === 'jaggersu@gmail.com' && (
-                            <div>
-                                <label className="text-[10px] text-[#FF5500] block mb-1.5 tracking-widest">ADMIN PASSWORD</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    placeholder="Admin Password"
-                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 font-mono placeholder-zinc-700 focus:outline-none focus:border-[#FF5500]/60"
-                                />
-                            </div>
-                        )}
-
-                        {status === 'error' && (
-                            <p className="text-red-400 text-xs">{errorMsg}</p>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={status === 'sending'}
-                            className="w-full py-2.5 bg-[#FF5500] text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-white transition-colors disabled:opacity-50"
-                        >
-                            {status === 'sending' ? '寄送中…' : '寄送登入連結 →'}
-                        </button>
-
-                        <p className="text-[10px] text-zinc-700 text-center">// 無需密碼，點擊信件連結直接登入</p>
-                    </form>
+                {errorMsg && (
+                    <p className="text-red-400 text-xs mb-4 font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">
+                        {errorMsg}
+                    </p>
                 )}
 
                 <button
                     type="button"
                     onClick={handleGoogleLogin}
                     disabled={googleLoading}
-                    className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -156,45 +73,6 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                     </svg>
                     {googleLoading ? '跳轉中…' : '使用 Google 登入'}
                 </button>
-
-                {isDev && (
-                    <form onSubmit={handleDevLogin} className="mt-5 pt-4 border-t border-zinc-900 space-y-2">
-                        <p className="text-[9px] text-yellow-600 tracking-widest">// DEV ONLY · PASSWORD LOGIN</p>
-                        <div className="flex gap-2">
-                            <button type="button"
-                                onClick={() => { setDevEmail('jaggersu@gmail.com'); setDevPassword('dev123456'); }}
-                                className="flex-1 py-1.5 text-[10px] bg-[#FF5500]/10 hover:bg-[#FF5500]/25 border border-[#FF5500]/30 text-[#FF5500] rounded tracking-widest transition-colors">
-                                ADMIN
-                            </button>
-                            <button type="button"
-                                onClick={() => { setDevEmail('client@jagger.com'); setDevPassword('dev123456'); }}
-                                className="flex-1 py-1.5 text-[10px] bg-zinc-800/40 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 rounded tracking-widest transition-colors">
-                                CLIENT
-                            </button>
-                        </div>
-                        <input
-                            type="email"
-                            value={devEmail}
-                            onChange={e => setDevEmail(e.target.value)}
-                            placeholder="admin@email.com"
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-300 font-mono placeholder-zinc-700 focus:outline-none focus:border-yellow-600/40"
-                        />
-                        <input
-                            type="password"
-                            value={devPassword}
-                            onChange={e => setDevPassword(e.target.value)}
-                            placeholder="password"
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-xs text-zinc-300 font-mono placeholder-zinc-700 focus:outline-none focus:border-yellow-600/40"
-                        />
-                        {devError && <p className="text-red-400 text-[10px]">{devError}</p>}
-                        <button
-                            type="submit"
-                            className="w-full py-2 bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-600/40 text-yellow-500 text-[10px] font-bold tracking-widest rounded transition-colors"
-                        >
-                            DEV LOGIN →
-                        </button>
-                    </form>
-                )}
             </div>
         </div>
     );
