@@ -134,7 +134,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
                         <p className="text-[9px] text-yellow-600 tracking-widest">// DEV ONLY · PASSWORD LOGIN</p>
                         <div className="flex gap-2">
                             <button type="button"
-                                onClick={() => { setDevEmail('admin@jagger.com'); setDevPassword('dev123456'); }}
+                                onClick={() => { setDevEmail('jaggersu@gmail.com'); setDevPassword('dev123456'); }}
                                 className="flex-1 py-1.5 text-[10px] bg-[#FF5500]/10 hover:bg-[#FF5500]/25 border border-[#FF5500]/30 text-[#FF5500] rounded tracking-widest transition-colors">
                                 ADMIN
                             </button>

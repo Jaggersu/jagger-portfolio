@@ -76,7 +76,7 @@ export function UserFlowProvider({ children }: { children: React.ReactNode }) {
                     phone: profileRow?.phone ?? u.user_metadata?.phone ?? '',
                     company: profileRow?.company ?? u.user_metadata?.company ?? '',
                     plan: profileRow?.plan_type ?? u.user_metadata?.plan ?? '',
-                    role: (profileRow?.role as 'client' | 'admin') ?? 'client',
+                    role: (profileRow?.email === 'jaggersu@gmail.com' || (profileRow?.role as 'client' | 'admin') === 'admin') ? 'admin' : 'client',
                 });
                 setFlowState('ACTIVE');
             } else {
