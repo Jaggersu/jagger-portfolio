@@ -95,18 +95,21 @@ drop policy if exists "用戶可檢視自身合約" on public.contracts;
 drop policy if exists "admin可讀寫所有合約" on public.contracts;
 
 -- 1. SELECT 政策
+drop policy if exists "允許讀取合約" on public.contracts;
 create policy "允許讀取合約" on public.contracts
   for select using (
     auth.uid() = user_id or public.current_user_role() = 'admin'
   );
 
 -- 2. INSERT 政策
+drop policy if exists "允許建立合約" on public.contracts;
 create policy "允許建立合約" on public.contracts
   for insert with check (
     public.current_user_role() = 'admin'
   );
 
 -- 3. UPDATE 政策（僅限狀態為 PENDING 時）
+drop policy if exists "允許用戶簽署合約" on public.contracts;
 create policy "允許用戶簽署合約" on public.contracts
   for update using (
     auth.uid() = user_id and status = 'PENDING'
@@ -114,6 +117,7 @@ create policy "允許用戶簽署合約" on public.contracts
     auth.uid() = user_id and status in ('PENDING', 'SIGNED')
   );
 
+drop policy if exists "允許管理員修改未簽署合約" on public.contracts;
 create policy "允許管理員修改未簽署合約" on public.contracts
   for update using (
     public.current_user_role() = 'admin' and status = 'PENDING'
@@ -122,6 +126,7 @@ create policy "允許管理員修改未簽署合約" on public.contracts
   );
 
 -- 4. DELETE 政策（僅限狀態為 PENDING 且為管理員）
+drop policy if exists "允許管理員刪除未簽署合約" on public.contracts;
 create policy "允許管理員刪除未簽署合約" on public.contracts
   for delete using (
     public.current_user_role() = 'admin' and status = 'PENDING'
