@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Jagger OS=Portfolio",
+  title: "Jagger OS · Portfolio",
   description: "品牌設計、網站開發、AI 輔助工作流程。由 Jagger Su 主理。",
 };
 
