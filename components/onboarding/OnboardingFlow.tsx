@@ -1,0 +1,405 @@
+'use client';
+
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useUserFlow } from '@/lib/userFlow';
+import { supabase } from '@/lib/supabase';
+import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import type { User } from '@supabase/supabase-js';
+import type { ContractData } from '@/components/onboarding/ContractPdf';
+
+const ContractDownloadButton = dynamic(
+    () => import('@/components/onboarding/ContractPdf').then((m) => m.ContractDownloadButton),
+    { ssr: false }
+);
+
+interface Props {
+    open: boolean;
+    onClose?: () => void;
+}
+
+export default function OnboardingFlow({ open, onClose }: Props) {
+    const { signInWithGoogle } = useUserFlow();
+    const router = useRouter();
+
+    const [user, setUser] = useState<User | null>(null);
+    const [profile, setProfile] = useState<any | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [authLoading, setAuthLoading] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
+
+    const [budget, setBudget] = useState('');
+    const [timeline, setTimeline] = useState('');
+    const [signature, setSignature] = useState('');
+    const [contractScrolled, setContractScrolled] = useState(false);
+    const [signing, setSigning] = useState(false);
+    const [signError, setSignError] = useState<string | null>(null);
+    const [paymentBypassing, setPaymentBypassing] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const contractScrollRef = useRef<HTMLDivElement>(null);
+    const contractSentinelRef = useRef<HTMLDivElement>(null);
+
+    const step = !user
+        ? 'auth'
+        : !profile
+        ? 'auth'
+        : profile.payment_status === 'paid'
+        ? 'success'
+        : profile.contract_signed
+        ? 'payment'
+        : 'contract';
+
+    const fetchProfile = useCallback(async (uid: string) => {
+        const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', uid)
+            .maybeSingle();
+        setProfile(data);
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!mounted) return;
+            setUser(session?.user ?? null);
+            if (session?.user) {
+                fetchProfile(session.user.id).finally(() => setLoading(false));
+            } else {
+                setLoading(false);
+            }
+        });
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, session) => {
+            if (!mounted) return;
+            const u = session?.user ?? null;
+            setUser(u);
+            if (u) fetchProfile(u.id);
+            else setProfile(null);
+        });
+        return () => { mounted = false; subscription.unsubscribe(); };
+    }, [fetchProfile]);
+
+    useEffect(() => {
+        if (!open) return;
+        const el = containerRef.current;
+        if (!el) return;
+        requestAnimationFrame(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }, [open]);
+
+    useEffect(() => {
+        if (step !== 'contract' || !contractScrollRef.current || !contractSentinelRef.current) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) setContractScrolled(true); },
+            { root: contractScrollRef.current, threshold: 0.1 }
+        );
+        observer.observe(contractSentinelRef.current);
+        return () => observer.disconnect();
+    }, [step]);
+
+    const handleGoogleLogin = async () => {
+        setAuthError(null);
+        setAuthLoading(true);
+        const { error } = await signInWithGoogle('ON-DEMAND');
+        if (error) { setAuthError(error); setAuthLoading(false); }
+    };
+
+    const handleSignContract = async () => {
+        if (!signature.trim() || !user || !profile) return;
+        setSignError(null);
+        setSigning(true);
+        const { error } = await supabase.from('profiles').update({
+            contract_signed: true,
+            signed_at: new Date().toISOString(),
+            name: profile.name || user.user_metadata?.name || signature.trim(),
+        }).eq('id', user.id);
+        if (error) { setSignError('簽署失敗，請稍後再試。'); setSigning(false); return; }
+        await fetchProfile(user.id);
+        setSigning(false);
+    };
+
+    const handleBypassPayment = async () => {
+        if (!user || !profile) return;
+        setPaymentError(null);
+        setPaymentBypassing(true);
+        const { error } = await supabase.from('profiles').update({
+            payment_status: 'paid',
+            status: 'ACTIVE',
+            onboarding_completed: true,
+        }).eq('id', user.id);
+        if (error) { setPaymentError('更新失敗，請稍後再試。'); setPaymentBypassing(false); return; }
+        await fetchProfile(user.id);
+        setPaymentBypassing(false);
+    };
+
+    const partyName = profile?.name || user?.user_metadata?.name || user?.email || '';
+    const partyEmail = profile?.email || user?.email || '';
+    const budgetDisplay = budget ? `NT$ ${budget}` : '依件報價';
+    const timelineDisplay = timeline || '依需求議定';
+    const today = new Date().toLocaleDateString('zh-TW');
+    const isDev = process.env.NODE_ENV === 'development';
+
+    const contractData: ContractData = {
+        partyName, partyEmail,
+        signature: profile?.contract_signed ? signature || profile?.name : undefined,
+        signedAt: profile?.signed_at || undefined,
+        budget, timeline,
+    };
+
+    if (!open && step === 'auth') return null;
+    if (!open) return null;
+
+    return (
+        <div ref={containerRef} className="w-full bg-[#0A0A0B] border-t border-zinc-900">
+            <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 space-y-5">
+                {/* 標題列 */}
+                <div className="flex items-center justify-between mb-2">
+                    <div>
+                        <span className="text-[10px] font-mono text-zinc-600 tracking-widest uppercase block mb-1">
+                            {'// JAGGER OS · ONBOARDING'}
+                        </span>
+                        <h2 className="text-lg sm:text-xl font-bold text-white font-mono tracking-wider">
+                            開始你的 ON-DEMAND 流程
+                        </h2>
+                        <p className="text-zinc-600 text-[11px] font-mono mt-1">登入 → 簽署合約 → 付款 → 解鎖 Dashboard</p>
+                    </div>
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="text-zinc-600 hover:text-white font-mono text-xs tracking-widest border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                            收合 ×
+                        </button>
+                    )}
+                </div>
+
+                {/* ─── Step 1: Auth ─── */}
+                <section className={`border rounded-2xl p-6 sm:p-8 transition-all duration-500 ${step === 'auth' ? 'border-zinc-800 bg-black' : 'border-zinc-900/60 bg-[#0A0A0B]/80'}`}>
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold font-mono">1</div>
+                        <h3 className="text-sm font-mono font-bold text-white">Google 登入</h3>
+                        {step !== 'auth' && <span className="ml-auto text-[10px] font-mono text-[#FF5500] tracking-widest">DONE</span>}
+                    </div>
+
+                    {step === 'auth' ? (
+                        <div className="space-y-4">
+                            <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">使用 Google 帳號登入，我們會自動為你建立專屬工作看板。</p>
+                            {authError && (
+                                <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{authError}</p>
+                            )}
+                            <button
+                                onClick={handleGoogleLogin}
+                                disabled={authLoading}
+                                className="flex items-center gap-2 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                </svg>
+                                {authLoading ? '跳轉中…' : '使用 Google 登入 / 註冊'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3 font-mono">
+                            {user?.user_metadata?.avatar_url
+                                ? <img src={user.user_metadata.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                                : <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 text-xs font-bold">✓</div>
+                            }
+                            <div>
+                                <p className="text-white text-sm font-bold">{profile?.name || user?.user_metadata?.name || user?.email}</p>
+                                <p className="text-zinc-500 text-xs">{user?.email}</p>
+                            </div>
+                        </div>
+                    )}
+                </section>
+
+                {/* ─── Step 2: Contract ─── */}
+                {(step === 'contract' || step === 'payment' || step === 'success') && (
+                    <section className={`border rounded-2xl p-6 sm:p-8 transition-all duration-500 ${step === 'contract' ? 'border-zinc-800 bg-black' : 'border-zinc-900/60 bg-[#0A0A0B]/80'}`}>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold font-mono">2</div>
+                            <h3 className="text-sm font-mono font-bold text-white">線上合約簽署</h3>
+                            {step !== 'contract' && <span className="ml-auto text-[10px] font-mono text-[#FF5500] tracking-widest">SIGNED</span>}
+                        </div>
+
+                        {step === 'contract' ? (
+                            <div className="space-y-5">
+                                <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">填入本次專案的預算與期限，完整閱讀合約後，滾動到底部解鎖電子簽名。</p>
+
+                                {/* 輸入區：預算 & 期限 */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-mono text-zinc-500 tracking-widest block mb-1.5">專案預算（NT$）</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 font-mono text-xs">NT$</span>
+                                            <input type="text" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="例如：1,800"
+                                                className="w-full bg-[#0D0D0F] border border-zinc-800 rounded-lg pl-9 pr-3 py-2.5 text-sm font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/50 transition-colors" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-mono text-zinc-500 tracking-widest block mb-1.5">預估交付期限</label>
+                                        <input type="text" value={timeline} onChange={(e) => setTimeline(e.target.value)} placeholder="例如：24–48 小時"
+                                            className="w-full bg-[#0D0D0F] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/50 transition-colors" />
+                                    </div>
+                                </div>
+
+                                {/* 合約本文（暗黑主題） */}
+                                <div ref={contractScrollRef} className="h-[440px] overflow-y-auto rounded-xl border border-zinc-800 bg-[#0D0D0F] p-5 sm:p-7 text-[12px] font-mono leading-relaxed">
+                                    <div className="text-center mb-6">
+                                        <span className="text-[9px] text-zinc-600 tracking-widest uppercase block mb-1">{'// CONTRACT'}</span>
+                                        <h4 className="text-sm font-bold text-white tracking-widest">設計服務合約書</h4>
+                                    </div>
+                                    <div className="space-y-2 mb-6 pb-5 border-b border-zinc-800/60">
+                                        {[
+                                            { label: '甲方', value: 'Jagger OS / Jagger Su（jaggersu@gmail.com）', accent: false },
+                                            { label: '乙方', value: `${partyName}（${partyEmail}）`, accent: false },
+                                            { label: '方案', value: '散戶單件計價（ON-DEMAND）', accent: true },
+                                            { label: '報價', value: budgetDisplay, accent: !!budget },
+                                            { label: '期限', value: timelineDisplay, accent: !!timeline },
+                                            { label: '簽約日', value: today, accent: false },
+                                        ].map(({ label, value, accent }) => (
+                                            <div key={label} className="flex gap-3">
+                                                <span className="text-zinc-600 w-12 shrink-0">{label}</span>
+                                                <span className={accent ? 'text-[#FF5500]' : 'text-zinc-300'}>{value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="space-y-5 text-zinc-400">
+                                        <div>
+                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">一、服務內容</h5>
+                                            <p>甲方依乙方需求提供單件式設計服務，範圍包含平面素材、數位圖文、社群素材等。每件服務採個別報價、個別交付，無長期綁約或月費。</p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">二、報價與付款</h5>
+                                            <p>本次專案報價為{' '}
+                                                <span className={budget ? 'text-white font-bold' : 'text-zinc-500'}>{budgetDisplay}</span>
+                                                ，經乙方確認後付款。甲方收到款項後始開始製作。若乙方於製作開始前取消，可全額退款；製作開始後恕不退款。
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">三、交付與修改</h5>
+                                            <p>甲方於收到款項後{' '}
+                                                <span className={timeline ? 'text-white font-bold' : 'text-zinc-500'}>{timelineDisplay}</span>
+                                                {' '}內提供初稿。乙方享有 2 次小幅度修改機會；涉及新增範圍或大幅度調整，甲方得重新報價。
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">四、智慧財產權</h5>
+                                            <p>乙方於付清款項後取得最終檔案之使用權。原始檔、設計源檔與相關源碼仍歸甲方所有，除非雙方另有書面約定。</p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">五、保密義務</h5>
+                                            <p>雙方對於專案相關資訊、檔案與溝通內容負有保密義務，未經對方同意不得揭露予第三人。</p>
+                                        </div>
+                                        <div>
+                                            <h5 className="text-[#FF5500] text-[10px] tracking-widest mb-2">六、爭議處理</h5>
+                                            <p>本合約以中華民國法律為準據法。雙方同意以誠信協商解決爭議；協商不成，雙方同意以台北地方法院為第一審管轄法院。</p>
+                                        </div>
+                                    </div>
+                                    <div ref={contractSentinelRef} className="h-6 mt-8 flex items-center justify-center">
+                                        <span className="text-[9px] text-zinc-700 tracking-widest">{'// END OF CONTRACT'}</span>
+                                    </div>
+                                </div>
+
+                                {!contractScrolled && (
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-1 h-1 rounded-full bg-zinc-600 animate-pulse" />
+                                        <p className="text-[11px] font-mono text-zinc-600">請將合約滾動到底部以解鎖電子簽名</p>
+                                    </div>
+                                )}
+
+                                <div className={`space-y-3 transition-all duration-500 ${contractScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none select-none'}`}>
+                                    <div className="border-t border-zinc-800 pt-4">
+                                        <label className="text-[10px] font-mono text-[#FF5500] tracking-widest block mb-2">{'// 電子簽名（請輸入你的全名）'}</label>
+                                        <input type="text" value={signature} onChange={(e) => setSignature(e.target.value)} placeholder="例如：王小明"
+                                            className="w-full bg-[#0D0D0F] border border-zinc-800 rounded-lg px-3 py-2.5 text-sm font-mono text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-[#FF5500]/50 transition-colors" />
+                                    </div>
+                                    {signError && <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{signError}</p>}
+                                    <button onClick={handleSignContract} disabled={!signature.trim() || signing}
+                                        className="py-2.5 px-6 rounded-lg font-bold text-[11px] tracking-widest uppercase transition-all duration-200 bg-[#FF5500] text-black hover:bg-white disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800">
+                                        {signing ? '處理中…' : '同意並確認簽署 →'}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3 font-mono">
+                                <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs">✓</div>
+                                <div>
+                                    <p className="text-white text-sm font-bold">合約已簽署</p>
+                                    <p className="text-zinc-500 text-xs">{profile?.signed_at ? new Date(profile.signed_at).toLocaleDateString('zh-TW') : ''}</p>
+                                </div>
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* ─── Step 3: Payment ─── */}
+                {(step === 'payment' || step === 'success') && (
+                    <section className={`border rounded-2xl p-6 sm:p-8 transition-all duration-500 ${step === 'payment' ? 'border-zinc-800 bg-black' : 'border-zinc-900/60 bg-[#0A0A0B]/80'}`}>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold font-mono">3</div>
+                            <h3 className="text-sm font-mono font-bold text-white">付款解鎖</h3>
+                            {step === 'success' && <span className="ml-auto text-[10px] font-mono text-[#FF5500] tracking-widest">PAID</span>}
+                        </div>
+
+                        {step === 'payment' ? (
+                            <div className="space-y-4">
+                                <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">請完成付款後系統將自動解鎖 Dashboard。</p>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <button
+                                        onClick={() => { const u = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL; if (u) window.open(u, '_blank', 'noopener,noreferrer'); }}
+                                        disabled={!process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL}
+                                        className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        前往 Polar 付款 →
+                                    </button>
+                                    {isDev && (
+                                        <button onClick={handleBypassPayment} disabled={paymentBypassing}
+                                            className="flex-1 py-2.5 px-6 border border-yellow-600/40 text-yellow-500 font-bold text-[11px] tracking-widest rounded-lg hover:bg-yellow-600/10 transition-colors disabled:opacity-50">
+                                            {paymentBypassing ? '處理中…' : '[Dev Only] 繞過付款直接解鎖'}
+                                        </button>
+                                    )}
+                                </div>
+                                {!process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL && (
+                                    <p className="text-yellow-600 text-[11px] font-mono">提示：Polar 付款連結尚未設定（NEXT_PUBLIC_POLAR_CHECKOUT_URL）</p>
+                                )}
+                                {paymentError && <p className="text-red-400 text-[11px] font-mono bg-red-500/10 border border-red-500/20 rounded px-3 py-2">{paymentError}</p>}
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-3 font-mono">
+                                <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs">✓</div>
+                                <div>
+                                    <p className="text-white text-sm font-bold">付款完成</p>
+                                    <p className="text-zinc-500 text-xs">你已解鎖 Dashboard 權限</p>
+                                </div>
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* ─── Step 4: Success ─── */}
+                {step === 'success' && (
+                    <section className="border border-[#FF5500]/30 rounded-2xl p-8 sm:p-10 bg-gradient-to-b from-[#FF5500]/5 to-transparent text-center">
+                        <div className="w-14 h-14 mx-auto rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center mb-5">
+                            <span className="text-2xl">🎉</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-white font-mono mb-2">付款成功！歡迎加入</h3>
+                        <p className="text-zinc-500 text-[11px] font-mono mb-8">合約已簽署、付款已完成。你可以下載合約 PDF 存檔，或直接進入工作看板。</p>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <ContractDownloadButton data={contractData} />
+                            <button onClick={() => router.push('/dashboard')}
+                                className="inline-flex items-center gap-2 py-2.5 px-6 border border-zinc-700 text-white font-bold text-[11px] tracking-widest rounded-lg hover:border-[#FF5500] hover:text-[#FF5500] transition-colors">
+                                進入工作看板 →
+                            </button>
+                        </div>
+                    </section>
+                )}
+            </div>
+        </div>
+    );
+}

@@ -80,7 +80,9 @@ export async function GET(request: NextRequest) {
         }, { onConflict: 'id' });
 
         const origin = request.nextUrl.origin;
-        const redirectUrl = new URL('/onboarding', origin);
+        const redirectUrl = isAdmin
+            ? new URL('/admin', origin)
+            : new URL('/?onboarding=1', origin);
 
         return NextResponse.redirect(redirectUrl);
     } catch (err: any) {

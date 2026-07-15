@@ -12,6 +12,7 @@ import AskAIDialog from "../components/dashboard/AskAIDialog";
 import ContactSection from "../components/ContactSection";
 import BrandAnthropicIcon from "../components/icons/BrandAnthropicIcon";
 import type { AnimatedIconHandle } from "../components/icons/types";
+import OnboardingFlow from "../components/onboarding/OnboardingFlow";
 
 interface Point {
   x: number;
@@ -37,9 +38,17 @@ export default function Home() {
   const contentRef = useRef<HTMLDivElement>(null);
   const [showHeader, setShowHeader] = useState(false);
   const [showVisitorAI, setShowVisitorAI] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('onboarding') === '1') {
+        setShowOnboarding(true);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -620,7 +629,10 @@ export default function Home() {
       <ProcessWorkflow />
 
       {/* 3. 設計訂閱制區塊 */}
-      <SubscriptionCards />
+      <SubscriptionCards onOpenOnboarding={() => setShowOnboarding(true)} />
+
+      {/* Onboarding 流程（inline 展開，不跳頁） */}
+      <OnboardingFlow open={showOnboarding} onClose={() => setShowOnboarding(false)} />
 
       {/* 4. 聯繫區塊 */}
       <ContactSection />

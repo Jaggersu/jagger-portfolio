@@ -16,7 +16,11 @@ interface PlanItem {
     isPopular: boolean;
 }
 
-function SubscriptionContent() {
+interface Props {
+    onOpenOnboarding?: () => void;
+}
+
+function SubscriptionContent({ onOpenOnboarding }: Props) {
     const { flowState, profile } = useUserFlow();
     const router = useRouter();
 
@@ -25,8 +29,8 @@ function SubscriptionContent() {
             router.push(profile?.role === 'admin' ? '/admin' : '/dashboard');
             return;
         }
-        router.push('/onboarding');
-    }, [flowState, profile?.role, router]);
+        onOpenOnboarding?.();
+    }, [flowState, profile?.role, router, onOpenOnboarding]);
 
     const plan = {
         tag: '// ON-DEMAND',
@@ -115,6 +119,6 @@ function SubscriptionContent() {
     );
 }
 
-export default function SubscriptionCards() {
-    return <SubscriptionContent />;
+export default function SubscriptionCards({ onOpenOnboarding }: Props) {
+    return <SubscriptionContent onOpenOnboarding={onOpenOnboarding} />;
 }
