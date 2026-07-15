@@ -251,10 +251,25 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
 
                 {/* ─── Step 1: Auth ─── */}
                 <section className={`border rounded-2xl p-6 sm:p-8 transition-all duration-500 ${step === 'auth' ? 'border-zinc-800 bg-black' : 'border-zinc-900/60 bg-[#0A0A0B]/80'}`}>
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold font-mono">1</div>
-                        <h3 className="text-sm font-mono font-bold text-white">Google 登入</h3>
-                        {step !== 'auth' && <span className="ml-auto text-[10px] font-mono text-[#FF5500] tracking-widest">DONE</span>}
+                    <div 
+                        onClick={async () => {
+                            if (step === 'auth' || step === 'success') return;
+                            await supabase.auth.signOut();
+                            setUser(null);
+                            setProfile(null);
+                        }}
+                        className={`flex items-center gap-3 mb-4 select-none ${step !== 'auth' && step !== 'success' ? 'cursor-pointer group/step1' : ''}`}
+                    >
+                        <div className={`w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold font-mono ${step !== 'auth' && step !== 'success' ? 'group-hover/step1:bg-[#FF5500] group-hover/step1:text-black transition-all' : ''}`}>1</div>
+                        <h3 className={`text-sm font-mono font-bold text-white ${step !== 'auth' && step !== 'success' ? 'group-hover/step1:text-[#FF5500] transition-colors' : ''}`}>Google 登入</h3>
+                        {step !== 'auth' && (
+                            <div className="ml-auto flex items-center gap-3">
+                                <span className="text-[10px] font-mono text-zinc-500 group-hover/step1:text-[#FF5500] border border-zinc-900 group-hover/step1:border-[#FF5500]/40 px-2.5 py-1 rounded transition-all">
+                                    登出帳號
+                                </span>
+                                <span className="text-[10px] font-mono text-[#FF5500] tracking-widest">DONE</span>
+                            </div>
+                        )}
                     </div>
 
                      {step === 'auth' ? (
@@ -289,19 +304,6 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                      <p className="text-zinc-500 text-xs">{user?.email}</p>
                                  </div>
                              </div>
-                             {step !== 'success' && (
-                                 <button
-                                     type="button"
-                                     onClick={async () => {
-                                         await supabase.auth.signOut();
-                                         setUser(null);
-                                         setProfile(null);
-                                     }}
-                                     className="text-[10px] font-mono text-zinc-500 hover:text-red-400 border border-zinc-900 hover:border-red-950 px-2.5 py-1 rounded transition-all"
-                                 >
-                                     登出帳號
-                                 </button>
-                             )}
                          </div>
                      )}
                 </section>
@@ -309,9 +311,22 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                 {/* ─── Step 2: Contract ─── */}
                 {(step === 'contract' || step === 'payment' || step === 'success') && (
                     <section className={`border rounded-2xl p-6 sm:p-8 transition-all duration-500 ${step === 'contract' ? 'border-zinc-800 bg-black' : 'border-zinc-900/60 bg-[#0A0A0B]/80'}`}>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold font-mono">2</div>
-                             <h3 className="text-sm font-mono font-bold text-white">線上合約簽署</h3>
+                        <div 
+                            onClick={async () => {
+                                if (step !== 'payment' || !user) return;
+                                const { error } = await supabase.from('profiles').update({
+                                    contract_signed: false,
+                                    signed_at: null,
+                                }).eq('id', user.id);
+                                if (!error) {
+                                    await fetchProfile(user.id);
+                                    if (newContract) setNewContractSigned(false);
+                                }
+                            }}
+                            className={`flex items-center gap-3 mb-4 select-none ${step === 'payment' ? 'cursor-pointer group/step2' : ''}`}
+                        >
+                            <div className={`w-7 h-7 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold font-mono ${step === 'payment' ? 'group-hover/step2:bg-[#FF5500] group-hover/step2:text-black transition-all' : ''}`}>2</div>
+                             <h3 className={`text-sm font-mono font-bold text-white ${step === 'payment' ? 'group-hover/step2:text-[#FF5500] transition-colors' : ''}`}>線上合約簽署</h3>
                              {step !== 'contract' ? (
                                  <div className="ml-auto flex items-center gap-3">
                                      {step === 'payment' && (

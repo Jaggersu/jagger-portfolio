@@ -203,13 +203,24 @@ export default function OnboardingPage() {
                             : 'border-zinc-900/60 bg-[#0A0A0B]/80 opacity-80'
                     }`}
                 >
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold">
-                            1
-                        </div>
-                        <h2 className="text-sm font-mono font-bold text-white">Google 登入</h2>
+                    <div 
+                        onClick={async () => {
+                            if (step === 'auth' || step === 'success') return;
+                            await supabase.auth.signOut();
+                            setUser(null);
+                            setProfile(null);
+                        }}
+                        className={`flex items-center gap-3 mb-4 select-none ${step !== 'auth' && step !== 'success' ? 'cursor-pointer group/step1' : ''}`}
+                    >
+                        <div className={`w-8 h-8 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold ${step !== 'auth' && step !== 'success' ? 'group-hover/step1:bg-[#FF5500] group-hover/step1:text-black transition-all' : ''}`}>1</div>
+                        <h2 className={`text-sm font-mono font-bold text-white ${step !== 'auth' && step !== 'success' ? 'group-hover/step1:text-[#FF5500] transition-colors' : ''}`}>Google 登入</h2>
                         {step !== 'auth' && (
-                            <span className="ml-auto text-[10px] font-mono text-[#FF5500] tracking-widest">DONE</span>
+                            <div className="ml-auto flex items-center gap-3">
+                                <span className="text-[10px] font-mono text-zinc-500 group-hover/step1:text-[#FF5500] border border-zinc-900 group-hover/step1:border-[#FF5500]/40 px-2.5 py-1 rounded transition-all">
+                                    登出帳號
+                                </span>
+                                <span className="text-[10px] font-mono text-[#FF5500] tracking-widest">DONE</span>
+                            </div>
                         )}
                     </div>
 
@@ -256,19 +267,6 @@ export default function OnboardingPage() {
                                      <p className="text-zinc-500 text-xs">{user?.email}</p>
                                  </div>
                              </div>
-                             {step !== 'success' && (
-                                 <button
-                                     type="button"
-                                     onClick={async () => {
-                                         await supabase.auth.signOut();
-                                         setUser(null);
-                                         setProfile(null);
-                                     }}
-                                     className="text-[10px] font-mono text-zinc-500 hover:text-red-400 border border-zinc-900 hover:border-red-950 px-2.5 py-1 rounded transition-all"
-                                 >
-                                     登出帳號
-                                 </button>
-                             )}
                          </div>
                      )}
                 </section>
@@ -282,30 +280,29 @@ export default function OnboardingPage() {
                                 : 'border-zinc-900/60 bg-[#0A0A0B]/80 opacity-80'
                         }`}
                     >
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold">
+                        <div 
+                            onClick={async () => {
+                                if (step !== 'payment' || !user) return;
+                                const { error } = await supabase.from('profiles').update({
+                                    contract_signed: false,
+                                    signed_at: null,
+                                }).eq('id', user.id);
+                                if (!error) {
+                                    await fetchProfile(user.id);
+                                }
+                            }}
+                            className={`flex items-center gap-3 mb-4 select-none ${step === 'payment' ? 'cursor-pointer group/step2' : ''}`}
+                        >
+                            <div className={`w-8 h-8 rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center text-[#FF5500] text-xs font-bold ${step === 'payment' ? 'group-hover/step2:bg-[#FF5500] group-hover/step2:text-black transition-all' : ''}`}>
                                 2
                             </div>
-                             <h2 className="text-sm font-mono font-bold text-white">線上合約簽署</h2>
+                             <h2 className={`text-sm font-mono font-bold text-white ${step === 'payment' ? 'group-hover/step2:text-[#FF5500] transition-colors' : ''}`}>線上合約簽署</h2>
                              {step !== 'contract' ? (
                                  <div className="ml-auto flex items-center gap-3">
                                      {step === 'payment' && (
-                                         <button
-                                             type="button"
-                                             onClick={async () => {
-                                                 if (!user) return;
-                                                 const { error } = await supabase.from('profiles').update({
-                                                     contract_signed: false,
-                                                     signed_at: null,
-                                                 }).eq('id', user.id);
-                                                 if (!error) {
-                                                     await fetchProfile(user.id);
-                                                 }
-                                             }}
-                                             className="text-[10px] font-mono text-zinc-400 hover:text-[#FF5500] border border-zinc-800 hover:border-[#FF5500]/40 rounded px-2.5 py-1 transition-all"
-                                         >
+                                         <span className="text-[10px] font-mono text-zinc-400 group-hover/step2:text-[#FF5500] border border-zinc-800 group-hover/step2:border-[#FF5500]/40 rounded px-2.5 py-1 transition-all">
                                              修改合約內容
-                                         </button>
+                                         </span>
                                      )}
                                      <span className="text-[10px] font-mono text-[#FF5500] tracking-widest">SIGNED</span>
                                  </div>
