@@ -604,10 +604,12 @@ export default function OnboardingPage() {
 
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <button
-                                            onClick={() => {
+                                            onClick={async () => {
+                                                const { data: { user: currentUser } } = await supabase.auth.getUser();
+                                                const targetUser = currentUser || user;
                                                 const baseUrl = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_eAXDoDFEJieSUah4qc5Rw64SNEsWfjaqmevXz2dgqDw/redirect';
                                                 const sep = baseUrl.includes('?') ? '&' : '?';
-                                                const url = user ? `${baseUrl}${sep}metadata[user_id]=${user.id}` : baseUrl;
+                                                const url = targetUser ? `${baseUrl}${sep}metadata[user_id]=${targetUser.id}` : baseUrl;
                                                 window.location.href = url;
                                             }}
                                             onMouseEnter={() => cardIconRef.current?.startAnimation()}
