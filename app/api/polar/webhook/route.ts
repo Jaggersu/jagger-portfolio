@@ -71,8 +71,10 @@ export async function POST(req: NextRequest) {
         ['checkout.created', 'subscription.created', 'subscription.active', 'payment.success', 'order.created'].includes(eventType) ||
         ['succeeded', 'active', 'paid', 'confirmed'].includes(status);
 
-    if (!email || !isSuccessEvent) {
-        console.log('[polar/webhook] ignored event', { eventType, status, hasEmail: !!email });
+    const userId = get<string>(data, 'metadata.user_id') || null;
+
+    if ((!email && !userId) || !isSuccessEvent) {
+        console.log('[polar/webhook] ignored event', { eventType, status, hasEmail: !!email, hasUserId: !!userId });
         return NextResponse.json({ received: true, processed: false });
     }
 
@@ -80,29 +82,41 @@ export async function POST(req: NextRequest) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     const admin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 用 email 找 profile 並解鎖
-    const { data: profile } = await admin
-        .from('profiles')
-        .select('id, onboarding_completed')
-        .eq('email', email)
-        .single();
+    let profile = null;
+
+    if (userId) {
+        const { data: p } = await admin
+            .from('profiles')
+            .select('id, onboarding_completed')
+            .eq('id', userId)
+            .maybeSingle();
+        profile = p;
+    }
+
+    if (!profile && email) {
+        const { data: p } = await admin
+            .from('profiles')
+            .select('id, onboarding_completed')
+            .eq('email', email)
+            .maybeSingle();
+        profile = p;
+    }
 
     if (!profile) {
-        console.error('[polar/webhook] profile not found for', email);
+        console.error('[polar/webhook] profile not found for', { userId, email });
         return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    if (!profile.onboarding_completed) {
-        const { error } = await admin
-            .from('profiles')
-            .update({ onboarding_completed: true, status: 'ACTIVE', payment_status: 'paid' })
-            .eq('id', profile.id);
-        if (error) {
-            console.error('[polar/webhook] update failed:', error);
-            return NextResponse.json({ error: 'Update failed' }, { status: 500 });
-        }
-        console.log('[polar/webhook] unlocked profile', profile.id);
+    const { error } = await admin
+        .from('profiles')
+        .update({ onboarding_completed: true, status: 'ACTIVE', payment_status: 'paid' })
+        .eq('id', profile.id);
+
+    if (error) {
+        console.error('[polar/webhook] update failed:', error);
+        return NextResponse.json({ error: 'Update failed' }, { status: 500 });
     }
+    console.log('[polar/webhook] unlocked profile', profile.id);
 
     return NextResponse.json({ received: true, processed: true });
 }
