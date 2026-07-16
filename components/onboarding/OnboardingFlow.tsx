@@ -749,13 +749,9 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                             <PartyPopperIcon size={30} color="#FF5500" loop={true} />
                         </div>
                         <h3 className="text-lg font-bold text-white font-mono mb-2">付款成功！歡迎加入</h3>
-                        <p className="text-zinc-500 text-[11px] font-mono mb-8">合約已簽署、付款已完成。你可以下載合約 PDF 存檔，或直接進入工作看板。</p>
+                        <p className="text-zinc-500 text-[11px] font-mono mb-8">合約已簽署、付款已完成。你可以下載合約 PDF 存檔。</p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                             <ContractDownloadButton data={contractData} />
-                            <button onClick={() => router.push('/dashboard')}
-                                className="inline-flex items-center gap-2 py-2.5 px-6 border border-zinc-700 text-white font-bold text-[11px] tracking-widest rounded-lg hover:border-[#FF5500] hover:text-[#FF5500] transition-colors">
-                                進入工作看板 →
-                            </button>
                         </div>
                     </section>
                 )}
@@ -769,10 +765,6 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                         <p className="text-zinc-500 text-[11px] font-mono mb-6">你的合約已簽署且付款完成，可隨時下載 PDF 存檔。</p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                             <ContractDownloadButton data={contractData} />
-                            <button onClick={() => router.push('/dashboard')}
-                                className="inline-flex items-center gap-2 py-2.5 px-6 border border-zinc-700 text-white font-bold text-[11px] tracking-widest rounded-lg hover:border-[#FF5500] hover:text-[#FF5500] transition-colors">
-                                進入工作看板 →
-                            </button>
                         </div>
                     </section>
                 )}

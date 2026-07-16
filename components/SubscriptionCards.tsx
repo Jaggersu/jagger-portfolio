@@ -174,6 +174,23 @@ function SubscriptionContent() {
                             <OnboardingFlow open={isExpanded} newContract={flowState === 'ACTIVE' && isCreatingNew} onClose={() => setIsExpanded(false)} />
                         </div>
                     </div>
+
+                    {/* 收合後的精簡列 */}
+                    {!isExpanded && flowState === 'ACTIVE' && (
+                        <div className="border-t border-zinc-800 px-6 py-3 flex items-center justify-between bg-[#0A0A0B]/50">
+                            <div className="flex items-center gap-3 font-mono text-[11px] text-zinc-500">
+                                <span className="w-2 h-2 rounded-full bg-[#FF5500]" />
+                                <span>合約流程已收合</span>
+                                {profile?.name && <span className="text-zinc-600">· {profile.name}</span>}
+                            </div>
+                            <button
+                                onClick={() => setIsExpanded(true)}
+                                className="text-[10px] font-mono text-[#FF5500] hover:text-white border border-[#FF5500]/30 hover:border-[#FF5500] px-3 py-1.5 rounded-lg transition-colors tracking-widest"
+                            >
+                                展開 ↑
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* EOF 終止標記 */}
