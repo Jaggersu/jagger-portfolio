@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js';
 import type { ContractData } from '@/components/onboarding/ContractPdf';
 
 import TriangleAlertIcon from '@/components/icons/TriangleAlertIcon';
+import BrandTelegramIcon from '@/components/icons/BrandTelegramIcon';
 import type { AnimatedIconHandle } from '@/components/icons/types';
 
 const ContractDownloadButton = dynamic(
@@ -39,6 +40,7 @@ export default function OnboardingPage() {
     const contractScrollRef = useRef<HTMLDivElement>(null);
     const contractSentinelRef = useRef<HTMLDivElement>(null);
     const alertIconRef = useRef<AnimatedIconHandle>(null);
+    const tgIconRef = useRef<AnimatedIconHandle>(null);
 
     const step = !user
         ? 'auth'
@@ -567,14 +569,28 @@ export default function OnboardingPage() {
                                         >
                                             前往 Polar 付款 →
                                         </button>
+                                        
+                                        <a
+                                            href="https://t.me/jaggersu"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onMouseEnter={() => tgIconRef.current?.startAnimation()}
+                                            onMouseLeave={() => tgIconRef.current?.stopAnimation()}
+                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/30 hover:bg-[#FF5500]/20 hover:border-[#FF5500] transition-colors group cursor-pointer"
+                                        >
+                                            <span className="pointer-events-none shrink-0 text-[#FF5500]">
+                                                <BrandTelegramIcon ref={tgIconRef} size={14} color="#FF5500" strokeWidth={1.5} />
+                                            </span>
+                                            <span className="text-[11px] text-[#FF5500] group-hover:text-white font-bold tracking-widest uppercase">銀行匯款請聯繫我</span>
+                                        </a>
 
                                         {isDev && (
                                             <button
                                                 onClick={handleBypassPayment}
                                                 disabled={paymentBypassing}
-                                                className="flex-1 py-2.5 px-6 border border-yellow-600/40 text-yellow-500 font-bold text-[11px] tracking-widest rounded-lg hover:bg-yellow-600/10 transition-colors disabled:opacity-50"
+                                                className="py-2.5 px-6 border border-yellow-600/40 text-yellow-500 font-bold text-[11px] tracking-widest rounded-lg hover:bg-yellow-600/10 transition-colors disabled:opacity-50"
                                             >
-                                                {paymentBypassing ? '處理中…' : '[Dev Only] 繞過付款直接解鎖'}
+                                                {paymentBypassing ? '處理中…' : '[Dev Only] 繞過'}
                                             </button>
                                         )}
                                     </div>
