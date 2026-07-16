@@ -611,7 +611,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                             onMouseLeave={() => cardIconRef.current?.stopAnimation()}
                                             className="flex-1 py-2.5 px-6 rounded-lg bg-white/10 border border-white/30 hover:bg-white/20 hover:border-white transition-colors font-bold text-[11px] tracking-widest uppercase text-white flex items-center justify-center gap-2 cursor-pointer group"
                                         >
-                                            <span className="pointer-events-none shrink-0 text-white">
+                                            <span className="pointer-events-none shrink-0 text-white flex items-center">
                                                 <CreditCard ref={cardIconRef} size={20} color="currentColor" strokeWidth={1.5} />
                                             </span>
                                             信用卡付款(POLAR)
@@ -625,7 +625,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                             onMouseLeave={() => tgIconRef.current?.stopAnimation()}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 px-6 rounded-lg bg-[#FF5500]/10 border border-[#FF5500]/30 hover:bg-[#FF5500]/20 hover:border-[#FF5500] transition-colors group cursor-pointer"
                                         >
-                                            <span className="pointer-events-none shrink-0 text-[#FF5500]">
+                                            <span className="pointer-events-none shrink-0 text-[#FF5500] flex items-center">
                                                 <BrandTelegramIcon ref={tgIconRef} size={20} color="#FF5500" strokeWidth={1.5} />
                                             </span>
                                             <span className="text-[11px] text-[#FF5500] group-hover:text-white font-bold tracking-widest uppercase">銀行匯款請聯繫我</span>
