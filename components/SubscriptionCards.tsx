@@ -30,6 +30,7 @@ interface PlanItem {
 function SubscriptionContent() {
     const { flowState, profile } = useUserFlow();
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isCreatingNew, setIsCreatingNew] = useState(false);
     const arrowIconRef = useRef<AnimatedIconHandle>(null);
     const copyIconRef = useRef<AnimatedIconHandle>(null);
 
@@ -39,6 +40,7 @@ function SubscriptionContent() {
         const isSuccess = params.get('success') === 'true';
         if (isOnboarding || isSuccess) {
             setIsExpanded(true);
+            setIsCreatingNew(false);
             if (isOnboarding) {
                 window.history.replaceState({}, '', window.location.pathname);
             }
@@ -127,7 +129,10 @@ function SubscriptionContent() {
                                             </div>
                                         )}
                                         <button
-                                            onClick={openModal}
+                                            onClick={() => {
+                                                setIsCreatingNew(true);
+                                                openModal();
+                                            }}
                                             onMouseEnter={() => copyIconRef.current?.startAnimation()}
                                             onMouseLeave={() => copyIconRef.current?.stopAnimation()}
                                             className="w-full py-2.5 rounded-lg font-bold text-[11px] tracking-wider uppercase transition-all duration-300 border border-[#FF5500] text-white hover:bg-[#FF5500] hover:text-black cursor-pointer flex items-center justify-center gap-2"
@@ -144,7 +149,10 @@ function SubscriptionContent() {
                                     <p className="text-zinc-500 text-xs font-mono mb-6">依案報價 ． 無隱藏費用</p>
 
                                     <button
-                                        onClick={openModal}
+                                        onClick={() => {
+                                            setIsCreatingNew(false);
+                                            openModal();
+                                        }}
                                         onMouseEnter={() => arrowIconRef.current?.startAnimation()}
                                         onMouseLeave={() => arrowIconRef.current?.stopAnimation()}
                                         className="w-full py-3 rounded-lg font-bold text-[12px] tracking-wider uppercase transition-all duration-300 bg-[#FF5500] text-black hover:bg-white hover:text-black cursor-pointer flex items-center justify-center gap-2"
@@ -163,7 +171,7 @@ function SubscriptionContent() {
 
                     <div className={`grid transition-[grid-template-rows,opacity] duration-500 ease-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 border-t border-zinc-800' : 'grid-rows-[0fr] opacity-0'}`}>
                         <div className="min-h-0 overflow-hidden">
-                            <OnboardingFlow open={isExpanded} newContract={flowState === 'ACTIVE'} onClose={() => setIsExpanded(false)} />
+                            <OnboardingFlow open={isExpanded} newContract={flowState === 'ACTIVE' && isCreatingNew} onClose={() => setIsExpanded(false)} />
                         </div>
                     </div>
                 </div>
