@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
         const token = process.env.POLAR_ACCESS_TOKEN;
         const productId = process.env.POLAR_PRODUCT_ID;
-        const server = process.env.POLAR_SERVER === 'sandbox' ? 'sandbox' : 'production';
+        const server = (process.env.POLAR_SERVER as 'sandbox' | 'production') || 'production';
 
         if (!token) {
             return NextResponse.json({ error: 'Polar Access Token not configured on server' }, { status: 500 });

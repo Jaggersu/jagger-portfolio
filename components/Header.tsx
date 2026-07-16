@@ -59,7 +59,7 @@ export default function Header({ visible }: HeaderProps) {
                   title="登出"
                   onMouseEnter={() => logoutIconRef.current?.startAnimation()}
                   onMouseLeave={() => logoutIconRef.current?.stopAnimation()}
-                  className="flex items-center gap-1 text-[10px] font-mono text-zinc-500 hover:text-[#FF5500] transition-colors border border-zinc-800 hover:border-[#FF5500] px-2 py-1.5 rounded-lg"
+                  className="flex items-center gap-1 text-[10px] font-mono text-zinc-500 border border-zinc-800 px-2 py-1.5 rounded-lg transition-colors"
                 >
                   <span className="pointer-events-none">
                     <LogoutIcon ref={logoutIconRef} size={18} strokeWidth={2} color="currentColor" />
