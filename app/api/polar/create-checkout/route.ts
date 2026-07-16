@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Polar Access Token not configured on server' }, { status: 500 });
         }
 
-        const isSandbox = token.startsWith('polar_oat_sb_');
+        const isSandbox = token.includes('_sb_') || token.startsWith('polar_pat_sb_') || token.startsWith('polar_oat_sb_');
         const polar = new Polar({
             accessToken: token,
             server: isSandbox ? 'sandbox' : 'production',
