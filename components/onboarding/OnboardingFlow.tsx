@@ -654,7 +654,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                         </span>
                                         <div>
                                             <span className="font-bold text-[#facc15] block mb-0.5">// 注意事項</span>
-                                            前往 Polar 付款頁面時，<span className="text-white font-bold underline">請務必自行輸入您的合約總額 ({budgetDisplay})</span>。
+                                            前往 Polar 付款頁面時，<span className="text-white font-bold underline">請務必確認您的合約總額 ({budgetDisplay})</span>。
                                         </div>
                                     </div>
                                     <div className="flex flex-col sm:flex-row gap-3">
