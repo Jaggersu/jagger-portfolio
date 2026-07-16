@@ -27,22 +27,24 @@ export async function POST(req: NextRequest) {
         // 3. Create checkout session. Amount in cents (smallest currency unit, e.g., TWD * 100)
         const centsAmount = amount ? Math.round(Number(amount) * 100) : undefined;
 
+        const productId = '0b73f32e-2e7c-4d15-8fe1-ad13a58abcc8';
+
         console.log('[create-checkout] Creating checkout session', {
-            productPriceId: '0b73f32e-2e7c-4d15-8fe1-ad13a58abcc8',
+            productId,
             centsAmount,
             userId,
             email,
         });
 
         const checkout = await polar.checkouts.create({
-            productPriceId: '0b73f32e-2e7c-4d15-8fe1-ad13a58abcc8',
+            products: [productId],
             successUrl: 'https://jagger-portfolio.vercel.app/?success=true&checkout_id={CHECKOUT_ID}',
             customerEmail: email || undefined,
             amount: centsAmount,
             metadata: {
                 user_id: userId,
             },
-        } as any);
+        });
 
         return NextResponse.json({ url: checkout.url });
     } catch (err: any) {
