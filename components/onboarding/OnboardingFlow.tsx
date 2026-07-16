@@ -29,6 +29,7 @@ import ArrowBigUpDashIcon from '../icons/ArrowBigUpDashIcon';
 import TriangleAlertIcon from '../icons/TriangleAlertIcon';
 import BrandTelegramIcon from '../icons/BrandTelegramIcon';
 import CreditCard from '../icons/CreditCard';
+import PartyPopperIcon from '../icons/PartyPopperIcon';
 import type { AnimatedIconHandle } from '../icons/types';
 
 interface Props {
@@ -686,11 +687,10 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                     </section>
                 )}
 
-                {/* ─── Step 4: Success ─── */}
                 {step === 'success' && (
                     <section className="border border-[#FF5500]/30 rounded-2xl p-8 sm:p-10 bg-gradient-to-b from-[#FF5500]/5 to-transparent text-center">
                         <div className="w-14 h-14 mx-auto rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center mb-5">
-                            <span className="text-2xl">🎉</span>
+                            <PartyPopperIcon size={30} color="#FF5500" loop={true} />
                         </div>
                         <h3 className="text-lg font-bold text-white font-mono mb-2">付款成功！歡迎加入</h3>
                         <p className="text-zinc-500 text-[11px] font-mono mb-8">合約已簽署、付款已完成。你可以下載合約 PDF 存檔，或直接進入工作看板。</p>

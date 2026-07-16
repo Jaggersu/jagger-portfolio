@@ -11,6 +11,7 @@ import type { ContractData } from '@/components/onboarding/ContractPdf';
 import TriangleAlertIcon from '@/components/icons/TriangleAlertIcon';
 import BrandTelegramIcon from '@/components/icons/BrandTelegramIcon';
 import CreditCard from '@/components/icons/CreditCard';
+import PartyPopperIcon from '@/components/icons/PartyPopperIcon';
 import type { AnimatedIconHandle } from '@/components/icons/types';
 
 const ContractDownloadButton = dynamic(
@@ -699,11 +700,10 @@ export default function OnboardingPage() {
                     </section>
                 )}
 
-                {/* Step 4: Success */}
                 {step === 'success' && (
                     <section className="relative border border-[#FF5500]/40 rounded-2xl p-8 sm:p-10 bg-gradient-to-b from-[#FF5500]/5 to-transparent text-center animate-in fade-in zoom-in duration-500">
                         <div className="w-16 h-16 mx-auto rounded-full bg-[#FF5500]/10 border border-[#FF5500]/30 flex items-center justify-center mb-5">
-                            <span className="text-2xl">🎉</span>
+                            <PartyPopperIcon size={32} color="#FF5500" loop={true} />
                         </div>
                         <h2 className="text-xl font-bold text-white font-mono mb-2">付款成功！歡迎加入</h2>
                         <p className="text-zinc-400 text-xs font-mono mb-8">
