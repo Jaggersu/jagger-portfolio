@@ -10,10 +10,15 @@ export async function POST(req: NextRequest) {
         }
 
         const token = process.env.POLAR_ACCESS_TOKEN;
+        const productId = process.env.POLAR_PRODUCT_ID;
         const server = process.env.POLAR_SERVER === 'sandbox' ? 'sandbox' : 'production';
 
         if (!token) {
             return NextResponse.json({ error: 'Polar Access Token not configured on server' }, { status: 500 });
+        }
+
+        if (!productId) {
+            return NextResponse.json({ error: 'Polar Product ID not configured on server' }, { status: 500 });
         }
 
         console.log('[create-checkout] Polar server:', server);
@@ -24,8 +29,6 @@ export async function POST(req: NextRequest) {
 
         // 3. Create checkout session. Amount in cents (smallest currency unit, e.g., TWD * 100)
         const centsAmount = amount ? Math.round(Number(amount) * 100) : undefined;
-
-        const productId = '0b73f32e-2e7c-4d15-8fe1-ad13a58abcc8';
 
         console.log('[create-checkout] Creating checkout session', {
             productId,
@@ -46,7 +49,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ url: checkout.url });
     } catch (err: any) {
-        console.error('[create-checkout] Failed to create checkout session:', err);
-        return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+        const status = typeof err?.statusCode === 'number' ? err.statusCode : 500;
+        const message = err?.body || err?.message || 'Internal Server Error';
+        console.error('[create-checkout] Failed to create checkout session', { status, message });
+        return NextResponse.json({ error: message }, { status });
     }
 }
