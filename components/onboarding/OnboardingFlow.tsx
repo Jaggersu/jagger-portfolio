@@ -56,6 +56,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const [signError, setSignError] = useState<string | null>(null);
     const [paymentBypassing, setPaymentBypassing] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [newContractSigned, setNewContractSigned] = useState(false);
     const [newContractPaid, setNewContractPaid] = useState(false);
 
@@ -602,21 +603,51 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                     <div className="flex flex-col sm:flex-row gap-3">
                                         <button
                                             onClick={async () => {
-                                                const { data: { user: currentUser } } = await supabase.auth.getUser();
-                                                const targetUser = currentUser || user;
-                                                const baseUrl = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_eAXDoDFEJieSUah4qc5Rw64SNEsWfjaqmevXz2dgqDw/redirect';
-                                                const sep = baseUrl.includes('?') ? '&' : '?';
-                                                const u = targetUser ? `${baseUrl}${sep}metadata[user_id]=${targetUser.id}` : baseUrl;
-                                                window.location.href = u;
+                                                try {
+                                                    setCheckoutLoading(true);
+                                                    setPaymentError(null);
+                                                    const { data: { user: currentUser } } = await supabase.auth.getUser();
+                                                    const targetUser = currentUser || user;
+                                                    if (!targetUser) {
+                                                        throw new Error('未登入系統 (Not logged in)');
+                                                    }
+                                                    
+                                                    const res = await fetch('/api/polar/create-checkout', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            amount: budget || '3500',
+                                                            userId: targetUser.id,
+                                                            email: targetUser.email,
+                                                        }),
+                                                    });
+                                                    
+                                                    const data = await res.json();
+                                                    if (!res.ok) {
+                                                        throw new Error(data.error || '建立付款交易失敗');
+                                                    }
+                                                    
+                                                    if (data.url) {
+                                                        window.location.href = data.url;
+                                                    } else {
+                                                        throw new Error('未傳回付款連結');
+                                                    }
+                                                } catch (err: any) {
+                                                    console.error(err);
+                                                    setPaymentError(err.message || '連線錯誤，請稍後再試');
+                                                } finally {
+                                                    setCheckoutLoading(false);
+                                                }
                                             }}
+                                            disabled={checkoutLoading}
                                             onMouseEnter={() => cardIconRef.current?.startAnimation()}
                                             onMouseLeave={() => cardIconRef.current?.stopAnimation()}
-                                            className="flex-1 py-2.5 px-6 rounded-lg bg-white/10 border border-white/30 hover:bg-white/20 hover:border-white transition-colors font-bold text-[11px] tracking-widest uppercase text-white flex items-center justify-center gap-2 cursor-pointer group"
+                                            className="flex-1 py-2.5 px-6 rounded-lg bg-white/10 border border-white/30 hover:bg-white/20 hover:border-white transition-colors font-bold text-[11px] tracking-widest uppercase text-white flex items-center justify-center gap-2 cursor-pointer group disabled:opacity-50"
                                         >
                                             <span className="pointer-events-none shrink-0 text-white flex items-center">
                                                 <CreditCard ref={cardIconRef} size={20} color="currentColor" strokeWidth={1.5} />
                                             </span>
-                                            信用卡付款(POLAR)
+                                            {checkoutLoading ? '處理中…' : '信用卡付款(POLAR)'}
                                         </button>
                                         
                                         <a
