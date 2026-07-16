@@ -61,6 +61,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const [newContractSigned, setNewContractSigned] = useState(false);
     const [newContractPaid, setNewContractPaid] = useState(false);
     const [signatureImage, setSignatureImage] = useState('');
+    const [vendorSignatureImage, setVendorSignatureImage] = useState('');
 
     const containerRef = useRef<HTMLDivElement>(null);
     const contractScrollRef = useRef<HTMLDivElement>(null);
@@ -182,6 +183,18 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
             };
         }
     }, [user, fetchProfile, newContract]);
+
+    useEffect(() => {
+        // 預載乙方草寫簽名圖，轉為 base64 供 PDF 使用
+        fetch('/signatures/jagger-signature.png')
+            .then((res) => res.blob())
+            .then((blob) => {
+                const reader = new FileReader();
+                reader.onloadend = () => setVendorSignatureImage(reader.result as string);
+                reader.readAsDataURL(blob);
+            })
+            .catch(() => setVendorSignatureImage(''));
+    }, []);
 
     useEffect(() => {
         if (!open) return;
@@ -316,7 +329,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
         signature: profile?.contract_signed ? profile?.name || partyName : undefined,
         signatureImage: signatureImage || undefined,
         vendorSignature: 'Jagger Su',
-        // 若 public/signatures/jagger-signature.png 存在，可在此改為對應 base64 或 public url：vendorSignatureImage: '/signatures/jagger-signature.png',
+        vendorSignatureImage: vendorSignatureImage || undefined,
         signedAt: profile?.signed_at || undefined,
         budget,
         timeline,
