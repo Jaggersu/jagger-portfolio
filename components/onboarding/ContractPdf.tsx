@@ -135,34 +135,49 @@ export function ContractDocument({ partyName, partyEmail, signature, signedAt, b
                     </View>
                 </View>
 
-                <Text style={styles.heading}>一、服務內容</Text>
+                <Text style={styles.heading}>一、服務範疇</Text>
                 <Text style={styles.paragraph}>
-                    甲方依乙方需求提供單件式設計服務，範圍包含平面素材、數位圖文、社群素材等。每件服務採個別報價、個別交付，無長期綁約或月費。
+                    乙方依客戶所選方案，提供對應之視覺設計、網頁建置或 SaaS 產品開發等服務。具體交付項目、規格與時程，以本線上系統生成之確認數據為準。超出本合約約定範圍之額外需求須另行報價。
                 </Text>
 
-                <Text style={styles.heading}>二、報價與付款</Text>
+                <Text style={styles.heading}>二、修改次數與範圍變更</Text>
                 <Text style={styles.paragraph}>
-                    本次專案報價為 {budgetDisplay}，經乙方確認後付款。甲方收到款項後始開始製作。若乙方於製作開始前取消，可全額退款；製作開始後恕不退款。
+                    本案交付包含最多 2 次微調修正。超出次數之修改，或因客戶需求變更導致工作範圍擴大者，乙方得另行報價。客戶如於確認稿後要求重大方向調整，視同新增需求處理。
                 </Text>
 
-                <Text style={styles.heading}>三、交付與修改</Text>
+                <Text style={styles.heading}>三、費用、付款與執行時程</Text>
                 <Text style={styles.paragraph}>
-                    甲方於收到款項後 {timelineDisplay} 內提供初稿。乙方享有 2 次小幅度修改機會；涉及新增範圍或大幅度調整，甲方得重新報價。
+                    本合約服務費用總計為 {budgetDisplay}，執行時程為 {timelineDisplay}（自客戶完整提供執行所需素材之次日起算）。本服務採 100% 線上全額預付制，客戶完成付款後，合約始生履約效力，乙方即安排時程執行。
                 </Text>
 
-                <Text style={styles.heading}>四、智慧財產權</Text>
+                <Text style={styles.heading}>四、智慧財產權歸屬</Text>
                 <Text style={styles.paragraph}>
-                    乙方於付清款項後取得最終檔案之使用權。原始檔、設計源檔與相關源碼仍歸甲方所有，除非雙方另有書面約定。
+                    客戶完成全額付款後，乙方將本專案之最終定稿著作財產權完整移轉予客戶。乙方保留：(a) 作品集展示與參展權；(b) 工作流程中所使用之通用框架、元件庫及可重用程式碼之所有權。未獲客戶採用之提案稿，著作權仍歸乙方所有。
                 </Text>
 
-                <Text style={styles.heading}>五、保密義務</Text>
+                <Text style={styles.heading}>五、客戶素材與侵權責任</Text>
                 <Text style={styles.paragraph}>
-                    雙方對於專案相關資訊、檔案與溝通內容負有保密義務，未經對方同意不得揭露予第三人。
+                    客戶提供之文字、圖片、商標及其他素材，應保證合法取得且不侵害任何第三方之智慧財產權；因客戶素材引發之法律責任由客戶自行承擔。乙方所使用之正版圖庫及字型授權，僅限本專案用途，客戶不得另作他用或轉授權。
                 </Text>
 
-                <Text style={styles.heading}>六、爭議處理</Text>
+                <Text style={styles.heading}>六、合約終止與退款</Text>
                 <Text style={styles.paragraph}>
-                    本合約以中華民國法律為準據法。雙方同意以誠信協商解決爭議；協商不成，雙方同意以台北地方法院為第一審管轄法院。
+                    本案因屬客製化按件計酬服務，付款後若乙方已開始執行：(a) 客戶主動終止時，已支付款項不予退還，乙方應交付終止前已完成之階段性半成品；(b) 乙方主動終止時，應於 7 個工作天內依未完成比例退還對應款項。
+                </Text>
+
+                <Text style={styles.heading}>七、保密條款</Text>
+                <Text style={styles.paragraph}>
+                    雙方同意對合作過程中取得之商業機密、未公開素材、客戶資料予以嚴格保密；未經對方書面同意，不得向第三方揭露。保密義務於合約終止後繼續存續 3 年。
+                </Text>
+
+                <Text style={styles.heading}>八、不可抗力</Text>
+                <Text style={styles.paragraph}>
+                    因天災、政府法規變動、網路基礎設施故障、第三方服務中斷（如雲端平台、金流閘道）等不可抗力事件，導致乙方無法如期履約者，乙方得就受影響部分順延時程，雙方均不得以此為由要求違約賠償。
+                </Text>
+
+                <Text style={styles.heading}>九、準據法與爭議解決</Text>
+                <Text style={styles.paragraph}>
+                    本合約受中華民國法律管轄。雙方應先以協商方式解決爭議；協商不成時，同意以臺灣桃園地方法院為第一審管轄法院。
                 </Text>
 
                 {signature && (
