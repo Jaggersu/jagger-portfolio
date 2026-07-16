@@ -41,7 +41,7 @@ function SubscriptionContent() {
         if (isOnboarding || isSuccess) {
             setIsExpanded(true);
             setIsCreatingNew(false);
-            if (isOnboarding) {
+            if (isOnboarding || isSuccess) {
                 window.history.replaceState({}, '', window.location.pathname);
             }
             setTimeout(() => {

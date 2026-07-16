@@ -60,6 +60,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [newContractSigned, setNewContractSigned] = useState(false);
     const [newContractPaid, setNewContractPaid] = useState(false);
+    const [freshSuccess, setFreshSuccess] = useState(false);
     const [signatureImage, setSignatureImage] = useState('');
     const [vendorSignatureImage, setVendorSignatureImage] = useState('');
 
@@ -87,7 +88,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
         : newContract
         ? (newContractPaid ? 'success' : newContractSigned ? 'payment' : 'contract')
         : profile.payment_status === 'paid'
-        ? 'success'
+        ? (freshSuccess ? 'success' : 'done')
         : profile.contract_signed
         ? 'payment'
         : 'contract';
@@ -140,6 +141,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
         if (data?.payment_status === 'paid') {
             await fetchProfile(user.id);
             if (newContract) setNewContractPaid(true);
+            setFreshSuccess(true);
             setVerifyingPayment(false);
             setRealtimeTimeout(false);
             window.history.replaceState({}, '', window.location.pathname);
@@ -171,6 +173,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                             // Immediately transition to success state
                             await fetchProfile(user.id);
                             if (newContract) setNewContractPaid(true);
+                            setFreshSuccess(true);
                             setVerifyingPayment(false);
                             setRealtimeTimeout(false);
                             window.history.replaceState({}, '', window.location.pathname);
@@ -207,6 +210,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
         if (!open) return;
         setNewContractSigned(false);
         setNewContractPaid(false);
+        setFreshSuccess(false);
         const el = containerRef.current;
         if (!el) return;
         requestAnimationFrame(() => {
@@ -746,6 +750,23 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                         </div>
                         <h3 className="text-lg font-bold text-white font-mono mb-2">付款成功！歡迎加入</h3>
                         <p className="text-zinc-500 text-[11px] font-mono mb-8">合約已簽署、付款已完成。你可以下載合約 PDF 存檔，或直接進入工作看板。</p>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <ContractDownloadButton data={contractData} />
+                            <button onClick={() => router.push('/dashboard')}
+                                className="inline-flex items-center gap-2 py-2.5 px-6 border border-zinc-700 text-white font-bold text-[11px] tracking-widest rounded-lg hover:border-[#FF5500] hover:text-[#FF5500] transition-colors">
+                                進入工作看板 →
+                            </button>
+                        </div>
+                    </section>
+                )}
+
+                {step === 'done' && (
+                    <section className="border border-zinc-800 rounded-2xl p-8 sm:p-10 bg-[#0A0A0B] text-center">
+                        <div className="w-12 h-12 mx-auto rounded-full bg-zinc-800/50 border border-zinc-700 flex items-center justify-center mb-4">
+                            <span className="text-[#FF5500] text-lg font-bold font-mono">✓</span>
+                        </div>
+                        <h3 className="text-base font-bold text-white font-mono mb-2">合約已完成</h3>
+                        <p className="text-zinc-500 text-[11px] font-mono mb-6">你的合約已簽署且付款完成，可隨時下載 PDF 存檔。</p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                             <ContractDownloadButton data={contractData} />
                             <button onClick={() => router.push('/dashboard')}
