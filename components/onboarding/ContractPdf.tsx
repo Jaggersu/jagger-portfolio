@@ -14,7 +14,7 @@ import {
 
 Font.register({
     family: 'NotoSansTC',
-    src: '/fonts/noto-sans-tc-400.woff2',
+    src: '/fonts/noto-sans-tc-400.ttf',
 });
 
 const styles = StyleSheet.create({
