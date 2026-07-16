@@ -1,53 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-
-/**
- * Polar.sh webhook signature verification.
- * Header format: Polar-Signature: t=<unix_timestamp>,v1=<hex_signature>
- * Signed payload: "<timestamp>.<rawBody>" with HMAC-SHA256 of POLAR_WEBHOOK_SECRET.
- */
-function verifyPolarSignature(secret: string, rawBody: string, signatureHeader: string): boolean {
-    try {
-        const parts: Record<string, string | undefined> = Object.fromEntries(
-            signatureHeader.split(',').map((part) => {
-                const [key, ...rest] = part.split('=');
-                return [key.trim(), rest.join('=').trim()];
-            })
-        );
-        const timestamp = parts.t;
-        const expected = parts.v1 || parts.sig || parts.signature;
-        if (!timestamp || !expected) return false;
-
-        const signedPayload = `${timestamp}.${rawBody}`;
-        const hmac = crypto.createHmac('sha256', secret).update(signedPayload).digest('hex');
-        return crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(expected, 'hex'));
-    } catch {
-        return false;
-    }
-}
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks';
 
 export async function POST(req: NextRequest) {
     const rawBody = await req.text();
     const secret = process.env.POLAR_WEBHOOK_SECRET;
-    const signature = req.headers.get('polar-signature') || req.headers.get('Polar-Signature') || '';
 
-    if (secret && signature) {
-        if (!verifyPolarSignature(secret, rawBody, signature)) {
-            console.error('[polar/webhook] signature verification failed');
-            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-        }
-    } else if (secret && !signature) {
-        console.error('[polar/webhook] missing Polar-Signature header');
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
+    if (!secret) {
+        console.error('[polar/webhook] POLAR_WEBHOOK_SECRET is not configured');
+        return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
 
-    let payload: unknown;
+    const headers: Record<string, string> = {};
+    req.headers.forEach((value, key) => {
+        headers[key] = value;
+    });
+
+    let payload: any;
     try {
-        payload = JSON.parse(rawBody);
-    } catch {
-        return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+        payload = validateEvent(rawBody, headers, secret);
+    } catch (err) {
+        console.error('[polar/webhook] signature verification failed:', err);
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
+
 
     function get<T>(obj: unknown, path: string): T | undefined {
         return path.split('.').reduce<unknown>((acc, key) => {
