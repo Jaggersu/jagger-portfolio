@@ -4,7 +4,6 @@ import React, { useState, useRef } from 'react';
 import { useUserFlow } from '../lib/userFlow';
 import LoginModal from './LoginModal';
 import OnboardingModal from './dashboard/OnboardingModal';
-import LayoutDashboardIcon from './icons/LayoutDashboardIcon';
 import LogoutIcon from './icons/LogoutIcon';
 import GolangIcon from './icons/GolangIcon';
 import type { AnimatedIconHandle } from './icons/types';
@@ -18,7 +17,6 @@ export default function Header({ visible }: HeaderProps) {
   const { flowState, profile, reset, openDashboard, dashboardOpen, closeDashboard } = useUserFlow();
   const router = useRouter();
   const [showLogin, setShowLogin] = useState(false);
-  const dashboardIconRef = useRef<AnimatedIconHandle>(null);
   const logoutIconRef = useRef<AnimatedIconHandle>(null);
   const loginIconRef = useRef<AnimatedIconHandle>(null);
 
@@ -55,35 +53,6 @@ export default function Header({ visible }: HeaderProps) {
 
             {flowState === 'ACTIVE' ? (
               <div className="flex items-center gap-2">
-                {/* Dashboard 入口按鈕：呼吸橘光 + Linear 風格動態 icon */}
-                <button
-                  onClick={() => {
-                    if (profile?.role === 'admin') {
-                      router.push('/admin');
-                    } else {
-                      openDashboard();
-                    }
-                  }}
-                  onMouseEnter={() => dashboardIconRef.current?.startAnimation()}
-                  onMouseLeave={() => dashboardIconRef.current?.stopAnimation()}
-                  className="group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#FF5500]/50 hover:border-[#FF5500] bg-[#FF5500]/5 hover:bg-[#FF5500]/10 transition-all duration-300"
-                >
-                  {/* 呼吸光暈 */}
-                  <span className="absolute inset-0 rounded-lg pointer-events-none" style={{
-                    background: 'rgba(255,85,0,0.12)',
-                    animation: 'db-glow 2s ease-in-out infinite',
-                  }} />
-                  {/* LayoutDashboard 動態 icon */}
-                  <span className="relative shrink-0 text-[#FF5500] pointer-events-none">
-                    <LayoutDashboardIcon ref={dashboardIconRef} size={18} strokeWidth={1.75} color="currentColor" />
-                  </span>
-                  {/* 文字 */}
-                  <span className="relative text-[11px] font-mono font-bold text-[#FF5500] tracking-widest group-hover:text-white transition-colors">
-                    {profile?.name?.split(' ')[0] || profile?.email?.split('@')[0] || 'CLIENT'}
-                    <span className="text-[#FF5500]/60 group-hover:text-white/60"> // 控制台</span>
-                  </span>
-                </button>
-
                 {/* 登出按鈕 */}
                 <button
                   onClick={() => void reset()}
