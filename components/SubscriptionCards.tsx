@@ -6,6 +6,7 @@ import OnboardingFlow from './onboarding/OnboardingFlow';
 import ArrowDown10Icon from './icons/ArrowDown10Icon';
 import DownloadIcon from './icons/DownloadIcon';
 import CopyIcon from './icons/CopyIcon';
+import ArrowBigDownIcon from './icons/ArrowBigDownIcon';
 import type { AnimatedIconHandle } from './icons/types';
 import dynamic from 'next/dynamic';
 import { supabase } from '../lib/supabase';
@@ -33,6 +34,7 @@ function SubscriptionContent() {
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const arrowIconRef = useRef<AnimatedIconHandle>(null);
     const copyIconRef = useRef<AnimatedIconHandle>(null);
+    const expandIconRef = useRef<AnimatedIconHandle>(null);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -185,9 +187,14 @@ function SubscriptionContent() {
                             </div>
                             <button
                                 onClick={() => setIsExpanded(true)}
-                                className="text-[10px] font-mono text-[#FF5500] hover:text-white border border-[#FF5500]/30 hover:border-[#FF5500] px-3 py-1.5 rounded-lg transition-colors tracking-widest"
+                                onMouseEnter={() => expandIconRef.current?.startAnimation()}
+                                onMouseLeave={() => expandIconRef.current?.stopAnimation()}
+                                className="flex items-center gap-1.5 text-[12px] font-mono text-[#FF5500] hover:text-white border border-[#FF5500]/30 hover:border-[#FF5500] px-3 py-1.5 rounded-lg transition-colors tracking-widest font-bold"
                             >
-                                展開 ↑
+                                展開
+                                <span className="pointer-events-none">
+                                    <ArrowBigDownIcon ref={expandIconRef} size={20} strokeWidth={2} color="currentColor" />
+                                </span>
                             </button>
                         </div>
                     )}
