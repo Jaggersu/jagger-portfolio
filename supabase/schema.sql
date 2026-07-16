@@ -45,6 +45,8 @@ alter table if exists public.profiles add column if not exists onboarding_comple
 alter table if exists public.profiles add column if not exists contract_signed boolean not null default false;
 alter table if exists public.profiles add column if not exists signed_at timestamptz;
 alter table if exists public.profiles add column if not exists payment_status text check (payment_status in ('unpaid','paid')) default 'unpaid';
+alter table if exists public.profiles add column if not exists contract_budget text;
+alter table if exists public.profiles add column if not exists contract_timeline text;
 update public.profiles set onboarding_completed = true, contract_signed = true, payment_status = 'paid' where status = 'ACTIVE' and onboarding_completed = false;
 
 -- Auto-create profile on signup
