@@ -34,9 +34,20 @@ function SubscriptionContent() {
     const copyIconRef = useRef<AnimatedIconHandle>(null);
 
     useEffect(() => {
-        if (new URLSearchParams(window.location.search).get('onboarding') === '1') {
+        const params = new URLSearchParams(window.location.search);
+        const isOnboarding = params.get('onboarding') === '1';
+        const isSuccess = params.get('success') === 'true';
+        if (isOnboarding || isSuccess) {
             setIsExpanded(true);
-            window.history.replaceState({}, '', window.location.pathname);
+            if (isOnboarding) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+            setTimeout(() => {
+                const el = document.getElementById('subscription');
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 150);
         }
     }, []);
 

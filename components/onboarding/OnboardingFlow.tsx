@@ -557,7 +557,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
                                         <button
                                             onClick={() => {
                                                 const u = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_eAXDoDFEJieSUah4qc5Rw64SNEsWfjaqmevXz2dgqDw/redirect';
-                                                window.open(u, '_blank', 'noopener,noreferrer');
+                                                window.location.href = u;
                                             }}
                                             className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors"
                                         >

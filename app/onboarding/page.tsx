@@ -561,7 +561,7 @@ export default function OnboardingPage() {
                                         <button
                                             onClick={() => {
                                                 const url = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_eAXDoDFEJieSUah4qc5Rw64SNEsWfjaqmevXz2dgqDw/redirect';
-                                                window.open(url, '_blank', 'noopener,noreferrer');
+                                                window.location.href = url;
                                             }}
                                             className="flex-1 py-2.5 px-6 bg-white text-black font-bold text-[11px] tracking-widest rounded-lg hover:bg-zinc-200 transition-colors"
                                         >
