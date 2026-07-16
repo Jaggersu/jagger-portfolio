@@ -24,39 +24,25 @@ export async function POST(req: NextRequest) {
             server: isSandbox ? 'sandbox' : 'production',
         });
 
-        // 1. List products to find the first one
-        const productsResponse = await polar.products.list({});
-        const products = productsResponse.result.items;
-        if (!products || products.length === 0) {
-            return NextResponse.json({ error: 'No products found in Polar organization' }, { status: 404 });
-        }
-        
-        // Use the first product
-        const product = products[0];
-
-        // 2. Determine successUrl
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-        const successUrl = `${siteUrl}?success=true`;
-        
         // 3. Create checkout session. Amount in cents (smallest currency unit, e.g., TWD * 100)
         const centsAmount = amount ? Math.round(Number(amount) * 100) : undefined;
 
         console.log('[create-checkout] Creating checkout session', {
-            productId: product.id,
+            productPriceId: '0b73f32e-2e7c-4d15-8fe1-ad13a58abcc8',
             centsAmount,
             userId,
             email,
         });
 
         const checkout = await polar.checkouts.create({
-            products: [product.id],
-            successUrl,
+            productPriceId: '0b73f32e-2e7c-4d15-8fe1-ad13a58abcc8',
+            successUrl: 'https://jagger-portfolio.vercel.app/?success=true&checkout_id={CHECKOUT_ID}',
             customerEmail: email || undefined,
             amount: centsAmount,
             metadata: {
                 user_id: userId,
             },
-        });
+        } as any);
 
         return NextResponse.json({ url: checkout.url });
     } catch (err: any) {
