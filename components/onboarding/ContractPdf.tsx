@@ -10,6 +10,7 @@ import {
     Font,
     PDFViewer,
     PDFDownloadLink,
+    Image,
 } from '@react-pdf/renderer';
 
 Font.register({
@@ -17,78 +18,168 @@ Font.register({
     src: '/fonts/noto-sans-tc-400.ttf',
 });
 
+const A4_WIDTH = 595.28;
+const A4_HEIGHT = 841.89;
+const PAGE_MARGIN = 50;
+const CONTENT_WIDTH = A4_WIDTH - PAGE_MARGIN * 2;
+
 const styles = StyleSheet.create({
     page: {
-        padding: 40,
+        paddingTop: PAGE_MARGIN,
+        paddingBottom: PAGE_MARGIN,
+        paddingHorizontal: PAGE_MARGIN,
         fontFamily: 'NotoSansTC',
-        fontSize: 11,
-        lineHeight: 1.5,
+        fontSize: 10,
+        lineHeight: 1.7,
         color: '#111',
     },
+    headerRow: {
+        width: CONTENT_WIDTH,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottomWidth: 1.5,
+        borderBottomColor: '#FF5500',
+        paddingBottom: 12,
+        marginBottom: 20,
+    },
+    logoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    logoBox: {
+        width: 18,
+        height: 18,
+        backgroundColor: '#FF5500',
+        borderRadius: 3,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    logoLetter: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#000000',
+    },
+    logoText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#111111',
+        letterSpacing: 1,
+    },
+    logoAccent: {
+        color: '#FF5500',
+    },
+    headerTag: {
+        fontSize: 8,
+        color: '#777777',
+    },
     title: {
-        fontSize: 18,
+        width: CONTENT_WIDTH,
+        fontSize: 16,
         textAlign: 'center',
-        marginBottom: 24,
+        marginBottom: 20,
         fontWeight: 'bold',
     },
     section: {
-        marginBottom: 12,
+        width: CONTENT_WIDTH,
+        marginBottom: 16,
+        padding: 12,
+        backgroundColor: '#fcfcfc',
+        borderWidth: 1,
+        borderColor: '#eeeeee',
+        borderRadius: 6,
     },
     heading: {
-        fontSize: 13,
+        width: CONTENT_WIDTH,
+        fontSize: 11,
         fontWeight: 'bold',
-        marginBottom: 6,
+        marginBottom: 4,
         marginTop: 10,
+        color: '#FF5500',
     },
     paragraph: {
-        marginBottom: 6,
-        textAlign: 'justify',
+        width: CONTENT_WIDTH,
+        marginBottom: 8,
+        textAlign: 'left',
     },
     row: {
+        width: CONTENT_WIDTH,
         flexDirection: 'row',
-        marginBottom: 4,
+        marginBottom: 6,
+        flexWrap: 'wrap' as const,
     },
     label: {
-        width: 80,
+        width: 90,
         fontWeight: 'bold',
+        color: '#555555',
     },
     value: {
         flex: 1,
+        minWidth: 0,
     },
-    signatureBox: {
-        marginTop: 30,
+    signaturesRow: {
+        width: CONTENT_WIDTH,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 36,
+        gap: 30,
+    },
+    signatureColumn: {
+        flex: 1,
         borderTopWidth: 1,
-        borderTopColor: '#000',
-        paddingTop: 8,
-        width: '60%',
+        borderTopColor: '#cccccc',
+        paddingTop: 10,
+        minWidth: 0,
     },
     signatureLabel: {
-        fontSize: 10,
-        color: '#555',
-        marginBottom: 4,
+        fontSize: 9,
+        color: '#555555',
+        marginBottom: 6,
+        fontWeight: 'bold',
     },
     signatureName: {
         fontSize: 14,
         fontWeight: 'bold',
+        color: '#111111',
+    },
+    signatureImage: {
+        width: 140,
+        height: 50,
+        objectFit: 'contain' as const,
+        marginTop: 4,
+        marginBottom: 8,
     },
     footer: {
         position: 'absolute',
         bottom: 24,
-        left: 40,
-        right: 40,
-        fontSize: 9,
+        left: PAGE_MARGIN,
+        right: PAGE_MARGIN,
+        fontSize: 8,
         textAlign: 'center',
-        color: '#777',
+        color: '#888',
+        borderTopWidth: 1,
+        borderTopColor: '#eeeeee',
+        paddingTop: 8,
     },
 });
 
 export interface ContractData {
     partyName: string;
     partyEmail: string;
+    /** 甲方（客戶）手寫簽名圖片（canvas dataURL） */
+    signatureImage?: string;
+    /** 甲方（客戶）文字簽名備援 */
     signature?: string;
+    /** 乙方（廠商）手寫簽名圖片（canvas dataURL 或 /public 路徑） */
+    vendorSignatureImage?: string;
+    /** 乙方（廠商）文字簽名備援 */
+    vendorSignature?: string;
     signedAt?: string;
     budget?: string;
     timeline?: string;
+    /** 是否已完稿（簽署且付款），僅完稿才應渲染 PDF */
+    completed?: boolean;
 }
 
 function formatDate(date?: string) {
@@ -97,25 +188,64 @@ function formatDate(date?: string) {
     return d.toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-export function ContractDocument({ partyName, partyEmail, signature, signedAt, budget, timeline }: ContractData) {
+export function ContractDocument({
+    partyName,
+    partyEmail,
+    signature,
+    signatureImage,
+    vendorSignature,
+    vendorSignatureImage,
+    signedAt,
+    budget,
+    timeline,
+    completed,
+}: ContractData) {
     const today = formatDate(new Date().toISOString());
     const signDate = signedAt ? formatDate(signedAt) : '';
     const budgetDisplay = budget ? `NT$ ${budget}` : '依件報價';
     const timelineDisplay = timeline || '依需求議定';
 
+    if (completed === false) {
+        return (
+            <Document>
+                <Page size="A4" style={styles.page}>
+                    <Text style={styles.title}>合約尚未完稿</Text>
+                    <Text style={styles.paragraph}>請完成簽署與付款後再下載正式合約 PDF。</Text>
+                </Page>
+            </Document>
+        );
+    }
+
     return (
         <Document>
             <Page size="A4" style={styles.page}>
+                {/* 表頭 Logo：與網站 Header 一致的 JAGGER OS 字樣 */}
+                <View style={styles.headerRow}>
+                    <View style={styles.logoContainer}>
+                        <View style={styles.logoBox}>
+                            <Text style={styles.logoLetter}>J</Text>
+                        </View>
+                        <Text style={styles.logoText}>
+                            JAGGER <Text style={styles.logoAccent}>OS</Text>
+                        </Text>
+                    </View>
+                    <Text style={styles.headerTag}>// ON-DEMAND SERVICE CONTRACT</Text>
+                </View>
+
                 <Text style={styles.title}>設計服務合約書</Text>
 
                 <View style={styles.section}>
                     <View style={styles.row}>
-                        <Text style={styles.label}>甲方：</Text>
-                        <Text style={styles.value}>Jagger OS / Jagger Su（jaggersu@gmail.com）</Text>
+                        <Text style={styles.label}>甲方（客戶）：</Text>
+                        <Text style={styles.value}>{partyName || '（尚未填寫）'}</Text>
                     </View>
                     <View style={styles.row}>
-                        <Text style={styles.label}>乙方：</Text>
-                        <Text style={styles.value}>{partyName || '（尚未填寫）'}（{partyEmail || '（尚未填寫）'}）</Text>
+                        <Text style={styles.label}>電子郵件：</Text>
+                        <Text style={styles.value}>{partyEmail || '（尚未填寫）'}</Text>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>乙方（廠商）：</Text>
+                        <Text style={styles.value}>Jagger OS / Jagger Su（jaggersu@gmail.com）</Text>
                     </View>
                     <View style={styles.row}>
                         <Text style={styles.label}>簽約日：</Text>
@@ -180,13 +310,38 @@ export function ContractDocument({ partyName, partyEmail, signature, signedAt, b
                     本合約受中華民國法律管轄。雙方應先以協商方式解決爭議；協商不成時，同意以臺灣桃園地方法院為第一審管轄法院。
                 </Text>
 
-                {signature && (
-                    <View style={styles.signatureBox}>
-                        <Text style={styles.signatureLabel}>乙方電子簽名</Text>
-                        <Text style={styles.signatureName}>{signature}</Text>
-                        <Text style={{ fontSize: 10, marginTop: 4 }}>{signDate || today}</Text>
+                {/* 雙方電子簽名欄位 */}
+                <View style={styles.signaturesRow}>
+                    {/* 甲方客戶電子簽名 */}
+                    <View style={styles.signatureColumn}>
+                        <Text style={styles.signatureLabel}>甲方電子簽名（客戶）</Text>
+                        {signatureImage ? (
+                            <Image src={signatureImage} style={styles.signatureImage} />
+                        ) : signature ? (
+                            <Text style={[styles.signatureName, { marginTop: 8, marginBottom: 12 }]}>{signature}</Text>
+                        ) : (
+                            <View style={{ height: 40, justifyContent: 'center' }}>
+                                <Text style={{ fontSize: 9, color: '#999999', fontStyle: 'italic' }}>（等待簽署）</Text>
+                            </View>
+                        )}
+                        <Text style={{ fontSize: 9, color: '#555555' }}>{partyName || partyEmail || '甲方'}</Text>
+                        <Text style={{ fontSize: 9, color: '#555555' }}>簽署日期：{signDate || today}</Text>
                     </View>
-                )}
+
+                    {/* 乙方廠商電子簽名 */}
+                    <View style={styles.signatureColumn}>
+                        <Text style={styles.signatureLabel}>乙方電子簽名（廠商）</Text>
+                        {vendorSignatureImage ? (
+                            <Image src={vendorSignatureImage} style={styles.signatureImage} />
+                        ) : (
+                            <Text style={[styles.signatureName, { marginTop: 8, marginBottom: 12, color: '#FF5500' }]}>
+                                {vendorSignature || 'Jagger Su'}
+                            </Text>
+                        )}
+                        <Text style={{ fontSize: 9, color: '#555555' }}>Jagger OS / Jagger Su</Text>
+                        <Text style={{ fontSize: 9, color: '#555555' }}>簽署日期：{signDate || today}</Text>
+                    </View>
+                </View>
 
                 <Text style={styles.footer}>
                     本合約由 Jagger OS 線上服務平台自動產生，簽署後即視為雙方同意上述條款。

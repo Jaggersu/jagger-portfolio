@@ -60,6 +60,7 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const [checkoutLoading, setCheckoutLoading] = useState(false);
     const [newContractSigned, setNewContractSigned] = useState(false);
     const [newContractPaid, setNewContractPaid] = useState(false);
+    const [signatureImage, setSignatureImage] = useState('');
 
     const containerRef = useRef<HTMLDivElement>(null);
     const contractScrollRef = useRef<HTMLDivElement>(null);
@@ -245,6 +246,14 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const stopSignature = () => {
         drawingRef.current = false;
         lastPointRef.current = null;
+        const canvas = signatureCanvasRef.current;
+        if (canvas && hasSignature) {
+            try {
+                setSignatureImage(canvas.toDataURL('image/png'));
+            } catch {
+                // Ignore canvas serialization errors
+            }
+        }
     };
 
     const clearSignature = () => {
@@ -259,6 +268,13 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
         if (!hasSignature || !agreed || !user || !profile) return;
         setSignError(null);
         setSigning(true);
+
+        // 最後一次擷取手寫簽名快照
+        const canvas = signatureCanvasRef.current;
+        if (canvas) {
+            try { setSignatureImage(canvas.toDataURL('image/png')); } catch {}
+        }
+
         const { error } = await supabase.from('profiles').update({
             contract_signed: true,
             signed_at: new Date().toISOString(),
@@ -292,11 +308,19 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const today = new Date().toLocaleDateString('zh-TW');
     const isDev = process.env.NODE_ENV === 'development';
 
+    const isCompleted = newContract ? newContractPaid : profile?.payment_status === 'paid';
+
     const contractData: ContractData = {
-        partyName, partyEmail,
+        partyName,
+        partyEmail,
         signature: profile?.contract_signed ? profile?.name || partyName : undefined,
+        signatureImage: signatureImage || undefined,
+        vendorSignature: 'Jagger Su',
+        // 若 public/signatures/jagger-signature.png 存在，可在此改為對應 base64 或 public url：vendorSignatureImage: '/signatures/jagger-signature.png',
         signedAt: profile?.signed_at || undefined,
-        budget, timeline,
+        budget,
+        timeline,
+        completed: isCompleted,
     };
 
 
