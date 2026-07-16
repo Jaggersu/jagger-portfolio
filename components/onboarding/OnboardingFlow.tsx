@@ -63,6 +63,13 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
     const [signatureImage, setSignatureImage] = useState('');
     const [vendorSignatureImage, setVendorSignatureImage] = useState('');
 
+    useEffect(() => {
+        try {
+            const saved = sessionStorage.getItem('onboarding_signature');
+            if (saved) setSignatureImage(saved);
+        } catch {}
+    }, []);
+
     const containerRef = useRef<HTMLDivElement>(null);
     const contractScrollRef = useRef<HTMLDivElement>(null);
     const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -288,11 +295,19 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
             try { setSignatureImage(canvas.toDataURL('image/png')); } catch {}
         }
 
+        const sigSnapshot = canvas?.toDataURL('image/png') || '';
+
         const { error } = await supabase.from('profiles').update({
             contract_signed: true,
             signed_at: new Date().toISOString(),
             name: profile.name || user.user_metadata?.name || user.email || '',
+            contract_budget: budget,
+            contract_timeline: timeline,
         }).eq('id', user.id);
+
+        if (sigSnapshot) {
+            try { sessionStorage.setItem('onboarding_signature', sigSnapshot); } catch {}
+        }
         if (error) { setSignError('簽署失敗，請稍後再試。'); setSigning(false); return; }
         await fetchProfile(user.id);
         if (newContract) setNewContractSigned(true);
@@ -331,8 +346,8 @@ export default function OnboardingFlow({ open, onClose, newContract = false }: P
         vendorSignature: 'Jagger Su',
         vendorSignatureImage: vendorSignatureImage || undefined,
         signedAt: profile?.signed_at || undefined,
-        budget,
-        timeline,
+        budget: budget || profile?.contract_budget || undefined,
+        timeline: timeline || profile?.contract_timeline || undefined,
         completed: isCompleted,
     };
 

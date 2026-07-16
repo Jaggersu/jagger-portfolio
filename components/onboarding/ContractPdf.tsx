@@ -18,15 +18,19 @@ Font.register({
     src: '/fonts/noto-sans-tc-400.ttf',
 });
 
+Font.registerHyphenationCallback((word: string) =>
+    word.split('')
+);
+
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
-const PAGE_MARGIN = 60;
+const PAGE_MARGIN = 56;
 const CONTENT_WIDTH = A4_WIDTH - PAGE_MARGIN * 2;
 
 const styles = StyleSheet.create({
     page: {
         paddingTop: PAGE_MARGIN,
-        paddingBottom: PAGE_MARGIN + 28,
+        paddingBottom: PAGE_MARGIN + 30,
         paddingHorizontal: PAGE_MARGIN,
         fontFamily: 'NotoSansTC',
         fontSize: 10,
@@ -34,7 +38,6 @@ const styles = StyleSheet.create({
         color: '#111',
     },
     headerRow: {
-        width: '100%',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -75,14 +78,12 @@ const styles = StyleSheet.create({
         color: '#777777',
     },
     title: {
-        width: '100%',
         fontSize: 16,
         textAlign: 'center',
         marginBottom: 18,
         fontWeight: 'bold',
     },
     section: {
-        width: '100%',
         marginBottom: 14,
         padding: 12,
         backgroundColor: '#fcfcfc',
@@ -91,7 +92,6 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     highlightSection: {
-        width: '100%',
         marginBottom: 14,
         padding: 12,
         backgroundColor: '#FFF6F1',
@@ -100,7 +100,6 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     heading: {
-        width: '100%',
         fontSize: 11,
         fontWeight: 'bold',
         marginBottom: 4,
@@ -108,30 +107,27 @@ const styles = StyleSheet.create({
         color: '#FF5500',
     },
     paragraph: {
-        width: '100%',
         marginBottom: 8,
         textAlign: 'left',
     },
     row: {
-        width: '100%',
         flexDirection: 'row',
         marginBottom: 5,
-        flexWrap: 'wrap' as const,
     },
     label: {
         width: 90,
         fontWeight: 'bold',
         color: '#555555',
         paddingRight: 6,
+        flexShrink: 0,
     },
     value: {
         flex: 1,
         flexGrow: 1,
         flexShrink: 1,
-        minWidth: 120,
+        minWidth: 0,
     },
     signaturesRow: {
-        width: '100%',
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginTop: 36,
