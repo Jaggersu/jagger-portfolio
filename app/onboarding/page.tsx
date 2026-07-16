@@ -95,33 +95,64 @@ export default function OnboardingPage() {
     }, [fetchProfile]);
 
     const [verifyingPayment, setVerifyingPayment] = useState(false);
+    const [realtimeTimeout, setRealtimeTimeout] = useState(false);
+
+    const handleManualCheck = useCallback(async () => {
+        if (!user) return;
+        const { data } = await supabase
+            .from('profiles')
+            .select('payment_status')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (data?.payment_status === 'paid') {
+            await fetchProfile(user.id);
+            setVerifyingPayment(false);
+            setRealtimeTimeout(false);
+            window.history.replaceState({}, '', window.location.pathname);
+        } else {
+            window.location.reload();
+        }
+    }, [user, fetchProfile]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const params = new URLSearchParams(window.location.search);
         if (params.get('success') === 'true' && user) {
             setVerifyingPayment(true);
-            let attempts = 0;
-            const interval = setInterval(async () => {
-                attempts++;
-                const { data } = await supabase
-                    .from('profiles')
-                    .select('payment_status')
-                    .eq('id', user.id)
-                    .maybeSingle();
+            setRealtimeTimeout(false);
 
-                if (data?.payment_status === 'paid') {
-                    clearInterval(interval);
-                    await fetchProfile(user.id);
-                    setVerifyingPayment(false);
-                    window.history.replaceState({}, '', window.location.pathname);
-                } else if (attempts >= 5) {
-                    clearInterval(interval);
-                    setVerifyingPayment(false);
-                }
-            }, 2000);
+            // Subscribe to Supabase Realtime
+            const channel = supabase
+                .channel('schema-db-changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'profiles',
+                        filter: `id=eq.${user.id}`
+                    },
+                    async (payload) => {
+                        if (payload.new.payment_status === 'paid') {
+                            await fetchProfile(user.id);
+                            setVerifyingPayment(false);
+                            setRealtimeTimeout(false);
+                            window.history.replaceState({}, '', window.location.pathname);
+                        }
+                    }
+                )
+                .subscribe();
 
-            return () => clearInterval(interval);
+            // Fallback timeout after 30 seconds
+            const timer = setTimeout(() => {
+                setRealtimeTimeout(true);
+            }, 30000);
+
+            return () => {
+                supabase.removeChannel(channel);
+                clearTimeout(timer);
+            };
         }
     }, [user, fetchProfile]);
 
@@ -532,12 +563,22 @@ export default function OnboardingPage() {
 
                         {step === 'payment' ? (
                             verifyingPayment ? (
-                                <div className="flex items-center gap-3 font-mono text-zinc-400 py-2">
-                                    <svg className="animate-spin h-4 w-4 text-[#FF5500]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span className="text-[11px]">正在確認付款狀態 (Verifying Payment Status)...</span>
+                                <div className="flex flex-col gap-4 font-mono text-zinc-400 py-2">
+                                    <div className="flex items-center gap-3">
+                                        <svg className="animate-spin h-4 w-4 text-[#FF5500]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span className="text-[11px]">正在確認付款狀態 (Verifying Payment Status)...</span>
+                                    </div>
+                                    {realtimeTimeout && (
+                                        <button
+                                            onClick={handleManualCheck}
+                                            className="self-start py-2 px-4 border border-zinc-800 hover:border-[#FF5500] text-zinc-300 hover:text-white text-[11px] font-bold rounded transition-colors cursor-pointer"
+                                        >
+                                            Checking... Please refresh if not unlocked (點此手動重試)
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="space-y-5">
