@@ -10,6 +10,7 @@ import type { ContractData } from '@/components/onboarding/ContractPdf';
 
 import TriangleAlertIcon from '@/components/icons/TriangleAlertIcon';
 import BrandTelegramIcon from '@/components/icons/BrandTelegramIcon';
+import CreditCard from '@/components/icons/CreditCard';
 import type { AnimatedIconHandle } from '@/components/icons/types';
 
 const ContractDownloadButton = dynamic(
@@ -41,6 +42,7 @@ export default function OnboardingPage() {
     const contractSentinelRef = useRef<HTMLDivElement>(null);
     const alertIconRef = useRef<AnimatedIconHandle>(null);
     const tgIconRef = useRef<AnimatedIconHandle>(null);
+    const cardIconRef = useRef<AnimatedIconHandle>(null);
 
     const step = !user
         ? 'auth'
@@ -606,8 +608,13 @@ export default function OnboardingPage() {
                                                 const url = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL || 'https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_eAXDoDFEJieSUah4qc5Rw64SNEsWfjaqmevXz2dgqDw/redirect';
                                                 window.location.href = url;
                                             }}
-                                            className="flex-1 py-2.5 px-6 rounded-lg bg-white/10 border border-white/30 hover:bg-white/20 hover:border-white transition-colors font-bold text-[11px] tracking-widest uppercase text-white flex items-center justify-center cursor-pointer"
+                                            onMouseEnter={() => cardIconRef.current?.startAnimation()}
+                                            onMouseLeave={() => cardIconRef.current?.stopAnimation()}
+                                            className="flex-1 py-2.5 px-6 rounded-lg bg-white/10 border border-white/30 hover:bg-white/20 hover:border-white transition-colors font-bold text-[11px] tracking-widest uppercase text-white flex items-center justify-center gap-2 cursor-pointer group"
                                         >
+                                            <span className="pointer-events-none shrink-0 text-white">
+                                                <CreditCard ref={cardIconRef} size={14} color="currentColor" strokeWidth={1.5} />
+                                            </span>
                                             信用卡付款(POLAR)
                                         </button>
                                         
