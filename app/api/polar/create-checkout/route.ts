@@ -10,18 +10,16 @@ export async function POST(req: NextRequest) {
         }
 
         const token = process.env.POLAR_ACCESS_TOKEN;
-        console.log("API Triggered. Token exists:", !!token);
-        console.log("Token prefix looks like:", token ? token.substring(0, 15) : "UNDEFINED");
+        const server = process.env.POLAR_SERVER === 'sandbox' ? 'sandbox' : 'production';
 
         if (!token) {
             return NextResponse.json({ error: 'Polar Access Token not configured on server' }, { status: 500 });
         }
 
-        const isSandbox = token.includes('_sb_') || token.startsWith('polar_pat_sb_') || token.startsWith('polar_oat_sb_');
-        console.log("Detected isSandbox:", isSandbox);
+        console.log('[create-checkout] Polar server:', server);
         const polar = new Polar({
             accessToken: token,
-            server: isSandbox ? 'sandbox' : 'production',
+            server,
         });
 
         // 3. Create checkout session. Amount in cents (smallest currency unit, e.g., TWD * 100)
