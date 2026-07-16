@@ -20,21 +20,21 @@ Font.register({
 
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
-const PAGE_MARGIN = 50;
+const PAGE_MARGIN = 60;
 const CONTENT_WIDTH = A4_WIDTH - PAGE_MARGIN * 2;
 
 const styles = StyleSheet.create({
     page: {
         paddingTop: PAGE_MARGIN,
-        paddingBottom: PAGE_MARGIN,
+        paddingBottom: PAGE_MARGIN + 28,
         paddingHorizontal: PAGE_MARGIN,
         fontFamily: 'NotoSansTC',
         fontSize: 10,
-        lineHeight: 1.7,
+        lineHeight: 1.6,
         color: '#111',
     },
     headerRow: {
-        width: CONTENT_WIDTH,
+        width: '100%',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -75,23 +75,32 @@ const styles = StyleSheet.create({
         color: '#777777',
     },
     title: {
-        width: CONTENT_WIDTH,
+        width: '100%',
         fontSize: 16,
         textAlign: 'center',
-        marginBottom: 20,
+        marginBottom: 18,
         fontWeight: 'bold',
     },
     section: {
-        width: CONTENT_WIDTH,
-        marginBottom: 16,
+        width: '100%',
+        marginBottom: 14,
         padding: 12,
         backgroundColor: '#fcfcfc',
         borderWidth: 1,
         borderColor: '#eeeeee',
         borderRadius: 6,
     },
+    highlightSection: {
+        width: '100%',
+        marginBottom: 14,
+        padding: 12,
+        backgroundColor: '#FFF6F1',
+        borderWidth: 1,
+        borderColor: '#FF5500',
+        borderRadius: 6,
+    },
     heading: {
-        width: CONTENT_WIDTH,
+        width: '100%',
         fontSize: 11,
         fontWeight: 'bold',
         marginBottom: 4,
@@ -99,31 +108,34 @@ const styles = StyleSheet.create({
         color: '#FF5500',
     },
     paragraph: {
-        width: CONTENT_WIDTH,
+        width: '100%',
         marginBottom: 8,
         textAlign: 'left',
     },
     row: {
-        width: CONTENT_WIDTH,
+        width: '100%',
         flexDirection: 'row',
-        marginBottom: 6,
+        marginBottom: 5,
         flexWrap: 'wrap' as const,
     },
     label: {
         width: 90,
         fontWeight: 'bold',
         color: '#555555',
+        paddingRight: 6,
     },
     value: {
         flex: 1,
-        minWidth: 0,
+        flexGrow: 1,
+        flexShrink: 1,
+        minWidth: 120,
     },
     signaturesRow: {
-        width: CONTENT_WIDTH,
+        width: '100%',
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginTop: 36,
-        gap: 30,
+        gap: 20,
     },
     signatureColumn: {
         flex: 1,
@@ -144,8 +156,8 @@ const styles = StyleSheet.create({
         color: '#111111',
     },
     signatureImage: {
-        width: 140,
-        height: 50,
+        width: 150,
+        height: 55,
         objectFit: 'contain' as const,
         marginTop: 4,
         marginBottom: 8,
@@ -234,6 +246,7 @@ export function ContractDocument({
 
                 <Text style={styles.title}>設計服務合約書</Text>
 
+                {/* 甲乙雙方基本資料 */}
                 <View style={styles.section}>
                     <View style={styles.row}>
                         <Text style={styles.label}>甲方（客戶）：</Text>
@@ -245,12 +258,21 @@ export function ContractDocument({
                     </View>
                     <View style={styles.row}>
                         <Text style={styles.label}>乙方（廠商）：</Text>
-                        <Text style={styles.value}>Jagger OS / Jagger Su（jaggersu@gmail.com）</Text>
+                        <Text style={styles.value}>Jagger OS / Jagger Su</Text>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>乙方 Email：</Text>
+                        <Text style={styles.value}>jaggersu@gmail.com</Text>
                     </View>
                     <View style={styles.row}>
                         <Text style={styles.label}>簽約日：</Text>
                         <Text style={styles.value}>{signDate || today}</Text>
                     </View>
+                </View>
+
+                {/* 專案金額與交期摘要 */}
+                <View style={styles.highlightSection}>
+                    <Text style={[styles.heading, { marginTop: 0, marginBottom: 8 }]}>專案報價與交付期限</Text>
                     <View style={styles.row}>
                         <Text style={styles.label}>方案：</Text>
                         <Text style={styles.value}>散戶單件計價（ON-DEMAND）</Text>
@@ -277,7 +299,7 @@ export function ContractDocument({
 
                 <Text style={styles.heading}>三、費用、付款與執行時程</Text>
                 <Text style={styles.paragraph}>
-                    本合約服務費用總計為 {budgetDisplay}，執行時程為 {timelineDisplay}（自客戶完整提供執行所需素材之次日起算）。本服務採 100% 線上全額預付制，客戶完成付款後，合約始生履約效力，乙方即安排時程執行。
+                    本合約服務費用總計為 {budgetDisplay}，執行時程為 {timelineDisplay}（自客戶完整提供執行所需素材之次日起算）。本服務採 100% 線上全額預付制，客戶完成付款後，合約始生履約效力，乙方即安排時程執行。前述報價與期限已於第二條摘要明載。
                 </Text>
 
                 <Text style={styles.heading}>四、智慧財產權歸屬</Text>
