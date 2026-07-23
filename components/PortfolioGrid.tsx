@@ -17,6 +17,7 @@ export default function PortfolioGrid() {
     const [categories, setCategories] = useState<string[]>([]);
     const [activeCategory, setActiveCategory] = useState<string>('ALL');
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isError, setIsError] = useState<boolean>(false);
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const lightboxRef = useRef<any>(null);
     const INITIAL_LIMIT = 6;
@@ -25,12 +26,19 @@ export default function PortfolioGrid() {
         async function fetchPortfolio() {
             try {
                 setIsLoading(true);
+                setIsError(false);
                 const res = await fetch('/api/portfolio');
+                if (!res.ok) {
+                    console.error('[portfolio] API returned', res.status);
+                    setIsError(true);
+                    return;
+                }
                 const data = await res.json();
                 if (data.files) setFiles(data.files);
                 if (data.categories) setCategories(data.categories);
             } catch (err) {
                 console.error('無法讀取作品集資料:', err);
+                setIsError(true);
             } finally {
                 setIsLoading(false);
             }
@@ -115,6 +123,11 @@ export default function PortfolioGrid() {
                 {isLoading ? (
                     <div className="text-center py-20 font-mono text-xs text-zinc-500 animate-pulse tracking-widest">
                         LOADING PORTFOLIO FROM GOOGLE DRIVE...
+                    </div>
+                ) : isError ? (
+                    <div className="text-center py-20 font-mono text-xs text-zinc-500 tracking-widest">
+                        <div className="text-zinc-400 mb-2">系統維護中，請稍後再試</div>
+                        <div className="text-zinc-700 text-[10px]">PORTFOLIO API UNAVAILABLE</div>
                     </div>
                 ) : filteredFiles.length === 0 ? (
                     <div className="text-center py-20 font-mono text-xs text-zinc-500 tracking-widest">

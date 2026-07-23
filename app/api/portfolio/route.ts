@@ -7,10 +7,17 @@ export async function GET() {
         const rootFolderId = process.env.GOOGLE_DRIVE_PORTFOLIO_FOLDER_ID || process.env.GOOGLE_DRIVE_FOLDER_ID;
 
         if (!rootFolderId) {
+            console.error('[portfolio] Missing env: GOOGLE_DRIVE_PORTFOLIO_FOLDER_ID and GOOGLE_DRIVE_FOLDER_ID both unset');
             return NextResponse.json({ error: '環境變數配置不完整' }, { status: 500 });
         }
 
-        const drive = getDriveClient();
+        let drive;
+        try {
+            drive = getDriveClient();
+        } catch (initErr: any) {
+            console.error('[portfolio] Google Drive client init failed:', initErr.message);
+            return NextResponse.json({ error: 'Google Drive 認證失敗', details: initErr.message }, { status: 500 });
+        }
 
         // 1. 撈取所有子資料夾
         const foldersResponse = await drive.files.list({
@@ -60,7 +67,8 @@ export async function GET() {
         });
 
     } catch (error: any) {
-        console.error('Google Drive API 錯誤:', error);
-        return NextResponse.json({ error: '無法讀取雲端硬碟資料', details: error.message }, { status: 500 });
+        console.error('[portfolio] Google Drive API error:', error?.message || error);
+        if (error?.stack) console.error('[portfolio] Stack:', error.stack);
+        return NextResponse.json({ error: '無法讀取雲端硬碟資料', details: error?.message || 'Unknown error' }, { status: 500 });
     }
 }
