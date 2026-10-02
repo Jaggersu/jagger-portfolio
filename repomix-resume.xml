@@ -1,0 +1,904 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: app/resume/**
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+app/
+  resume/
+    components/
+      ResumeActionButtons.tsx
+    data.ts
+    page.tsx
+    types.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="app/resume/components/ResumeActionButtons.tsx">
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+
+export default function ResumeActionButtons() {
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const handlePrint = () => {
+    setIsPrinting(true);
+    // Short delay to ensure any state or render transitions are settled
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 150);
+  };
+
+  return (
+    <div className="fixed top-6 right-6 z-50 flex flex-col sm:flex-row items-end sm:items-center gap-2.5 print:hidden">
+      {/* Return to Portfolio Link */}
+      <Link
+        href="/"
+        className="group flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#141416]/90 hover:bg-zinc-800/90 text-zinc-300 hover:text-white border border-zinc-800/80 backdrop-blur-md text-xs font-mono transition-all shadow-lg hover:border-zinc-700"
+        title="返回作品集首頁"
+      >
+        <svg
+          className="w-3.5 h-3.5 text-zinc-400 group-hover:-translate-x-0.5 transition-transform"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>PORTFOLIO</span>
+      </Link>
+
+      {/* PRINT Button */}
+      <button
+        onClick={handlePrint}
+        disabled={isPrinting}
+        className="group flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#141416]/90 hover:bg-zinc-800/90 active:scale-95 text-zinc-200 hover:text-white border border-zinc-800/80 hover:border-zinc-600 backdrop-blur-md text-xs font-mono font-semibold transition-all shadow-lg cursor-pointer"
+        title="開啟瀏覽器列印視窗"
+      >
+        <svg
+          className="w-3.5 h-3.5 text-zinc-400 group-hover:text-[#FF5500] transition-colors"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+          />
+        </svg>
+        <span>{isPrinting ? 'PREPARING...' : 'PRINT'}</span>
+      </button>
+
+      {/* PDF DOWNLOAD Button */}
+      <a
+        href="/Jagger_Su_Resume.pdf"
+        download="Jagger_Su_Resume.pdf"
+        className="group relative flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FF5500] hover:bg-[#e04b00] active:scale-95 text-white font-mono text-xs font-bold shadow-[0_4px_20px_rgba(255,85,0,0.35)] hover:shadow-[0_6px_25px_rgba(255,85,0,0.5)] transition-all cursor-pointer border border-[#ff6a1f]"
+        title="直接下載 PDF 檔案"
+      >
+        <svg
+          className="w-3.5 h-3.5 text-white group-hover:translate-y-0.5 transition-transform"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+          />
+        </svg>
+        <span>PDF DOWNLOAD</span>
+      </a>
+    </div>
+  );
+}
+</file>
+
+<file path="app/resume/data.ts">
+import { ResumeData } from "./types";
+
+export const resumeData: ResumeData = {
+  profile: {
+    name: "Jagger Su (蘇上祐)",
+    nameEn: "Jagger Su",
+    title: "Product Designer & Design Engineer",
+    bio: "具備14年從設計總監至總經理的完整資歷，專長為企業整合設計、前沿技術與商業營運，驅動數位轉型與 SaaS 產品落地。",
+    summary:
+      "擁有 14 年跨領域資歷的設計架構師與全端落地的實踐者，專精於從 0 到 1 的 SaaS 產品架構、高互動 Web 介面與設計系統建立。曾執掌大型生活娛樂集團品牌體驗與營運策略，兼具頂層商業思維與代碼工程落地能力，能無縫串聯設計規範、前端實作與非同步遠端協作流。",
+    birthDate: "1979.01.21",
+    availability: "錄取後 1-2 週內可到職（可全時配合遠端非同步協作）",
+    contact: {
+      email: "sujagger.104@gmail.com",
+      phone: "0960-385-778",
+      location: "Taoyuan, Taiwan (Remote Available)",
+      website: "https://jagger-portfolio.vercel.app",
+      github: "https://github.com/Jaggersu",
+      telegram: "https://t.me/jaggersu",
+      linkedin: "https://linkedin.com/in/jaggersu",
+    },
+  },
+
+  expertise: {
+    designArchitecture: [
+      "Design Systems & Token Architecture (Tokens Studio / Figma)",
+      "Atomic Design & Reusable Component Library Governance",
+      "Micro-interactions & Spring Physics (Framer Motion / Motion)",
+      "Accessibility (WCAG 2.1 AA Compliance & Keyboard Navigation)",
+      "Figma-to-Code Engineering & Design System Documentation",
+    ],
+    frontendTech: [
+      "Next.js 15/16 (App Router, Server Actions, RSC, ISR)",
+      "React 19 & TypeScript Strict Mode",
+      "Tailwind CSS v3/v4 & Headless UI Architecture",
+      "State Management (Zustand, React Query / TanStack)",
+      "Backend Integration (Supabase Auth/RLS, REST, GraphQL)",
+      "Performance Tuning (Core Web Vitals, Bundle Splitting)",
+    ],
+    remoteCollaboration: [
+      "Agile / Scrum Sprint Planning & Fast Iterations",
+      "Asynchronous Communication & High-fidelity RFC Specs",
+      "Git Flow & GitHub Actions CI/CD Pipeline Automation",
+      "Cross-functional Leadership (Dev, UI/UX, Product Owners)",
+      "Production-ready Observability, Testing & Error Boundaries",
+    ],
+  },
+
+  experiences: [
+    {
+      id: "exp-1",
+      company: "Greenzone Inc. (牛奶弄設計有限公司)",
+      role: "Co-Founder & Product Lead",
+      period: "2021 - Present",
+      location: "Taiwan",
+      achievements: [
+        "主導數位產品架構、自動化行政流程設計與 SaaS 解決方案落地。",
+        "統籌前端工程與體驗設計標準，運用現代全端技術棧確保設計規格 100% 精準實現。",
+      ],
+      techStack: ["Next.js", "React", "TypeScript", "Tailwind CSS", "Supabase", "Design Systems"],
+    },
+    {
+      id: "exp-2",
+      company: "樂與食國際開發股份有限公司",
+      role: "總經理暨設計總監",
+      period: "2010/1 - 2021/4",
+      achievements: [
+        "掌管旗下 Brown Sugar、Dozo、Myst 等知名餐飲與娛樂旗艦品牌之全方位視覺系統（CIS）、空間數位體驗與市場策略。",
+        "深度協同並派駐上海 Brown Sugar、上海 Dozo、上海 Sabatini 等跨兩岸品牌實體與數位營運，具備多年對接大陸在地團隊、跨文化非同步溝通與高頻協同管理經驗。",
+        "帶領跨部門團隊建立設計交付與專案管理 SOP，平衡極致體驗美感與千萬級商業運營效益。",
+      ],
+      techStack: ["Brand Strategy", "CIS Design", "Project Management", "UI/UX", "Operations"],
+    },
+  ],
+
+  projects: [
+    {
+      id: "proj-1",
+      name: "AIPT",
+      category: "SaaS 智慧物業維運與工單 AI 生態系",
+      role: "Core Frontend Architect & Product Designer",
+      period: "2024",
+      techStack: ["Next.js 16", "TypeScript", "Supabase RLS", "Tailwind CSS", "AI Agent API"],
+      highlights: [
+        "設計並落地多維度角色權限（RBAC）與工單調度看板，支援廠商即時報價、住戶審核與多級工單狀態追蹤。",
+        "封裝統一的共用 UI 元件庫（VendorSelector、Interactive Modals 等），大幅降低代碼重複率並提升測試覆蓋度。",
+        "整合 Generative AI 智能助理介面，自動分類工單痛點並生成維護分析摘要，提升物業管理效率達 60%。",
+      ],
+      link: "https://aipt-one.vercel.app",
+    },
+    {
+      id: "proj-2",
+      name: "REBOX WORKFLOW SYSTEM",
+      category: "SaaS 敏捷模組化管理平台",
+      role: "Full-stack Frontend Lead",
+      period: "2023 - 2024",
+      techStack: ["Next.js", "Supabase", "Tailwind CSS", "Server Actions", "PostgreSQL"],
+      highlights: [
+        "開發高自訂彈性工作流程節點畫布與狀態追蹤面板，滿足非技術人員直覺拖拉調整專案節奏的需求。",
+        "運用 React Server Components (RSC) 與樂觀更新（Optimistic Updates），消除操作遲滯感，實現近即時流暢體驗。",
+      ],
+      link: "https://rebox-roan.vercel.app",
+    },
+    {
+      id: "proj-lottery",
+      name: "TAIWAN LOTTERY PLATFORM (台灣彩券官網)",
+      category: "大型彩票交易與資訊平台 UI/UX",
+      role: "Senior Web Designer (e21摩奇創意時期)",
+      period: "Core Archive",
+      techStack: ["High-Traffic UX", "Information Architecture", "HTML/CSS", "JavaScript", "Design System"],
+      highlights: [
+        "主導台灣彩券官網核心視覺介面與即時開獎資訊架構設計，兼顧極高瞬間併發流量下的高可用性與直覺易讀性。",
+        "制定彩票平台開獎動態展示與數位活動互動流程，建立長期穩定營運之介面規範。",
+      ],
+      link: "https://www.taiwanlottery.com/",
+    },
+    {
+      id: "proj-4",
+      name: "FUMA CRASH · Web3 Gaming Platform",
+      category: "GameFi / 即時倍率高頻互動遊戲",
+      role: "Lead Interactive Web & Game UI Designer",
+      period: "Live Production",
+      techStack: ["Crash Mechanics", "Game UI/UX", "Interactive Web", "High-frequency States", "Real-time Feedback"],
+      highlights: [
+        "操刀高張力即時倍率（Crash）遊戲之視覺體系與動態曲線，兼顧高頻下注決策與沉浸式遊戲心理反饋。",
+        "規劃即時倒數、投注狀態切換與開獎動效反饋，確保在跨裝置環境下維持極低延遲的直覺操作感。",
+        "打造具備現代科技感與強烈視覺刺激的遊戲面板，成功整合於線上運行驗證環境。"
+      ],
+      link: "https://jaggersu888.wixstudio.com/fuma",
+    },
+  ],
+
+  education: [
+    {
+      id: "edu-1",
+      degree: "學士學位 · 中文系",
+      school: "輔仁大學 (Fu Jen Catholic University)",
+      period: "2001 - 2008",
+    },
+  ],
+
+  languages: {
+    english: {
+      listening: 6,
+      speaking: 6,
+      reading: 7,
+      writing: 7,
+      summary: "商務溝通 · Professional",
+    },
+    others: [
+      { language: "中文 (繁體)", proficiency: "母語 (Native)" },
+      { language: "台語 (Taiwanese)", proficiency: "母語精通 (Fluent)" },
+      { language: "日文 (Japanese)", proficiency: "基礎略懂 (Basic)" },
+    ],
+  },
+};
+</file>
+
+<file path="app/resume/page.tsx">
+import React from 'react';
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import { Mail, Phone, MapPin, Globe, Send, Cake, Zap } from 'lucide-react';
+import { resumeData } from './data';
+
+function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+      <path d="M9 18c-4.51 2-5-2-7-2" />
+    </svg>
+  );
+}
+import ResumeActionButtons from './components/ResumeActionButtons';
+
+export const metadata: Metadata = {
+  title: `${resumeData.profile.nameEn || 'Jagger Su'} · Resume | ${resumeData.profile.title}`,
+  description: `${resumeData.profile.nameEn || 'Jagger Su'} 的專業履歷：${resumeData.profile.bio}`,
+  openGraph: {
+    title: `${resumeData.profile.nameEn || 'Jagger Su'} · Resume`,
+    description: resumeData.profile.bio,
+    type: 'profile',
+  },
+};
+
+export default function ResumePage() {
+  const { profile, expertise, experiences, projects, education, languages } = resumeData;
+
+  return (
+    <main className="min-h-screen bg-[#0A0A0B] text-zinc-100 py-6 sm:py-10 px-3 sm:px-6 flex flex-col items-center justify-start print:p-0 print:m-0 print:bg-white print:min-h-0 print:text-[#111827]">
+      {/* Print Specific CSS Overrides & A4 Page Dimensions */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @page {
+              size: A4 portrait;
+              margin: 14mm 12mm 14mm 12mm;
+            }
+            @media print {
+              html, body {
+                background-color: #ffffff !important;
+                background: #ffffff !important;
+                color: #111827 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                overflow: visible !important;
+                width: 100% !important;
+                height: auto !important;
+                font-size: 11pt;
+              }
+              a {
+                text-decoration: none !important;
+                color: inherit !important;
+              }
+              .break-avoid {
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+              }
+            }
+          `,
+        }}
+      />
+
+      {/* Floating Action Buttons for Print / Download PDF */}
+      <ResumeActionButtons />
+
+      {/* Main A4 Resume Sheet Container */}
+      <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-[#0D0D0D] text-zinc-100 rounded-2xl border border-zinc-800 shadow-[0_20px_60px_rgba(0,0,0,0.85)] p-6 sm:p-10 lg:p-12 relative overflow-hidden transition-colors print:max-w-none print:w-full print:min-h-0 print:bg-white print:text-[#111827] print:border-none print:shadow-none print:rounded-none print:p-0 print:pt-1 print:m-0">
+        {/* Subtle decorative grid for screen mode */}
+        <div className="vector-grid opacity-20 pointer-events-none absolute inset-0 print:hidden" />
+
+        {/* Dual-Column Layout: Left ~35%, Right ~65% */}
+        <div className="relative z-10 flex flex-col md:flex-row print:flex-row gap-8 lg:gap-10 print:gap-8 items-start">
+          {/* ======================================================== */}
+          {/* LEFT COLUMN (35%): Profile, Contacts, Skills, Education  */}
+          {/* ======================================================== */}
+          <aside className="w-full md:w-[35%] print:w-[35%] shrink-0 flex flex-col gap-6 md:border-r md:border-zinc-800/80 md:pr-7 lg:pr-8 print:border-r print:border-zinc-200 print:pr-6">
+            {/* Profile Intro */}
+            <div className="break-avoid">
+              <div className="relative w-20 h-20 rounded-full overflow-hidden border border-zinc-700/80 shadow-[0_0_20px_rgba(255,85,0,0.12)] mb-4 print:border-zinc-300 print:shadow-none bg-zinc-950">
+                <Image
+                  src="/avatar.png"
+                  alt={profile.name}
+                  fill
+                  unoptimized
+                  className="object-cover"
+                  priority
+                />
+              </div>
+              <h1 className="text-2xl font-black tracking-tight text-white print:text-[#111827] font-sans">
+                {profile.name}
+              </h1>
+              <p className="text-xs font-mono font-semibold text-[#FF5500] tracking-wider mt-1.5 uppercase">
+                {profile.title}
+              </p>
+              <p className="text-xs text-zinc-400 print:text-zinc-600 leading-relaxed mt-3 font-sans">
+                {profile.bio}
+              </p>
+            </div>
+
+            {/* Contact Information */}
+            <div className="break-avoid border-t border-zinc-800/70 pt-5 print:border-zinc-200">
+              <h2 className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold mb-3">
+                // CONTACT & LINKS
+              </h2>
+              <ul className="space-y-2.5 text-xs font-mono">
+                <li className="flex items-center gap-2.5 text-zinc-300 print:text-zinc-700">
+                  <Mail className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                  <a
+                    href={`mailto:${profile.contact.email}`}
+                    className="hover:text-white print:text-zinc-800 transition-colors truncate"
+                  >
+                    {profile.contact.email}
+                  </a>
+                </li>
+                {profile.contact.phone && (
+                  <li className="flex items-center gap-2.5 text-zinc-300 print:text-zinc-700">
+                    <Phone className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                    <a
+                      href={`tel:${profile.contact.phone}`}
+                      className="hover:text-white print:text-zinc-800 transition-colors truncate"
+                    >
+                      {profile.contact.phone}
+                    </a>
+                  </li>
+                )}
+                {profile.contact.location && (
+                  <li className="flex items-center gap-2.5 text-zinc-300 print:text-zinc-700">
+                    <MapPin className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                    <span className="truncate">{profile.contact.location}</span>
+                  </li>
+                )}
+                {profile.contact.website && (
+                  <li className="flex items-center gap-2.5 text-zinc-300 print:text-zinc-700">
+                    <Globe className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                    <a
+                      href={profile.contact.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-[#FF5500] print:text-zinc-800 transition-colors truncate"
+                    >
+                      {profile.contact.website.replace('https://', '')}
+                    </a>
+                  </li>
+                )}
+                {profile.contact.github && (
+                  <li className="flex items-center gap-2.5 text-zinc-300 print:text-zinc-700">
+                    <GithubIcon className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                    <a
+                      href={profile.contact.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-[#FF5500] print:text-zinc-800 transition-colors truncate"
+                    >
+                      {profile.contact.github.replace('https://', '')}
+                    </a>
+                  </li>
+                )}
+                {profile.contact.telegram && (
+                  <li className="flex items-center gap-2.5 text-zinc-300 print:text-zinc-700">
+                    <Send className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                    <a
+                      href={profile.contact.telegram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-[#FF5500] print:text-zinc-800 transition-colors truncate"
+                    >
+                      t.me/jaggersu
+                    </a>
+                  </li>
+                )}
+              </ul>
+
+              {/* Birthdate & Availability Info */}
+              {(profile.birthDate || profile.availability) && (
+                <div className="mt-3.5 pt-3 border-t border-zinc-800/70 print:border-zinc-200 space-y-1.5 text-[11px] font-mono">
+                  {profile.birthDate && (
+                    <div className="flex items-center gap-2.5 text-zinc-300 print:text-zinc-700">
+                      <Cake className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                      <span>{profile.birthDate}</span>
+                    </div>
+                  )}
+                  {profile.availability && (
+                    <div className="flex items-start gap-2.5 text-zinc-300 print:text-zinc-700">
+                      <Zap className="w-3.5 h-3.5 text-[#FF5500] shrink-0 mt-0.5" />
+                      <span className="leading-snug">
+                        <span className="text-zinc-100 print:text-zinc-800 font-semibold">可到職：</span>
+                        {profile.availability}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Core Expertise */}
+            <div className="border-t border-zinc-800/70 pt-5 print:border-zinc-200 flex flex-col gap-5">
+              <h2 className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold">
+                // CORE EXPERTISE
+              </h2>
+
+              {/* 1. Design Architecture */}
+              <div className="break-avoid">
+                <h3 className="text-xs font-mono font-bold text-zinc-200 print:text-zinc-800 mb-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+                  設計架構 (Design Architecture)
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {expertise.designArchitecture.map((item, idx) => (
+                    <span
+                      key={idx}
+                      className="text-[10.5px] font-mono px-2 py-0.5 rounded bg-zinc-900/90 text-zinc-300 border border-zinc-800 print:bg-zinc-100 print:text-zinc-800 print:border-zinc-300"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Frontend Engineering */}
+              <div className="break-avoid">
+                <h3 className="text-xs font-mono font-bold text-zinc-200 print:text-zinc-800 mb-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+                  前端技術 (Frontend Tech)
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {expertise.frontendTech.map((item, idx) => (
+                    <span
+                      key={idx}
+                      className="text-[10.5px] font-mono px-2 py-0.5 rounded bg-zinc-900/90 text-zinc-300 border border-zinc-800 print:bg-zinc-100 print:text-zinc-800 print:border-zinc-300"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Remote Collaboration */}
+              <div className="break-avoid">
+                <h3 className="text-xs font-mono font-bold text-zinc-200 print:text-zinc-800 mb-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+                  遠端協作 (Remote & Agile)
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {expertise.remoteCollaboration.map((item, idx) => (
+                    <span
+                      key={idx}
+                      className="text-[10.5px] font-mono px-2 py-0.5 rounded bg-zinc-900/90 text-zinc-300 border border-zinc-800 print:bg-zinc-100 print:text-zinc-800 print:border-zinc-300"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Education */}
+            <div className="break-avoid border-t border-zinc-800/70 pt-5 print:border-zinc-200">
+              <h2 className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold mb-3">
+                // EDUCATION
+              </h2>
+              {education.map((edu) => (
+                <div key={edu.id} className="text-xs">
+                  <div className="font-bold text-zinc-200 print:text-zinc-800 font-sans">
+                    {edu.degree}
+                  </div>
+                  <div className="text-zinc-400 print:text-zinc-600 font-mono text-[11px] mt-0.5">
+                    {edu.school}
+                  </div>
+                  <div className="text-[10px] font-mono text-[#FF5500] mt-1">
+                    {edu.period}
+                  </div>
+                  {edu.description && (
+                    <p className="text-[11px] text-zinc-400 print:text-zinc-600 mt-1.5 leading-relaxed font-sans">
+                      {edu.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Languages */}
+            {languages && (
+              <div className="break-avoid border-t border-zinc-800/70 pt-5 print:border-zinc-200">
+                <h2 className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold mb-3">
+                  // LANGUAGES
+                </h2>
+
+                {/* English 10-Block Indicator */}
+                {languages.english && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <h3 className="text-xs font-mono font-bold text-zinc-200 print:text-zinc-800 flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+                        英文 (English)
+                      </h3>
+                      {languages.english.summary && (
+                        <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/25 print:bg-zinc-100 print:text-zinc-700 print:border-zinc-300 whitespace-nowrap">
+                          {languages.english.summary}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {[
+                        { label: '聽 Listen', score: languages.english.listening },
+                        { label: '說 Speak', score: languages.english.speaking },
+                        { label: '讀 Read', score: languages.english.reading },
+                        { label: '寫 Write', score: languages.english.writing },
+                      ].map((dim) => (
+                        <div key={dim.label} className="flex items-center justify-between gap-1.5">
+                          <span className="text-[10.5px] font-mono text-zinc-300 print:text-zinc-700 whitespace-nowrap shrink-0">
+                            {dim.label}
+                          </span>
+                          <div className="flex items-center gap-[2.5px] flex-1 justify-center px-1">
+                            {Array.from({ length: 10 }).map((_, i) => {
+                              const isActive = i < dim.score;
+                              return (
+                                <span
+                                  key={i}
+                                  className={`w-[2.5px] h-[7px] rounded-[0.5px] ${
+                                    isActive
+                                      ? 'bg-[#FF5500] print:bg-zinc-800'
+                                      : 'bg-zinc-800 print:bg-zinc-200'
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
+                          <span className="text-[10px] font-mono text-zinc-400 print:text-zinc-600 shrink-0 text-right">
+                            {dim.score}/10
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other Languages */}
+                {languages.others && languages.others.length > 0 && (
+                  <div className="mt-3.5 pt-3 border-t border-zinc-800/60 print:border-zinc-200 space-y-1.5 text-xs font-mono">
+                    {languages.others.map((lang, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-zinc-300 print:text-zinc-700">
+                        <span>{lang.language}</span>
+                        <span className="text-[10px] text-zinc-500 print:text-zinc-500">{lang.proficiency}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </aside>
+
+          {/* ======================================================== */}
+          {/* RIGHT COLUMN (65%): Summary, Experience, Projects        */}
+          {/* ======================================================== */}
+          <section className="w-full md:w-[65%] print:w-[65%] flex-1 flex flex-col gap-7 print:gap-6">
+            {/* Executive Summary */}
+            <div className="break-avoid">
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold">
+                  // SUMMARY
+                </span>
+                <div className="h-[1px] flex-1 bg-zinc-800/80 print:bg-zinc-200" />
+              </div>
+              <p className="text-xs sm:text-[13px] text-zinc-300 print:text-zinc-700 leading-relaxed font-sans">
+                {profile.summary}
+              </p>
+            </div>
+
+            {/* Professional Experience */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold">
+                  // PROFESSIONAL EXPERIENCE
+                </span>
+                <div className="h-[1px] flex-1 bg-zinc-800/80 print:bg-zinc-200" />
+              </div>
+
+              <div className="space-y-6 print:space-y-5">
+                {experiences.map((exp) => (
+                  <article
+                    key={exp.id}
+                    className="break-avoid relative pl-3 sm:pl-4 border-l-2 border-zinc-800 print:border-zinc-300"
+                  >
+                    {/* Period badge and Role */}
+                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 mb-1">
+                      <h3 className="text-sm font-bold text-white print:text-[#111827] font-sans">
+                        {exp.role}
+                      </h3>
+                      <span className="text-[10.5px] font-mono font-medium text-[#FF5500] bg-[#FF5500]/10 border border-[#FF5500]/25 px-2 py-0.5 rounded shrink-0 print:border-[#FF5500]/40">
+                        {exp.period}
+                      </span>
+                    </div>
+
+                    {/* Company and Location */}
+                    <div className="text-xs font-mono text-zinc-400 print:text-zinc-600 mb-2">
+                      <span className="text-zinc-200 print:text-zinc-800 font-semibold">{exp.company}</span>
+                      {exp.location && <span> · {exp.location}</span>}
+                    </div>
+
+                    {/* Achievements List */}
+                    <ul className="space-y-1.5 text-xs text-zinc-300 print:text-zinc-700 leading-relaxed font-sans mb-2.5">
+                      {exp.achievements.map((ach, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-[#FF5500] font-bold text-[10px] mt-0.5 shrink-0">▸</span>
+                          <span>{ach}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Tech stack tags */}
+                    {exp.techStack && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {exp.techStack.map((tech, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800/80 print:bg-zinc-100 print:text-zinc-700 print:border-zinc-200"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            {/* Featured Projects */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold">
+                  // FEATURED PROJECTS
+                </span>
+                <div className="h-[1px] flex-1 bg-zinc-800/80 print:bg-zinc-200" />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 print:gap-3.5">
+                {projects.map((proj) => (
+                  <div
+                    key={proj.id}
+                    className="break-avoid bg-[#121214]/90 print:bg-white border border-zinc-800/80 print:border-zinc-200 rounded-xl p-4 print:p-3 print:rounded-lg"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-bold font-mono text-white print:text-[#111827]">
+                          {proj.name}
+                        </h3>
+                        <span className="text-[11px] font-mono text-zinc-400 print:text-zinc-500">
+                          // {proj.category}
+                        </span>
+                      </div>
+                      {proj.link && (
+                        <a
+                          href={proj.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] font-mono text-[#FF5500] hover:underline flex items-center gap-1 shrink-0 print:hidden"
+                        >
+                          LIVE DEMO ↗
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Tech Stack */}
+                    <div className="flex flex-wrap gap-1 mb-2.5">
+                      {proj.techStack.map((tech, idx) => (
+                        <span
+                          key={idx}
+                          className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800/60 text-zinc-300 border border-zinc-700/60 print:bg-zinc-100 print:text-zinc-800 print:border-zinc-200"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Project Highlights */}
+                    <ul className="space-y-1 text-xs text-zinc-300 print:text-zinc-700 leading-relaxed font-sans">
+                      {proj.highlights.map((hl, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-[#FF5500] text-[9px] mt-1 shrink-0">•</span>
+                          <span>{hl}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer Tagline */}
+            <div className="break-avoid border-t border-zinc-800/70 pt-4 text-center sm:text-right print:border-zinc-200">
+              <span className="text-[10px] font-mono text-zinc-500 print:text-zinc-400">
+                JAGGER OS · RESUME ARCHIVE // {new Date().getFullYear()} · COMPILED WITH NEXT.JS & TAILWIND CSS
+              </span>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="app/resume/types.ts">
+export interface ContactInfo {
+  email: string;
+  phone?: string;
+  location: string;
+  website?: string;
+  github?: string;
+  telegram?: string;
+  linkedin?: string;
+}
+
+export interface Profile {
+  name: string;
+  nameEn: string;
+  title: string;
+  bio: string;
+  summary: string;
+  avatarUrl?: string;
+  birthDate?: string;
+  availability?: string;
+  contact: ContactInfo;
+}
+
+export interface ExpertiseCategory {
+  category: string;
+  skills: string[];
+}
+
+export interface CoreExpertise {
+  designArchitecture: string[];
+  frontendTech: string[];
+  remoteCollaboration: string[];
+  additional?: ExpertiseCategory[];
+}
+
+export interface FeaturedProject {
+  id: string;
+  name: string;
+  category: string;
+  role: string;
+  period?: string;
+  techStack: string[];
+  highlights: string[];
+  link?: string;
+}
+
+export interface ProfessionalExperience {
+  id: string;
+  company: string;
+  role: string;
+  period: string;
+  location?: string;
+  achievements: string[];
+  techStack?: string[];
+}
+
+export interface EducationItem {
+  id: string;
+  degree: string;
+  school: string;
+  period: string;
+  description?: string;
+}
+
+export interface EnglishSkillBreakdown {
+  listening: number; // 1-10
+  speaking: number;  // 1-10
+  reading: number;   // 1-10
+  writing: number;   // 1-10
+  summary: string;
+}
+
+export interface LanguageData {
+  english: EnglishSkillBreakdown;
+  others: { language: string; proficiency: string }[];
+}
+
+export interface ResumeData {
+  profile: Profile;
+  expertise: CoreExpertise;
+  experiences: ProfessionalExperience[];
+  projects: FeaturedProject[];
+  education: EducationItem[];
+  languages: LanguageData;
+}
+</file>
+
+</files>

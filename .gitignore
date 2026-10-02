@@ -43,3 +43,5 @@ next-env.d.ts
 # repomix
 repomix-output.*
 repomix-*.*
+!repomix-resume.xml
+
