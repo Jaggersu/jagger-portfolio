@@ -29,7 +29,7 @@ export default function CookieBanner() {
     if (!visible) return null;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[300] p-4 sm:p-6">
+        <div className="fixed bottom-0 left-0 right-0 z-[300] p-4 sm:p-6 print:hidden">
             <div className="max-w-3xl mx-auto bg-[#0A0A0B] border border-zinc-800 rounded-xl px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-2xl font-mono">
                 <div className="flex items-start gap-3 flex-1">
                     <span className="text-[#FF5500] text-base shrink-0 mt-0.5">🍪</span>

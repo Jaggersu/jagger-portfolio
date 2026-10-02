@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "export:pdf": "powershell -Command \"Start-Process -FilePath 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' -ArgumentList '--headless', '--disable-gpu', '--no-pdf-header-footer', '--print-to-pdf=C:\\Users\\sujag\\Documents\\jagger-portfolio\\public\\Jagger_Su_Resume.pdf', 'http://localhost:3000/resume' -Wait\""
   },
   "dependencies": {
     "@fontsource/noto-sans-tc": "^5.2.9",
@@ -17,6 +18,7 @@
     "@supabase/supabase-js": "^2.110.0",
     "glightbox": "^3.3.1",
     "googleapis": "^173.0.0",
+    "lucide-react": "^1.50.0",
     "motion": "^12.42.2",
     "next": "16.2.10",
     "qrcode.react": "^4.2.0",
