@@ -15,6 +15,8 @@ export interface Profile {
   bio: string;
   summary: string;
   avatarUrl?: string;
+  birthDate?: string;
+  availability?: string;
   contact: ContactInfo;
 }
 
@@ -59,11 +61,24 @@ export interface EducationItem {
   description?: string;
 }
 
+export interface EnglishSkillBreakdown {
+  listening: number; // 1-10
+  speaking: number;  // 1-10
+  reading: number;   // 1-10
+  writing: number;   // 1-10
+  summary: string;
+}
+
+export interface LanguageData {
+  english: EnglishSkillBreakdown;
+  others: { language: string; proficiency: string }[];
+}
+
 export interface ResumeData {
   profile: Profile;
   expertise: CoreExpertise;
   experiences: ProfessionalExperience[];
   projects: FeaturedProject[];
   education: EducationItem[];
-  languages?: { language: string; proficiency: string }[];
+  languages: LanguageData;
 }

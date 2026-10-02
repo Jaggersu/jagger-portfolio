@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "export:pdf": "powershell -Command \"Start-Process -FilePath 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' -ArgumentList '--headless', '--disable-gpu', '--no-pdf-header-footer', '--print-to-pdf=C:\\Users\\sujag\\Documents\\jagger-portfolio\\public\\Jagger_Su_Resume.pdf', 'http://localhost:3000/resume' -Wait\""
+    "export:pdf": "powershell -Command \"if (Test-Path 'public/Jagger_Su_Resume.pdf') { Remove-Item 'public/Jagger_Su_Resume.pdf' -Force }; $port = 3001; Start-Process -FilePath 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' -ArgumentList '--headless', '--disable-gpu', '--no-pdf-header-footer', '--print-to-pdf=C:\\Users\\sujag\\Documents\\jagger-portfolio\\public\\Jagger_Su_Resume.pdf', ('http://localhost:' + $port + '/resume') -Wait\""
   },
   "dependencies": {
     "@fontsource/noto-sans-tc": "^5.2.9",

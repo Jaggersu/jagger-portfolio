@@ -42,7 +42,7 @@ const liveSites = [
         snapshot: '/projects/05_rebox.png', // 精準對應 public/projects/05_rebox.png
     },
     {
-        name: 'AIPT ONE ECOSYSTEM',
+        name: 'AIPT',
         url: 'https://aipt-one.vercel.app/',
         tech: 'Next.js / Generative AI Project',
         status: '403 PENDING',

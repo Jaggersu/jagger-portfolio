@@ -8,6 +8,8 @@ export const resumeData: ResumeData = {
     bio: "具備14年從設計總監至總經理的完整資歷，專長為企業整合設計、前沿技術與商業營運，驅動數位轉型與 SaaS 產品落地。",
     summary:
       "擁有 14 年跨領域資歷的設計架構師與全端落地的實踐者，專精於從 0 到 1 的 SaaS 產品架構、高互動 Web 介面與設計系統建立。曾執掌大型生活娛樂集團品牌體驗與營運策略，兼具頂層商業思維與代碼工程落地能力，能無縫串聯設計規範、前端實作與非同步遠端協作流。",
+    birthDate: "1979.01.21",
+    availability: "錄取後 1-2 週內可到職（可全時配合遠端非同步協作）",
     contact: {
       email: "sujagger.104@gmail.com",
       phone: "0960-385-778",
@@ -64,6 +66,7 @@ export const resumeData: ResumeData = {
       period: "2010/1 - 2021/4",
       achievements: [
         "掌管旗下 Brown Sugar、Dozo、Myst 等知名餐飲與娛樂旗艦品牌之全方位視覺系統（CIS）、空間數位體驗與市場策略。",
+        "深度協同並派駐上海 Brown Sugar、上海 Dozo、上海 Sabatini 等跨兩岸品牌實體與數位營運，具備多年對接大陸在地團隊、跨文化非同步溝通與高頻協同管理經驗。",
         "帶領跨部門團隊建立設計交付與專案管理 SOP，平衡極致體驗美感與千萬級商業運營效益。",
       ],
       techStack: ["Brand Strategy", "CIS Design", "Project Management", "UI/UX", "Operations"],
@@ -73,7 +76,7 @@ export const resumeData: ResumeData = {
   projects: [
     {
       id: "proj-1",
-      name: "AIPT ONE ECOSYSTEM",
+      name: "AIPT",
       category: "SaaS 智慧物業維運與工單 AI 生態系",
       role: "Core Frontend Architect & Product Designer",
       period: "2024",
@@ -99,30 +102,31 @@ export const resumeData: ResumeData = {
       link: "https://rebox-roan.vercel.app",
     },
     {
-      id: "proj-3",
-      name: "SECURITY UNION HUB",
-      category: "企業級安全監控與組織管理入口",
-      role: "Frontend Architect",
-      period: "2023",
-      techStack: ["Next.js", "TypeScript", "Tailwind CSS", "Vercel Edge"],
+      id: "proj-lottery",
+      name: "TAIWAN LOTTERY PLATFORM (台灣彩券官網)",
+      category: "大型彩票交易與資訊平台 UI/UX",
+      role: "Senior Web Designer (e21摩奇創意時期)",
+      period: "Core Archive",
+      techStack: ["High-Traffic UX", "Information Architecture", "HTML/CSS", "JavaScript", "Design System"],
       highlights: [
-        "遵循極簡暗黑工控美學打造即時警報監控中心，支援百毫秒即時事件回報與圖表過濾。",
-        "完成極致輕量化與首屏效能優化，達到 Google Core Web Vitals 全綠指標與極低記憶體佔用。",
+        "主導台灣彩券官網核心視覺介面與即時開獎資訊架構設計，兼顧極高瞬間併發流量下的高可用性與直覺易讀性。",
+        "制定彩票平台開獎動態展示與數位活動互動流程，建立長期穩定營運之介面規範。",
       ],
-      link: "https://security-union-website.vercel.app",
+      link: "https://www.taiwanlottery.com/",
     },
     {
       id: "proj-4",
-      name: "JAGGER OS · Interactive Portfolio",
-      category: "個人品牌高互動實驗室與 Design System 展演",
-      role: "Creator & Engineer",
-      period: "2024",
-      techStack: ["Next.js 16", "Motion/React", "Tailwind CSS v4", "Polar SDK", "Supabase"],
+      name: "FUMA CRASH · Web3 Gaming Platform",
+      category: "GameFi / 即時倍率高頻互動遊戲",
+      role: "Lead Interactive Web & Game UI Designer",
+      period: "Live Production",
+      techStack: ["Crash Mechanics", "Game UI/UX", "Interactive Web", "High-frequency States", "Real-time Feedback"],
       highlights: [
-        "打造融合幾何工程網格、向量畫布互動、微動態動畫與 AI 諮詢對話的沈浸式個人品牌平台。",
-        "整合 Polar SDK 實現在線贊助與訂閱流程，建立完整從展示、互動到轉化的全端閉環。",
+        "操刀高張力即時倍率（Crash）遊戲之視覺體系與動態曲線，兼顧高頻下注決策與沉浸式遊戲心理反饋。",
+        "規劃即時倒數、投注狀態切換與開獎動效反饋，確保在跨裝置環境下維持極低延遲的直覺操作感。",
+        "打造具備現代科技感與強烈視覺刺激的遊戲面板，成功整合於線上運行驗證環境。"
       ],
-      link: "https://jaggersu.com",
+      link: "https://jaggersu888.wixstudio.com/fuma",
     },
   ],
 
@@ -135,8 +139,18 @@ export const resumeData: ResumeData = {
     },
   ],
 
-  languages: [
-    { language: "中文 (繁體)", proficiency: "母語 (Native)" },
-    { language: "英文 (English)", proficiency: "流暢商務溝通 (Professional Working)" },
-  ],
+  languages: {
+    english: {
+      listening: 6,
+      speaking: 6,
+      reading: 7,
+      writing: 7,
+      summary: "商務溝通 · Professional",
+    },
+    others: [
+      { language: "中文 (繁體)", proficiency: "母語 (Native)" },
+      { language: "台語 (Taiwanese)", proficiency: "母語精通 (Fluent)" },
+      { language: "日文 (Japanese)", proficiency: "基礎略懂 (Basic)" },
+    ],
+  },
 };

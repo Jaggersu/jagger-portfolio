@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { Mail, Phone, MapPin, Globe, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, Send, Cake, Zap } from 'lucide-react';
 import { resumeData } from './data';
 
 function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -179,6 +179,27 @@ export default function ResumePage() {
                   </li>
                 )}
               </ul>
+
+              {/* Birthdate & Availability Info */}
+              {(profile.birthDate || profile.availability) && (
+                <div className="mt-3.5 pt-3 border-t border-zinc-800/70 print:border-zinc-200 space-y-1.5 text-[11px] font-mono">
+                  {profile.birthDate && (
+                    <div className="flex items-center gap-2.5 text-zinc-300 print:text-zinc-700">
+                      <Cake className="w-3.5 h-3.5 text-[#FF5500] shrink-0" />
+                      <span>{profile.birthDate}</span>
+                    </div>
+                  )}
+                  {profile.availability && (
+                    <div className="flex items-start gap-2.5 text-zinc-300 print:text-zinc-700">
+                      <Zap className="w-3.5 h-3.5 text-[#FF5500] shrink-0 mt-0.5" />
+                      <span className="leading-snug">
+                        <span className="text-zinc-100 print:text-zinc-800 font-semibold">可到職：</span>
+                        {profile.availability}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Core Expertise */}
@@ -268,19 +289,73 @@ export default function ResumePage() {
             </div>
 
             {/* Languages */}
-            {languages && languages.length > 0 && (
+            {languages && (
               <div className="break-avoid border-t border-zinc-800/70 pt-5 print:border-zinc-200">
-                <h2 className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold mb-2.5">
+                <h2 className="text-[11px] font-mono tracking-widest text-[#FF5500] uppercase font-bold mb-3">
                   // LANGUAGES
                 </h2>
-                <div className="space-y-1.5 text-xs font-mono">
-                  {languages.map((lang, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-zinc-300 print:text-zinc-700">
-                      <span>{lang.language}</span>
-                      <span className="text-[10px] text-zinc-500 print:text-zinc-500">{lang.proficiency}</span>
+
+                {/* English 10-Block Indicator */}
+                {languages.english && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <h3 className="text-xs font-mono font-bold text-zinc-200 print:text-zinc-800 flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF5500]" />
+                        英文 (English)
+                      </h3>
+                      {languages.english.summary && (
+                        <span className="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/25 print:bg-zinc-100 print:text-zinc-700 print:border-zinc-300 whitespace-nowrap">
+                          {languages.english.summary}
+                        </span>
+                      )}
                     </div>
-                  ))}
-                </div>
+
+                    <div className="space-y-1.5">
+                      {[
+                        { label: '聽 Listen', score: languages.english.listening },
+                        { label: '說 Speak', score: languages.english.speaking },
+                        { label: '讀 Read', score: languages.english.reading },
+                        { label: '寫 Write', score: languages.english.writing },
+                      ].map((dim) => (
+                        <div key={dim.label} className="flex items-center justify-between gap-1.5">
+                          <span className="text-[10.5px] font-mono text-zinc-300 print:text-zinc-700 whitespace-nowrap shrink-0">
+                            {dim.label}
+                          </span>
+                          <div className="flex items-center gap-[2.5px] flex-1 justify-center px-1">
+                            {Array.from({ length: 10 }).map((_, i) => {
+                              const isActive = i < dim.score;
+                              return (
+                                <span
+                                  key={i}
+                                  className={`w-[2.5px] h-[7px] rounded-[0.5px] ${
+                                    isActive
+                                      ? 'bg-[#FF5500] print:bg-zinc-800'
+                                      : 'bg-zinc-800 print:bg-zinc-200'
+                                  }`}
+                                />
+                              );
+                            })}
+                          </div>
+                          <span className="text-[10px] font-mono text-zinc-400 print:text-zinc-600 shrink-0 text-right">
+                            {dim.score}/10
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other Languages */}
+                {languages.others && languages.others.length > 0 && (
+                  <div className="mt-3.5 pt-3 border-t border-zinc-800/60 print:border-zinc-200 space-y-1.5 text-xs font-mono">
+                    {languages.others.map((lang, idx) => (
+                      <div key={idx} className="flex justify-between items-center text-zinc-300 print:text-zinc-700">
+                        <span>{lang.language}</span>
+                        <span className="text-[10px] text-zinc-500 print:text-zinc-500">{lang.proficiency}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </aside>
